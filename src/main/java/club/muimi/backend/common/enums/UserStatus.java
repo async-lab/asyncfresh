@@ -1,6 +1,6 @@
 package club.muimi.backend.common.enums;
 
-public enum Status {
+public enum UserStatus {
     ACTIVE,
     DISABLED
 }

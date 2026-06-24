@@ -1,18 +1,23 @@
 package club.muimi.backend.entity;
 
 import club.muimi.backend.common.enums.Role;
-import club.muimi.backend.common.enums.Status;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import lombok.Getter;
+import club.muimi.backend.common.enums.UserStatus;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class User {
     @Id
+    @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -25,23 +30,31 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean emailVerified = false;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Role role = Role.FRESHMAN;
 
     @Column(nullable = false)
-    private Status status = Status.ACTIVE;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(nullable = false)
+    @Builder.Default
     private Long tokenVersion = 0L;
 
-    @Column(nullable = false)
+    @Column
     private LocalDateTime lastLoginAt;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
