@@ -28,12 +28,17 @@ $EnvironmentVariables = [ordered]@{
     JWT_SECRET                = "please-change-this-to-a-strong-secret-with-at-least-32-chars"
     JWT_COOKIE_SECURE         = "false"
     JWT_COOKIE_SAME_SITE      = "Strict"
+    AUTH_CACHE_TYPE           = "redis"
     MAIL_SMTP_HOST            = "smtp.163.com"
     MAIL_SMTP_PORT            = "465"
     MAIL_SMTP_SSL_ENABLE      = "true"
     MAIL_SMTP_STARTTLS_ENABLE = "false"
     MAIL_ACCOUNT              = "your_mail@163.com"
     MAIL_AUTH_CODE            = "your_code"
+    DEFAULT_ADMIN_ENABLED     = "true"
+    DEFAULT_ADMIN_USERNAME    = "fresh_admin"
+    DEFAULT_ADMIN_PASSWORD    = "AdminPass123"
+    DEFAULT_ADMIN_EMAIL       = "admin@example.com"
 }
 
 function Test-ModeValid {

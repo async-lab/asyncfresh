@@ -1,10 +1,14 @@
 package club.muimi.backend.config;
 
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Locale;
 
+@Setter
+@Getter
 @ConfigurationProperties(prefix = "app.security.jwt")
 public class JwtProperties {
 
@@ -16,70 +20,6 @@ public class JwtProperties {
     private String csrfHeaderName;
     private boolean cookieSecure;
     private String cookieSameSite;
-
-    public String getSecret() {
-        return secret;
-    }
-
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-
-    public long getExpireSeconds() {
-        return expireSeconds;
-    }
-
-    public void setExpireSeconds(long expireSeconds) {
-        this.expireSeconds = expireSeconds;
-    }
-
-    public long getRememberExpireSeconds() {
-        return rememberExpireSeconds;
-    }
-
-    public void setRememberExpireSeconds(long rememberExpireSeconds) {
-        this.rememberExpireSeconds = rememberExpireSeconds;
-    }
-
-    public String getCookieName() {
-        return cookieName;
-    }
-
-    public void setCookieName(String cookieName) {
-        this.cookieName = cookieName;
-    }
-
-    public String getCsrfCookieName() {
-        return csrfCookieName;
-    }
-
-    public void setCsrfCookieName(String csrfCookieName) {
-        this.csrfCookieName = csrfCookieName;
-    }
-
-    public String getCsrfHeaderName() {
-        return csrfHeaderName;
-    }
-
-    public void setCsrfHeaderName(String csrfHeaderName) {
-        this.csrfHeaderName = csrfHeaderName;
-    }
-
-    public boolean isCookieSecure() {
-        return cookieSecure;
-    }
-
-    public void setCookieSecure(boolean cookieSecure) {
-        this.cookieSecure = cookieSecure;
-    }
-
-    public String getCookieSameSite() {
-        return cookieSameSite;
-    }
-
-    public void setCookieSameSite(String cookieSameSite) {
-        this.cookieSameSite = cookieSameSite;
-    }
 
     @PostConstruct
     public void validate() {

@@ -12,9 +12,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
         "spring.datasource.url=jdbc:mysql://localhost:3306/fresh?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&sessionVariables=default_storage_engine=InnoDB",
         "spring.datasource.username=epoch",
         "spring.datasource.password=123456",
+        "spring.data.redis.host=127.0.0.1",
+        "spring.data.redis.port=6379",
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
-        "app.auth.cache-type=memory"
+        "app.auth.cache-type=redis",
+        "app.bootstrap.default-admin.enabled=false"
 })
 class MysqlIntegrationTest {
 

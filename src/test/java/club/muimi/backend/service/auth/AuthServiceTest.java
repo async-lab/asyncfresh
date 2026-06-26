@@ -9,8 +9,10 @@ import club.muimi.backend.dto.auth.LoginRequest;
 import club.muimi.backend.dto.auth.RegisterRequest;
 import club.muimi.backend.dto.auth.ResetPasswordRequest;
 import club.muimi.backend.dto.auth.SendEmailCodeRequest;
+import club.muimi.backend.entity.GroupMember;
 import club.muimi.backend.entity.User;
 import club.muimi.backend.exception.UnauthorizedException;
+import club.muimi.backend.vo.auth.CurrentUserVo;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.UserRepository;
@@ -35,6 +37,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -237,5 +240,29 @@ class AuthServiceTest {
         authService.sendEmailCode(request);
 
         verify(authCacheService).markEmailCooldown(any(), anyString(), any());
+    }
+
+    @Test
+    void getCurrentUserShouldReturnEmptyGroupsForAdminWithoutMembership() {
+        User admin = User.builder()
+                .id(99L)
+                .username("admin")
+                .email("admin@example.com")
+                .passwordHash("hashed")
+                .emailVerified(true)
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .build();
+        LoginUser loginUser = new LoginUser(99L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        when(currentUserService.requireCurrentUser()).thenReturn(loginUser);
+        when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
+        when(groupMemberRepository.findAllByUserId(99L)).thenReturn(List.of());
+        when(recruitmentGroupRepository.findByLeaderUserId(99L)).thenReturn(Optional.empty());
+
+        CurrentUserVo result = authService.getCurrentUser();
+
+        assertThat(result.role()).isEqualTo(Role.ADMIN);
+        assertThat(result.groups()).isEmpty();
     }
 }

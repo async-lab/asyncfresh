@@ -592,13 +592,13 @@
             <h1>把登录、注册、CSRF 与权限验证整条链路直接摆到页面上</h1>
             <p class="lead">
                 这个单文件页面不依赖任何前端构建工具，直接作为未来 Vue 单页应用的回退入口。
-                现在它已经能完整联调公开接口、登录态、当前用户、登出、改密、忘记密码，以及
-                `leader/admin` 路由的权限拦截结果。
+                现在它已经能完整联调公开接口、登录态、当前用户、登出、改密、忘记密码，并根据
+                当前登录角色直接展示后续受保护业务接口应采用的权限策略。
             </p>
             <div class="hero-actions">
                 <button class="button button-primary" id="generate-demo">生成测试账号草稿</button>
                 <button class="button button-secondary" id="refresh-session">刷新当前会话</button>
-                <button class="button button-warm" id="run-probe-suite">运行权限探针</button>
+                <button class="button button-warm" id="run-probe-suite">运行会话检查</button>
             </div>
             <div class="route-strip">
                 <span class="route-pill" id="current-route-pill">Route: /</span>
@@ -654,7 +654,7 @@
                         <h2 class="panel-title">注册链路</h2>
                         <p class="panel-desc">
                             先发注册验证码，再提交注册。默认注册角色是 `FRESHMAN`，
-                            后续用它去验证 `leader/admin` 路由拦截是否正常。
+                            后续用它去验证登录态、角色识别和权限策略提示是否正常。
                         </p>
                     </div>
                     <span class="badge">公开接口</span>
@@ -776,14 +776,14 @@
             <section class="panel sheet">
                 <div class="panel-head">
                     <div>
-                        <h2 class="panel-title">权限探针</h2>
+                        <h2 class="panel-title">会话与角色检查</h2>
                         <p class="panel-desc">
-                            这里不依赖真实业务控制器，而是直接访问 `leader/admin` 路由空间。
-                            未登录时应返回 `401`；普通新生登录后应返回 `403`；
-                            如果你换成管理员账号登录，路由会放行到不存在的地址并返回 `404`。
+                            当前版本不再依赖虚构的 `leader/admin probe` 接口。
+                            页面会通过真实的 `/api/v1/auth/me` 返回结果与当前角色，
+                            直接展示后续受保护业务接口应采用的权限策略。
                         </p>
                     </div>
-                    <span class="badge">401 / 403 / 404</span>
+                    <span class="badge">200 / 401 / 角色策略</span>
                 </div>
 
                 <div class="probe-grid">
@@ -792,20 +792,19 @@
                         <span id="probe-me">-</span>
                     </div>
                     <div class="probe-card">
-                        <strong>`/api/v1/leader/probe`</strong>
-                        <span id="probe-leader">-</span>
+                        <strong>当前角色</strong>
+                        <span id="probe-role">-</span>
                     </div>
                     <div class="probe-card">
-                        <strong>`/api/v1/admin/probe`</strong>
-                        <span id="probe-admin">-</span>
+                        <strong>权限策略</strong>
+                        <span id="probe-policy">-</span>
                     </div>
                 </div>
 
                 <div class="button-row">
                     <button class="button button-secondary" id="probe-auth">验证当前用户接口</button>
-                    <button class="button button-secondary" id="probe-leader-button">验证 Leader 权限</button>
-                    <button class="button button-secondary" id="probe-admin-button">验证 Admin 权限</button>
-                    <button class="button button-warm" id="probe-suite-inline">整套权限检查</button>
+                    <button class="button button-secondary" id="probe-role-button">刷新角色策略</button>
+                    <button class="button button-warm" id="probe-suite-inline">整套会话检查</button>
                 </div>
             </section>
 
@@ -882,10 +881,10 @@
         currentUser: null,
         lastRequestId: "-",
         logs: [],
-        probes: {
+        checks: {
             me: "-",
-            leader: "-",
-            admin: "-"
+            role: "-",
+            policy: "-"
         },
         flow: {
             registerCodeSent: false,
@@ -929,8 +928,8 @@
         responseFrame: document.getElementById("response-frame"),
         responseBadge: document.getElementById("response-badge"),
         probeMe: document.getElementById("probe-me"),
-        probeLeader: document.getElementById("probe-leader"),
-        probeAdmin: document.getElementById("probe-admin")
+        probeRole: document.getElementById("probe-role"),
+        probePolicy: document.getElementById("probe-policy")
     };
 
     const buttons = Array.from(document.querySelectorAll(".button"));
@@ -974,7 +973,7 @@
             state.flow.registered ? ["注册完成", "ok"] : ["尚未注册", "warn"],
             state.flow.loggedIn ? ["已登录", "ok"] : ["未登录", "warn"],
             state.flow.csrfReady ? ["CSRF 已就绪", "ok"] : ["CSRF 未就绪", "warn"],
-            state.flow.permissionGuardVerified ? ["权限拦截已验证", "ok"] : ["尚未验证权限拦截", "warn"],
+            state.flow.permissionGuardVerified ? ["角色策略已识别", "ok"] : ["尚未识别角色策略", "warn"],
             state.flow.logoutVerified ? ["已验证登出回收", "ok"] : ["尚未验证登出", "warn"]
         ];
 
@@ -1012,8 +1011,8 @@
             },
             {
                 done: state.flow.permissionGuardVerified,
-                title: "6. 验证权限拦截",
-                text: "普通新生账号访问 `leader/admin` 路由时应收到 `403`。"
+                title: "6. 校验角色与权限策略",
+                text: "调用 `/api/v1/auth/me` 后，页面会根据当前角色展示后续受保护业务接口应采用的权限策略。"
             },
             {
                 done: state.flow.logoutVerified,
@@ -1060,11 +1059,34 @@
         nodes.metricRole.textContent = state.currentUser ? state.currentUser.role : "未登录";
         nodes.metricCsrf.textContent = previewValue(csrfToken);
         nodes.currentRoutePill.textContent = "Route: " + (window.location.pathname || "/");
-        nodes.probeMe.textContent = state.probes.me;
-        nodes.probeLeader.textContent = state.probes.leader;
-        nodes.probeAdmin.textContent = state.probes.admin;
+        nodes.probeMe.textContent = state.checks.me;
+        nodes.probeRole.textContent = state.checks.role;
+        nodes.probePolicy.textContent = state.checks.policy;
         buildFlowTags();
         buildTimeline();
+    }
+
+    function refreshRoleStrategy() {
+        if (!state.currentUser) {
+            state.checks.role = "游客";
+            state.checks.policy = "仅公开接口";
+            state.flow.permissionGuardVerified = false;
+            return;
+        }
+
+        state.checks.role = state.currentUser.role;
+        switch (state.currentUser.role) {
+            case "ADMIN":
+                state.checks.policy = "可访问未来 Admin / Leader 受保护接口";
+                break;
+            case "LEADER":
+                state.checks.policy = "可访问未来 Leader 接口，不可访问 Admin 接口";
+                break;
+            default:
+                state.checks.policy = "仅可访问普通用户接口";
+                break;
+        }
+        state.flow.permissionGuardVerified = true;
     }
 
     function pushLog(entry) {
@@ -1231,17 +1253,19 @@
 
     async function refreshCurrentUser(silent = false) {
         const result = await apiRequest("/api/v1/auth/me");
-        state.probes.me = String(result.status);
+        state.checks.me = String(result.status);
 
         if (result.status === 200 && result.payload?.code === 0) {
             state.currentUser = result.payload.data;
             state.flow.loggedIn = true;
+            refreshRoleStrategy();
             if (!silent) {
                 syncAccountFields();
             }
         } else {
             state.currentUser = null;
             state.flow.loggedIn = false;
+            refreshRoleStrategy();
         }
     }
 
@@ -1299,7 +1323,7 @@
             state.currentUser = null;
             state.flow.loggedIn = false;
             await refreshCurrentUser(true);
-            if (state.probes.me === "401") {
+            if (state.checks.me === "401") {
                 state.flow.logoutVerified = true;
             }
         }
@@ -1350,19 +1374,9 @@
         }
     }
 
-    async function probePath(path, bucket) {
-        const result = await apiRequest(path);
-        state.probes[bucket] = String(result.status);
-        if ((bucket === "leader" || bucket === "admin") && result.status === 403) {
-            state.flow.permissionGuardVerified = true;
-        }
-        return result;
-    }
-
     async function runProbeSuite() {
         await refreshCurrentUser(true);
-        await probePath("/api/v1/leader/probe", "leader");
-        await probePath("/api/v1/admin/probe", "admin");
+        refreshRoleStrategy();
     }
 
     function bindEvents() {
@@ -1388,8 +1402,10 @@
         document.getElementById("submit-change-password").addEventListener("click", () => runAction(submitChangePassword));
 
         document.getElementById("probe-auth").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
-        document.getElementById("probe-leader-button").addEventListener("click", () => runAction(() => probePath("/api/v1/leader/probe", "leader")));
-        document.getElementById("probe-admin-button").addEventListener("click", () => runAction(() => probePath("/api/v1/admin/probe", "admin")));
+        document.getElementById("probe-role-button").addEventListener("click", () => runAction(async () => {
+            await refreshCurrentUser(true);
+            refreshRoleStrategy();
+        }));
 
         fields.registerEmail.addEventListener("change", syncAccountFields);
         fields.registerPassword.addEventListener("change", syncAccountFields);

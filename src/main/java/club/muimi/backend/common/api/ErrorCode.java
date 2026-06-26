@@ -1,7 +1,9 @@
 package club.muimi.backend.common.api;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public enum ErrorCode {
     BAD_REQUEST(40000, HttpStatus.BAD_REQUEST, "参数错误"),
     UNAUTHORIZED(40100, HttpStatus.UNAUTHORIZED, "未登录或登录已过期"),
@@ -24,15 +26,4 @@ public enum ErrorCode {
         this.defaultMessage = defaultMessage;
     }
 
-    public int getCode() {
-        return code;
-    }
-
-    public HttpStatus getHttpStatus() {
-        return httpStatus;
-    }
-
-    public String getDefaultMessage() {
-        return defaultMessage;
-    }
 }

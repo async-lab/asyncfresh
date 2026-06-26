@@ -189,7 +189,10 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("当前登录状态已失效"));
         List<GroupMember> groupMembers = groupMemberRepository.findAllByUserId(loginUser.getUserId());
         List<Long> groupIds = groupMembers.stream().map(GroupMember::getGroupId).distinct().toList();
-        List<GroupSimpleVo> groups = recruitmentGroupRepository.findAllByIdIn(groupIds)
+        // 默认管理员和未分组用户都可能没有任何 groupId，这里显式短路，避免生成空 IN 查询。
+        List<GroupSimpleVo> groups = groupIds.isEmpty()
+                ? List.of()
+                : recruitmentGroupRepository.findAllByIdIn(groupIds)
                 .stream()
                 .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
                 .toList();
