@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRESH 权限链路联调台</title>
+    <style>
+        :root {
+            --bg: #efe6d6;
+            --panel: rgba(255, 250, 242, 0.9);
+            --panel-strong: rgba(248, 241, 229, 0.96);
+            --ink: #1f1c19;
+            --muted: #6b6259;
+            --accent: #1f6b55;
+            --accent-2: #bc7b31;
+            --accent-3: #12362f;
+            --danger: #b4453e;
+            --ok: #19764c;
+            --warn: #9d6a15;
+            --line: rgba(23, 39, 34, 0.09);
+            --shadow: 0 24px 60px rgba(46, 35, 16, 0.14);
+            --radius-xl: 30px;
+            --radius-lg: 22px;
+            --radius-md: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            font-family: "Source Han Serif SC", "Songti SC", "Microsoft YaHei", serif;
+            background:
+                radial-gradient(circle at top left, rgba(31, 107, 85, 0.18), transparent 28%),
+                radial-gradient(circle at 88% 18%, rgba(188, 123, 49, 0.16), transparent 24%),
+                linear-gradient(135deg, #f7f0e2 0%, #eee3ce 52%, #e4d8c3 100%);
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        .page {
+            width: min(1400px, calc(100vw - 28px));
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+            gap: 22px;
+            margin-bottom: 22px;
+        }
+
+        .hero-main {
+            padding: 34px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-main::after {
+            content: "";
+            position: absolute;
+            inset: auto -40px -80px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(31, 107, 85, 0.18), transparent 68%);
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            color: var(--accent-3);
+            background: rgba(31, 107, 85, 0.08);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 18px 0 14px;
+            font-size: clamp(34px, 4.8vw, 62px);
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+        }
+
+        .lead {
+            margin: 0;
+            max-width: 760px;
+            color: var(--muted);
+            font-size: 17px;
+            line-height: 1.9;
+        }
+
+        .hero-actions,
+        .button-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hero-actions {
+            margin-top: 26px;
+        }
+
+        .button {
+            border: 0;
+            border-radius: 16px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+        }
+
+        .button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+            transform: none;
+        }
+
+        .button-primary {
+            color: #fffdf8;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
+            box-shadow: 0 16px 30px rgba(31, 107, 85, 0.2);
+        }
+
+        .button-secondary {
+            color: var(--accent-3);
+            background: rgba(31, 107, 85, 0.08);
+        }
+
+        .button-warm {
+            color: #fffaf4;
+            background: linear-gradient(135deg, #be7e33, #8f531b);
+            box-shadow: 0 16px 30px rgba(143, 83, 27, 0.2);
+        }
+
+        .button-danger {
+            color: #fff8f6;
+            background: linear-gradient(135deg, #b4453e, #7d2d28);
+            box-shadow: 0 16px 30px rgba(125, 45, 40, 0.18);
+        }
+
+        .hero-side {
+            padding: 22px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .stack-card {
+            padding: 18px 18px 16px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 238, 228, 0.92));
+            border: 1px solid rgba(31, 107, 85, 0.1);
+        }
+
+        .stack-card h2,
+        .section-title,
+        .panel-title {
+            margin: 0;
+        }
+
+        .stack-card h2 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .metric {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(23, 39, 34, 0.08);
+        }
+
+        .metric strong {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .metric span {
+            display: block;
+            font-size: 15px;
+            font-weight: 700;
+            word-break: break-all;
+        }
+
+        .tag-cloud {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(23, 39, 34, 0.08);
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .tag.ok {
+            color: var(--ok);
+            background: rgba(25, 118, 76, 0.08);
+        }
+
+        .tag.warn {
+            color: var(--warn);
+            background: rgba(157, 106, 21, 0.1);
+        }
+
+        .tag.danger {
+            color: var(--danger);
+            background: rgba(180, 69, 62, 0.1);
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+            gap: 22px;
+        }
+
+        .column {
+            display: grid;
+            gap: 22px;
+            align-content: start;
+        }
+
+        .sheet {
+            padding: 24px;
+            background: var(--panel-strong);
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 18px;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            letter-spacing: -0.03em;
+        }
+
+        .panel-desc {
+            margin: 6px 0 0;
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .badge {
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--accent-3);
+            background: rgba(31, 107, 85, 0.08);
+            white-space: nowrap;
+        }
+
+        .fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .field,
+        .field-full {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field-full {
+            grid-column: 1 / -1;
+        }
+
+        .field label,
+        .field-full label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+        }
+
+        .field input,
+        .field select,
+        .field-full input,
+        .field-full select {
+            width: 100%;
+            border: 1px solid rgba(23, 39, 34, 0.12);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.86);
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .field input:focus,
+        .field select:focus,
+        .field-full input:focus,
+        .field-full select:focus {
+            border-color: rgba(31, 107, 85, 0.45);
+            box-shadow: 0 0 0 4px rgba(31, 107, 85, 0.08);
+        }
+
+        .check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .hint {
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 12px;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 18px minmax(0, 1fr);
+            gap: 12px;
+            align-items: start;
+            padding: 14px 14px 14px 10px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.62);
+            border: 1px solid rgba(23, 39, 34, 0.07);
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+            background: rgba(107, 98, 89, 0.25);
+        }
+
+        .timeline-item.done .timeline-dot {
+            background: var(--ok);
+        }
+
+        .timeline-item.wait .timeline-dot {
+            background: var(--warn);
+        }
+
+        .timeline-item.off .timeline-dot {
+            background: rgba(107, 98, 89, 0.25);
+        }
+
+        .timeline-item strong {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .timeline-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .probe-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .probe-card {
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.68);
+            border: 1px solid rgba(23, 39, 34, 0.08);
+        }
+
+        .probe-card strong {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .probe-card span {
+            display: block;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .mini-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .shell {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
+            gap: 22px;
+        }
+
+        .log-list {
+            display: grid;
+            gap: 12px;
+            max-height: 620px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .log-item {
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.68);
+            border: 1px solid rgba(23, 39, 34, 0.08);
+        }
+
+        .log-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .log-route {
+            font-weight: 800;
+            color: var(--accent-3);
+        }
+
+        .log-status {
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-weight: 800;
+        }
+
+        .status-2xx {
+            color: var(--ok);
+            background: rgba(25, 118, 76, 0.09);
+        }
+
+        .status-4xx {
+            color: var(--warn);
+            background: rgba(157, 106, 21, 0.12);
+        }
+
+        .status-5xx {
+            color: var(--danger);
+            background: rgba(180, 69, 62, 0.12);
+        }
+
+        .log-message {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--ink);
+            word-break: break-word;
+        }
+
+        .code-frame {
+            min-height: 620px;
+            padding: 22px;
+            border-radius: 24px;
+            background:
+                linear-gradient(180deg, rgba(16, 24, 22, 0.98), rgba(19, 31, 28, 0.98));
+            color: #dbeee5;
+            border: 1px solid rgba(97, 113, 101, 0.28);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow: auto;
+        }
+
+        .route-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .route-pill {
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(23, 39, 34, 0.08);
+        }
+
+        .footer-note {
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 1160px) {
+            .hero,
+            .workspace,
+            .shell {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .page {
+                width: min(calc(100vw - 16px), 1400px);
+                padding-top: 10px;
+            }
+
+            .hero-main,
+            .sheet,
+            .hero-side {
+                padding: 20px;
+            }
+
+            .fields,
+            .metrics,
+            .probe-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel-head {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 34px;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="page">
+    <section class="hero">
+        <article class="panel hero-main">
+            <div class="eyebrow">FRESH · Auth Flow Console</div>
+            <h1>把登录、注册、CSRF 与权限验证整条链路直接摆到页面上</h1>
+            <p class="lead">
+                这个单文件页面不依赖任何前端构建工具，直接作为未来 Vue 单页应用的回退入口。
+                现在它已经能完整联调公开接口、登录态、当前用户、登出、改密、忘记密码，以及
+                `leader/admin` 路由的权限拦截结果。
+            </p>
+            <div class="hero-actions">
+                <button class="button button-primary" id="generate-demo">生成测试账号草稿</button>
+                <button class="button button-secondary" id="refresh-session">刷新当前会话</button>
+                <button class="button button-warm" id="run-probe-suite">运行权限探针</button>
+            </div>
+            <div class="route-strip">
+                <span class="route-pill" id="current-route-pill">Route: /</span>
+                <span class="route-pill">SPA 回退入口已生效</span>
+                <span class="route-pill">所有请求默认携带 Cookie</span>
+                <span class="route-pill">写操作自动附带 CSRF Header</span>
+            </div>
+        </article>
+
+        <aside class="panel hero-side">
+            <section class="stack-card">
+                <h2>会话快照</h2>
+                <div class="metrics">
+                    <div class="metric">
+                        <strong>当前路径</strong>
+                        <span id="metric-path">/</span>
+                    </div>
+                    <div class="metric">
+                        <strong>登录身份</strong>
+                        <span id="metric-user">游客</span>
+                    </div>
+                    <div class="metric">
+                        <strong>角色</strong>
+                        <span id="metric-role">未登录</span>
+                    </div>
+                    <div class="metric">
+                        <strong>CSRF 状态</strong>
+                        <span id="metric-csrf">未就绪</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="stack-card">
+                <h2>链路状态</h2>
+                <div class="tag-cloud" id="flow-tags"></div>
+            </section>
+
+            <section class="stack-card">
+                <h2>开发提示</h2>
+                <p class="mini-note">
+                    当前验证码由后端开发邮件服务写到服务端日志中。你发送注册码或重置码后，
+                    从后端控制台复制 6 位验证码填回本页即可完成整条联调链路。
+                </p>
+            </section>
+        </aside>
+    </section>
+
+    <section class="workspace">
+        <div class="column">
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">注册链路</h2>
+                        <p class="panel-desc">
+                            先发注册验证码，再提交注册。默认注册角色是 `FRESHMAN`，
+                            后续用它去验证 `leader/admin` 路由拦截是否正常。
+                        </p>
+                    </div>
+                    <span class="badge">公开接口</span>
+                </div>
+
+                <div class="fields">
+                    <div class="field">
+                        <label for="register-username">用户名</label>
+                        <input id="register-username" placeholder="fresh_demo_001">
+                    </div>
+                    <div class="field">
+                        <label for="register-email">邮箱</label>
+                        <input id="register-email" type="email" placeholder="fresh_demo_001@example.com">
+                    </div>
+                    <div class="field">
+                        <label for="register-password">密码</label>
+                        <input id="register-password" type="password" placeholder="Pass1234">
+                    </div>
+                    <div class="field">
+                        <label for="register-code">验证码</label>
+                        <input id="register-code" placeholder="从后端日志复制 6 位数字">
+                    </div>
+                </div>
+
+                <p class="hint">
+                    注册流程会调用 `/api/v1/auth/send-email-code` 和 `/api/v1/auth/register`。
+                </p>
+
+                <div class="button-row">
+                    <button class="button button-secondary" id="send-register-code">发送注册验证码</button>
+                    <button class="button button-primary" id="submit-register">提交注册</button>
+                </div>
+            </section>
+
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">登录与会话</h2>
+                        <p class="panel-desc">
+                            登录成功后，后端会下发 HttpOnly 登录 Cookie 与可读的 `XSRF-TOKEN`。
+                            本页随后会主动调用 `/api/v1/auth/me` 回读当前用户。
+                        </p>
+                    </div>
+                    <span class="badge">Cookie + JWT</span>
+                </div>
+
+                <div class="fields">
+                    <div class="field">
+                        <label for="login-email">邮箱</label>
+                        <input id="login-email" type="email" placeholder="登录邮箱">
+                    </div>
+                    <div class="field">
+                        <label for="login-password">密码</label>
+                        <input id="login-password" type="password" placeholder="登录密码">
+                    </div>
+                    <div class="field-full">
+                        <label class="check">
+                            <input id="remember-me" type="checkbox">
+                            <span>记住我</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary" id="submit-login">登录</button>
+                    <button class="button button-secondary" id="fetch-me">读取当前用户</button>
+                    <button class="button button-danger" id="submit-logout">安全登出</button>
+                </div>
+            </section>
+
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">找回与改密</h2>
+                        <p class="panel-desc">
+                            这里同时覆盖忘记密码、重置密码和已登录用户改密三条分支，
+                            用来验证验证码链路与 CSRF 保护是否一并工作。
+                        </p>
+                    </div>
+                    <span class="badge">验证码 + CSRF</span>
+                </div>
+
+                <div class="fields">
+                    <div class="field">
+                        <label for="reset-email">重置邮箱</label>
+                        <input id="reset-email" type="email" placeholder="用于找回密码">
+                    </div>
+                    <div class="field">
+                        <label for="reset-code">重置验证码</label>
+                        <input id="reset-code" placeholder="从后端日志复制 6 位数字">
+                    </div>
+                    <div class="field">
+                        <label for="reset-password">新密码</label>
+                        <input id="reset-password" type="password" placeholder="NewPass123">
+                    </div>
+                    <div class="field">
+                        <label for="change-old-password">旧密码</label>
+                        <input id="change-old-password" type="password" placeholder="当前登录密码">
+                    </div>
+                    <div class="field">
+                        <label for="change-new-password">改密新密码</label>
+                        <input id="change-new-password" type="password" placeholder="Changed123">
+                    </div>
+                    <div class="field">
+                        <label for="change-confirm-password">确认新密码</label>
+                        <input id="change-confirm-password" type="password" placeholder="Changed123">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-secondary" id="send-reset-code">发送重置验证码</button>
+                    <button class="button button-warm" id="submit-reset-password">提交重置密码</button>
+                    <button class="button button-primary" id="submit-change-password">已登录用户改密</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="column">
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">权限探针</h2>
+                        <p class="panel-desc">
+                            这里不依赖真实业务控制器，而是直接访问 `leader/admin` 路由空间。
+                            未登录时应返回 `401`；普通新生登录后应返回 `403`；
+                            如果你换成管理员账号登录，路由会放行到不存在的地址并返回 `404`。
+                        </p>
+                    </div>
+                    <span class="badge">401 / 403 / 404</span>
+                </div>
+
+                <div class="probe-grid">
+                    <div class="probe-card">
+                        <strong>`/api/v1/auth/me`</strong>
+                        <span id="probe-me">-</span>
+                    </div>
+                    <div class="probe-card">
+                        <strong>`/api/v1/leader/probe`</strong>
+                        <span id="probe-leader">-</span>
+                    </div>
+                    <div class="probe-card">
+                        <strong>`/api/v1/admin/probe`</strong>
+                        <span id="probe-admin">-</span>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-secondary" id="probe-auth">验证当前用户接口</button>
+                    <button class="button button-secondary" id="probe-leader-button">验证 Leader 权限</button>
+                    <button class="button button-secondary" id="probe-admin-button">验证 Admin 权限</button>
+                    <button class="button button-warm" id="probe-suite-inline">整套权限检查</button>
+                </div>
+            </section>
+
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">链路看板</h2>
+                        <p class="panel-desc">
+                            用一步一格的形式观察当前页面是否已经完整跑通注册、登录、会话校验、
+                            权限拦截、登出回收这几段关键路径。
+                        </p>
+                    </div>
+                    <span class="badge">Flow</span>
+                </div>
+
+                <div class="timeline" id="flow-timeline"></div>
+            </section>
+
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">当前用户视图</h2>
+                        <p class="panel-desc">
+                            成功调用 `/api/v1/auth/me` 后，这里会展开当前用户对象；未登录时会直接显示游客态。
+                        </p>
+                    </div>
+                    <span class="badge">CurrentUserVo</span>
+                </div>
+
+                <div class="code-frame" id="current-user-frame">等待读取当前用户...</div>
+            </section>
+        </div>
+    </section>
+
+    <section class="shell">
+        <section class="panel sheet">
+            <div class="panel-head">
+                <div>
+                    <h2 class="panel-title">请求时间线</h2>
+                    <p class="panel-desc">
+                        每次点击都会把请求结果记录在这里，便于观察验证码、登录态、权限判断和请求 ID。
+                    </p>
+                </div>
+                <span class="badge" id="request-count">0 Requests</span>
+            </div>
+
+            <div class="log-list" id="request-log"></div>
+            <p class="footer-note">
+                页面会自动发送 `credentials: "include"`；对所有写操作会尝试从 `XSRF-TOKEN`
+                Cookie 里读取值并追加到 `X-CSRF-TOKEN` 请求头。
+            </p>
+        </section>
+
+        <section class="panel sheet">
+            <div class="panel-head">
+                <div>
+                    <h2 class="panel-title">响应检查台</h2>
+                    <p class="panel-desc">
+                        这里展示最近一次请求的完整结构，包含 HTTP 状态、业务码、请求 ID 和返回体。
+                    </p>
+                </div>
+                <span class="badge" id="response-badge">Last Response</span>
+            </div>
+
+            <div class="code-frame" id="response-frame">等待请求...</div>
+        </section>
+    </section>
+</main>
+
+<script>
+    const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+    const state = {
+        busy: false,
+        currentUser: null,
+        lastRequestId: "-",
+        logs: [],
+        probes: {
+            me: "-",
+            leader: "-",
+            admin: "-"
+        },
+        flow: {
+            registerCodeSent: false,
+            registered: false,
+            loggedIn: false,
+            csrfReady: false,
+            resetCodeSent: false,
+            resetDone: false,
+            permissionGuardVerified: false,
+            logoutVerified: false
+        }
+    };
+
+    const fields = {
+        registerUsername: document.getElementById("register-username"),
+        registerEmail: document.getElementById("register-email"),
+        registerPassword: document.getElementById("register-password"),
+        registerCode: document.getElementById("register-code"),
+        loginEmail: document.getElementById("login-email"),
+        loginPassword: document.getElementById("login-password"),
+        rememberMe: document.getElementById("remember-me"),
+        resetEmail: document.getElementById("reset-email"),
+        resetCode: document.getElementById("reset-code"),
+        resetPassword: document.getElementById("reset-password"),
+        changeOldPassword: document.getElementById("change-old-password"),
+        changeNewPassword: document.getElementById("change-new-password"),
+        changeConfirmPassword: document.getElementById("change-confirm-password")
+    };
+
+    const nodes = {
+        currentRoutePill: document.getElementById("current-route-pill"),
+        metricPath: document.getElementById("metric-path"),
+        metricUser: document.getElementById("metric-user"),
+        metricRole: document.getElementById("metric-role"),
+        metricCsrf: document.getElementById("metric-csrf"),
+        flowTags: document.getElementById("flow-tags"),
+        flowTimeline: document.getElementById("flow-timeline"),
+        currentUserFrame: document.getElementById("current-user-frame"),
+        requestLog: document.getElementById("request-log"),
+        requestCount: document.getElementById("request-count"),
+        responseFrame: document.getElementById("response-frame"),
+        responseBadge: document.getElementById("response-badge"),
+        probeMe: document.getElementById("probe-me"),
+        probeLeader: document.getElementById("probe-leader"),
+        probeAdmin: document.getElementById("probe-admin")
+    };
+
+    const buttons = Array.from(document.querySelectorAll(".button"));
+
+    function getCookie(name) {
+        return document.cookie
+            .split(";")
+            .map(item => item.trim())
+            .filter(Boolean)
+            .map(item => {
+                const eqIndex = item.indexOf("=");
+                if (eqIndex === -1) {
+                    return [item, ""];
+                }
+                return [item.slice(0, eqIndex), decodeURIComponent(item.slice(eqIndex + 1))];
+            })
+            .find(entry => entry[0] === name)?.[1] || "";
+    }
+
+    function previewValue(value, limit = 18) {
+        if (!value) {
+            return "未就绪";
+        }
+        return value.length <= limit ? value : value.slice(0, limit) + "...";
+    }
+
+    function safeJson(data) {
+        return JSON.stringify(data, null, 2);
+    }
+
+    function setBusy(nextBusy) {
+        state.busy = nextBusy;
+        buttons.forEach(button => {
+            button.disabled = nextBusy;
+        });
+    }
+
+    function buildFlowTags() {
+        const tags = [
+            state.flow.registerCodeSent ? ["注册验证码已发", "ok"] : ["等待注册验证码", "warn"],
+            state.flow.registered ? ["注册完成", "ok"] : ["尚未注册", "warn"],
+            state.flow.loggedIn ? ["已登录", "ok"] : ["未登录", "warn"],
+            state.flow.csrfReady ? ["CSRF 已就绪", "ok"] : ["CSRF 未就绪", "warn"],
+            state.flow.permissionGuardVerified ? ["权限拦截已验证", "ok"] : ["尚未验证权限拦截", "warn"],
+            state.flow.logoutVerified ? ["已验证登出回收", "ok"] : ["尚未验证登出", "warn"]
+        ];
+
+        nodes.flowTags.innerHTML = tags
+            .map(([label, type]) => `<span class="tag ${type}">${label}</span>`)
+            .join("");
+    }
+
+    function buildTimeline() {
+        const items = [
+            {
+                done: state.flow.registerCodeSent,
+                title: "1. 获取注册验证码",
+                text: "调用 `/api/v1/auth/send-email-code`，验证码从后端日志复制回来。"
+            },
+            {
+                done: state.flow.registered,
+                title: "2. 完成注册",
+                text: "调用 `/api/v1/auth/register`，默认注册角色应为 `FRESHMAN`。"
+            },
+            {
+                done: state.flow.loggedIn,
+                title: "3. 完成登录",
+                text: "调用 `/api/v1/auth/login`，浏览器应收到登录 Cookie。"
+            },
+            {
+                done: state.flow.csrfReady,
+                title: "4. 获取 CSRF Token",
+                text: "登录后浏览器应出现 `XSRF-TOKEN`，写操作会自动带上 `X-CSRF-TOKEN`。"
+            },
+            {
+                done: state.currentUser !== null,
+                title: "5. 回读当前用户",
+                text: "调用 `/api/v1/auth/me`，验证当前会话确实已经建立。"
+            },
+            {
+                done: state.flow.permissionGuardVerified,
+                title: "6. 验证权限拦截",
+                text: "普通新生账号访问 `leader/admin` 路由时应收到 `403`。"
+            },
+            {
+                done: state.flow.logoutVerified,
+                title: "7. 安全登出与回收会话",
+                text: "调用 `/api/v1/auth/logout` 后再次访问 `/me` 应返回 `401`。"
+            }
+        ];
+
+        nodes.flowTimeline.innerHTML = items
+            .map(item => {
+                const status = item.done ? "done" : "wait";
+                return `
+                    <div class="timeline-item ${status}">
+                        <div class="timeline-dot"></div>
+                        <div>
+                            <strong>${item.title}</strong>
+                            <span>${item.text}</span>
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+    }
+
+    function renderCurrentUser() {
+        if (!state.currentUser) {
+            nodes.currentUserFrame.textContent =
+                "当前状态：游客\n\n" +
+                "建议按以下顺序联调：\n" +
+                "1. 发送注册验证码\n" +
+                "2. 在后端日志中复制验证码并完成注册\n" +
+                "3. 登录后再次点击“读取当前用户”";
+            return;
+        }
+
+        nodes.currentUserFrame.textContent = safeJson(state.currentUser);
+    }
+
+    function renderMetrics() {
+        const csrfToken = getCookie("XSRF-TOKEN");
+        state.flow.csrfReady = Boolean(csrfToken);
+        nodes.metricPath.textContent = window.location.pathname || "/";
+        nodes.metricUser.textContent = state.currentUser ? state.currentUser.username : "游客";
+        nodes.metricRole.textContent = state.currentUser ? state.currentUser.role : "未登录";
+        nodes.metricCsrf.textContent = previewValue(csrfToken);
+        nodes.currentRoutePill.textContent = "Route: " + (window.location.pathname || "/");
+        nodes.probeMe.textContent = state.probes.me;
+        nodes.probeLeader.textContent = state.probes.leader;
+        nodes.probeAdmin.textContent = state.probes.admin;
+        buildFlowTags();
+        buildTimeline();
+    }
+
+    function pushLog(entry) {
+        state.logs.unshift(entry);
+        state.logs = state.logs.slice(0, 30);
+        nodes.requestCount.textContent = `${state.logs.length} Requests`;
+
+        nodes.requestLog.innerHTML = state.logs.map(item => {
+            const statusClass = item.status >= 500 ? "status-5xx" : item.status >= 400 ? "status-4xx" : "status-2xx";
+            return `
+                <article class="log-item">
+                    <div class="log-head">
+                        <span class="log-route">${item.method} ${item.path}</span>
+                        <span class="log-status ${statusClass}">${item.status}</span>
+                    </div>
+                    <div class="log-message">${item.summary}</div>
+                    <div class="log-head" style="margin-top: 10px;">
+                        <span>RequestId: ${item.requestId || "-"}</span>
+                        <span>${item.time}</span>
+                    </div>
+                </article>
+            `;
+        }).join("");
+    }
+
+    function setResponseFrame(result) {
+        const badgeText = `${result.method} ${result.path} · HTTP ${result.status}`;
+        nodes.responseBadge.textContent = badgeText;
+        nodes.responseFrame.textContent = safeJson({
+            method: result.method,
+            path: result.path,
+            status: result.status,
+            requestId: result.requestId,
+            payload: result.payload,
+            raw: result.raw
+        });
+    }
+
+    function responseSummary(result) {
+        if (result.payload && typeof result.payload === "object") {
+            const message = result.payload.message || "无 message";
+            const code = result.payload.code;
+            return `业务码 ${code ?? "N/A"} · ${message}`;
+        }
+        return "返回的不是 JSON，通常意味着命中了默认错误页或空响应。";
+    }
+
+    async function apiRequest(path, options = {}) {
+        const method = options.method || "GET";
+        const headers = {
+            Accept: "application/json",
+            ...(options.headers || {})
+        };
+        const isSafeMethod = SAFE_METHODS.has(method.toUpperCase());
+
+        if (options.body !== undefined) {
+            headers["Content-Type"] = "application/json";
+        }
+
+        // 所有写操作默认自动补上 CSRF Header，确保能联调 logout/change-password 等接口。
+        if (!isSafeMethod && options.useCsrf !== false) {
+            const csrfToken = getCookie("XSRF-TOKEN");
+            if (csrfToken) {
+                headers["X-CSRF-TOKEN"] = csrfToken;
+            }
+        }
+
+        const response = await fetch(path, {
+            method,
+            headers,
+            credentials: "include",
+            body: options.body !== undefined ? JSON.stringify(options.body) : undefined
+        });
+
+        const raw = await response.text();
+        let payload = null;
+        try {
+            payload = raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            payload = null;
+        }
+
+        const requestId = payload?.requestId || response.headers.get("X-Request-Id") || "-";
+        const result = {
+            method,
+            path,
+            status: response.status,
+            ok: response.ok,
+            requestId,
+            payload,
+            raw,
+            time: new Date().toLocaleTimeString("zh-CN", { hour12: false })
+        };
+
+        state.lastRequestId = requestId;
+        pushLog({
+            method,
+            path,
+            status: response.status,
+            requestId,
+            time: result.time,
+            summary: responseSummary(result)
+        });
+        setResponseFrame(result);
+        renderMetrics();
+        return result;
+    }
+
+    function syncAccountFields() {
+        fields.loginEmail.value = fields.registerEmail.value;
+        fields.loginPassword.value = fields.registerPassword.value;
+        fields.resetEmail.value = fields.registerEmail.value;
+        fields.resetPassword.value = fields.registerPassword.value;
+        fields.changeOldPassword.value = fields.registerPassword.value;
+    }
+
+    function generateDraftIdentity() {
+        const stamp = String(Date.now()).slice(-6);
+        const username = `fresh_${stamp}`;
+        const email = `fresh_${stamp}@example.com`;
+        const password = `Pass${stamp}`;
+
+        fields.registerUsername.value = username;
+        fields.registerEmail.value = email;
+        fields.registerPassword.value = password;
+        fields.registerCode.value = "";
+        fields.loginPassword.value = password;
+        fields.loginEmail.value = email;
+        fields.resetEmail.value = email;
+        fields.resetPassword.value = `New${stamp}99`;
+        fields.resetCode.value = "";
+        fields.changeOldPassword.value = password;
+        fields.changeNewPassword.value = `Changed${stamp}`;
+        fields.changeConfirmPassword.value = `Changed${stamp}`;
+        fields.rememberMe.checked = true;
+    }
+
+    // 统一处理页面上的异步动作，避免按钮状态和日志逻辑散落在各处。
+    async function runAction(action) {
+        if (state.busy) {
+            return;
+        }
+        setBusy(true);
+        try {
+            await action();
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            pushLog({
+                method: "UI",
+                path: "frontend",
+                status: 500,
+                requestId: "-",
+                time: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
+                summary: `前端脚本异常：${message}`
+            });
+            nodes.responseBadge.textContent = "Frontend Error";
+            nodes.responseFrame.textContent = message;
+        } finally {
+            renderMetrics();
+            renderCurrentUser();
+            setBusy(false);
+        }
+    }
+
+    async function refreshCurrentUser(silent = false) {
+        const result = await apiRequest("/api/v1/auth/me");
+        state.probes.me = String(result.status);
+
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.currentUser = result.payload.data;
+            state.flow.loggedIn = true;
+            if (!silent) {
+                syncAccountFields();
+            }
+        } else {
+            state.currentUser = null;
+            state.flow.loggedIn = false;
+        }
+    }
+
+    async function sendRegisterCode() {
+        const result = await apiRequest("/api/v1/auth/send-email-code", {
+            method: "POST",
+            body: {
+                email: fields.registerEmail.value.trim(),
+                scene: "REGISTER"
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.flow.registerCodeSent = true;
+        }
+    }
+
+    async function submitRegister() {
+        const result = await apiRequest("/api/v1/auth/register", {
+            method: "POST",
+            body: {
+                username: fields.registerUsername.value.trim(),
+                email: fields.registerEmail.value.trim(),
+                password: fields.registerPassword.value,
+                confirmPassword: fields.registerPassword.value,
+                code: fields.registerCode.value.trim()
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.flow.registered = true;
+            syncAccountFields();
+        }
+    }
+
+    async function submitLogin() {
+        const result = await apiRequest("/api/v1/auth/login", {
+            method: "POST",
+            body: {
+                email: fields.loginEmail.value.trim(),
+                password: fields.loginPassword.value,
+                rememberMe: fields.rememberMe.checked
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.flow.loggedIn = true;
+            await refreshCurrentUser(true);
+            fields.changeOldPassword.value = fields.loginPassword.value;
+        }
+    }
+
+    async function submitLogout() {
+        const result = await apiRequest("/api/v1/auth/logout", {
+            method: "POST"
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.currentUser = null;
+            state.flow.loggedIn = false;
+            await refreshCurrentUser(true);
+            if (state.probes.me === "401") {
+                state.flow.logoutVerified = true;
+            }
+        }
+    }
+
+    async function sendResetCode() {
+        const result = await apiRequest("/api/v1/auth/forgot-password", {
+            method: "POST",
+            body: {
+                email: fields.resetEmail.value.trim()
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.flow.resetCodeSent = true;
+        }
+    }
+
+    async function submitResetPassword() {
+        const result = await apiRequest("/api/v1/auth/reset-password", {
+            method: "POST",
+            body: {
+                email: fields.resetEmail.value.trim(),
+                code: fields.resetCode.value.trim(),
+                newPassword: fields.resetPassword.value,
+                confirmPassword: fields.resetPassword.value
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.flow.resetDone = true;
+            fields.loginPassword.value = fields.resetPassword.value;
+            fields.changeOldPassword.value = fields.resetPassword.value;
+        }
+    }
+
+    async function submitChangePassword() {
+        const result = await apiRequest("/api/v1/auth/change-password", {
+            method: "POST",
+            body: {
+                oldPassword: fields.changeOldPassword.value,
+                newPassword: fields.changeNewPassword.value,
+                confirmPassword: fields.changeConfirmPassword.value
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            fields.loginPassword.value = fields.changeNewPassword.value;
+            fields.registerPassword.value = fields.changeNewPassword.value;
+            fields.changeOldPassword.value = fields.changeNewPassword.value;
+        }
+    }
+
+    async function probePath(path, bucket) {
+        const result = await apiRequest(path);
+        state.probes[bucket] = String(result.status);
+        if ((bucket === "leader" || bucket === "admin") && result.status === 403) {
+            state.flow.permissionGuardVerified = true;
+        }
+        return result;
+    }
+
+    async function runProbeSuite() {
+        await refreshCurrentUser(true);
+        await probePath("/api/v1/leader/probe", "leader");
+        await probePath("/api/v1/admin/probe", "admin");
+    }
+
+    function bindEvents() {
+        document.getElementById("generate-demo").addEventListener("click", () => runAction(async () => {
+            generateDraftIdentity();
+            syncAccountFields();
+            renderMetrics();
+            renderCurrentUser();
+        }));
+
+        document.getElementById("refresh-session").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
+        document.getElementById("run-probe-suite").addEventListener("click", () => runAction(runProbeSuite));
+        document.getElementById("probe-suite-inline").addEventListener("click", () => runAction(runProbeSuite));
+
+        document.getElementById("send-register-code").addEventListener("click", () => runAction(sendRegisterCode));
+        document.getElementById("submit-register").addEventListener("click", () => runAction(submitRegister));
+        document.getElementById("submit-login").addEventListener("click", () => runAction(submitLogin));
+        document.getElementById("fetch-me").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
+        document.getElementById("submit-logout").addEventListener("click", () => runAction(submitLogout));
+
+        document.getElementById("send-reset-code").addEventListener("click", () => runAction(sendResetCode));
+        document.getElementById("submit-reset-password").addEventListener("click", () => runAction(submitResetPassword));
+        document.getElementById("submit-change-password").addEventListener("click", () => runAction(submitChangePassword));
+
+        document.getElementById("probe-auth").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
+        document.getElementById("probe-leader-button").addEventListener("click", () => runAction(() => probePath("/api/v1/leader/probe", "leader")));
+        document.getElementById("probe-admin-button").addEventListener("click", () => runAction(() => probePath("/api/v1/admin/probe", "admin")));
+
+        fields.registerEmail.addEventListener("change", syncAccountFields);
+        fields.registerPassword.addEventListener("change", syncAccountFields);
+    }
+
+    function init() {
+        generateDraftIdentity();
+        syncAccountFields();
+        bindEvents();
+        renderMetrics();
+        renderCurrentUser();
+        runAction(() => refreshCurrentUser(true));
+    }
+
+    init();
+</script>
+</body>
+</html>

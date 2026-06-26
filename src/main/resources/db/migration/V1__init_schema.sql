@@ -13,7 +13,7 @@ CREATE TABLE `user` (
     CONSTRAINT `pk_user` PRIMARY KEY (`id`),
     CONSTRAINT `uk_user_username` UNIQUE (`username`),
     CONSTRAINT `uk_user_email` UNIQUE (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `application` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -35,7 +35,7 @@ CREATE TABLE `application` (
     CONSTRAINT `pk_application` PRIMARY KEY (`id`),
     CONSTRAINT `uk_application_user_direction` UNIQUE (`user_id`, `direction_level2_id`),
     CONSTRAINT `fk_application_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `recruitment_group` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -51,7 +51,7 @@ CREATE TABLE `recruitment_group` (
     CONSTRAINT `pk_recruitment_group` PRIMARY KEY (`id`),
     CONSTRAINT `uk_recruitment_group_name` UNIQUE (`name`),
     CONSTRAINT `fk_recruitment_group_leader_user_id` FOREIGN KEY (`leader_user_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `group_member` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -65,7 +65,7 @@ CREATE TABLE `group_member` (
     CONSTRAINT `fk_group_member_group_id` FOREIGN KEY (`group_id`) REFERENCES `recruitment_group` (`id`),
     CONSTRAINT `fk_group_member_user_id` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
     CONSTRAINT `fk_group_member_application_id` FOREIGN KEY (`application_id`) REFERENCES `application` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `recruitment_period` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -77,4 +77,4 @@ CREATE TABLE `recruitment_period` (
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     CONSTRAINT `pk_recruitment_period` PRIMARY KEY (`id`),
     CONSTRAINT `uk_recruitment_period_type` UNIQUE (`period_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
