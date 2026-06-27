@@ -90,6 +90,7 @@ public class CsrfProtectionFilter extends OncePerRequestFilter {
         return token == null || token.isBlank();
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean matches(String expected, String actual) {
         return MessageDigest.isEqual(
                 expected.getBytes(StandardCharsets.UTF_8),

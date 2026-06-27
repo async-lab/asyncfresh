@@ -24,6 +24,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     }
 
     @Override
+    @SuppressWarnings("RedundantThrows")
     public void handle(
             @NonNull HttpServletRequest request,
             HttpServletResponse response,

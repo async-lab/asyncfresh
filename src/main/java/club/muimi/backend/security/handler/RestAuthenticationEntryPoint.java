@@ -24,6 +24,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     }
 
     @Override
+    @SuppressWarnings("RedundantThrows")
     public void commence(
             @NonNull HttpServletRequest request,
             HttpServletResponse response,
