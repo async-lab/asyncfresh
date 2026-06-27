@@ -65,13 +65,13 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/app',
     component: UserLayout,
-    meta: { requiresAuth: true, roles: ['FRESHMAN', 'LEADER', 'ADMIN'], layout: 'user' },
+    meta: { requiresAuth: true, roles: ['FRESHMAN'], layout: 'user' },
     children: [
       {
         path: '',
         name: 'app-dashboard',
         component: AppDashboardView,
-        meta: { title: '首页', requiresAuth: true, roles: ['FRESHMAN', 'LEADER', 'ADMIN'] }
+        meta: { title: '首页', requiresAuth: true, roles: ['FRESHMAN'] }
       },
       {
         path: 'applications',
@@ -81,7 +81,7 @@ const routes: RouteRecordRaw[] = [
           title: '我的报名',
           description: '查看、创建、编辑或撤回本人报名申请。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN'],
+          roles: ['FRESHMAN'],
           periodHint: ['REGISTRATION']
         }
       },
@@ -93,7 +93,7 @@ const routes: RouteRecordRaw[] = [
           title: '报名详情',
           description: '展示报名申请详情、状态和分组结果。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -104,7 +104,7 @@ const routes: RouteRecordRaw[] = [
           title: '公告',
           description: '按全局和组内范围查看可见公告。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -115,7 +115,7 @@ const routes: RouteRecordRaw[] = [
           title: '公告详情',
           description: '展示公告 Markdown 内容、发布者和发布时间。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -126,7 +126,7 @@ const routes: RouteRecordRaw[] = [
           title: '学习资料',
           description: '按方向筛选学习资料并下载附件。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -137,7 +137,7 @@ const routes: RouteRecordRaw[] = [
           title: '资料详情',
           description: '展示资料正文、方向标签和附件。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -148,7 +148,7 @@ const routes: RouteRecordRaw[] = [
           title: '我的分组',
           description: '展示本人所在分组和分组详情入口。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -159,7 +159,7 @@ const routes: RouteRecordRaw[] = [
           title: '分组详情',
           description: '展示分组方向、年级、容量和负责人。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -170,7 +170,7 @@ const routes: RouteRecordRaw[] = [
           title: '任务',
           description: '查看本人可见任务、提交状态和截止时间。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -181,7 +181,7 @@ const routes: RouteRecordRaw[] = [
           title: '任务详情',
           description: '查看任务说明、提交附件并浏览提交历史。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN'],
+          roles: ['FRESHMAN'],
           periodHint: ['SELECTION']
         }
       },
@@ -193,7 +193,7 @@ const routes: RouteRecordRaw[] = [
           title: '我的成绩',
           description: '展示任务成绩、满分、评语和批阅时间。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       },
       {
@@ -204,7 +204,7 @@ const routes: RouteRecordRaw[] = [
           title: '个人设置',
           description: '查看账号信息、修改密码和退出登录。',
           requiresAuth: true,
-          roles: ['FRESHMAN', 'LEADER', 'ADMIN']
+          roles: ['FRESHMAN']
         }
       }
     ]
@@ -212,7 +212,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/leader',
     component: UserLayout,
-    meta: { requiresAuth: true, roles: ['LEADER', 'ADMIN'], layout: 'user' },
+    redirect: '/leader/announcements',
+    meta: { requiresAuth: true, roles: ['LEADER'], layout: 'user' },
     children: [
       {
         path: 'announcements',
@@ -222,7 +223,7 @@ const routes: RouteRecordRaw[] = [
           title: '组内公告管理',
           description: '负责人发布、编辑和删除自己负责组的公告。',
           requiresAuth: true,
-          roles: ['LEADER', 'ADMIN']
+          roles: ['LEADER']
         }
       },
       {
@@ -233,7 +234,7 @@ const routes: RouteRecordRaw[] = [
           title: '组内任务管理',
           description: '负责人发布、编辑和删除自己负责组的任务。',
           requiresAuth: true,
-          roles: ['LEADER', 'ADMIN'],
+          roles: ['LEADER'],
           periodHint: ['SELECTION']
         }
       },
@@ -245,7 +246,7 @@ const routes: RouteRecordRaw[] = [
           title: '任务批阅',
           description: '查看组内提交情况并进行评分和评语填写。',
           requiresAuth: true,
-          roles: ['LEADER', 'ADMIN']
+          roles: ['LEADER']
         }
       },
       {
@@ -256,7 +257,7 @@ const routes: RouteRecordRaw[] = [
           title: '组员信息',
           description: '查看负责组成员、报名申请和方向信息。',
           requiresAuth: true,
-          roles: ['LEADER', 'ADMIN']
+          roles: ['LEADER']
         }
       }
     ]
@@ -417,6 +418,18 @@ const router = createRouter({
   routes
 });
 
+function getHomePathByRole(role?: string) {
+  if (role === 'ADMIN') {
+    return '/admin';
+  }
+
+  if (role === 'LEADER') {
+    return '/leader/announcements';
+  }
+
+  return '/app';
+}
+
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
   const metaStore = useMetaStore();
@@ -443,8 +456,7 @@ router.beforeEach(async (to) => {
   }
 
   if (!authStore.hasRole(to.meta.roles)) {
-    ElMessage.error('无权访问该页面');
-    return '/403';
+    return getHomePathByRole(authStore.role);
   }
 
   return true;

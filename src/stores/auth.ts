@@ -28,7 +28,7 @@ export const useAuthStore = defineStore('auth', {
     isLoggedIn: (state) => Boolean(state.user),
     role: (state) => state.user?.role,
     isAdmin: (state) => state.user?.role === 'ADMIN',
-    isLeader: (state) => state.user?.role === 'LEADER' || state.user?.role === 'ADMIN'
+    isLeader: (state) => state.user?.role === 'LEADER'
   },
   actions: {
     async login(payload: LoginPayload) {

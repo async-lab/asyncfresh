@@ -43,6 +43,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
+import type { Role } from '@/types/api';
 import { isValidEmail, normalizeEmail } from '@/utils/authValidation';
 import { mockAccounts, type MockAccount } from '@/utils/mockAuth';
 
@@ -58,6 +59,34 @@ const form = reactive({
   password: '',
   rememberMe: false
 });
+
+function getHomePathByRole(role: Role) {
+  if (role === 'ADMIN') {
+    return '/admin';
+  }
+
+  if (role === 'LEADER') {
+    return '/leader/announcements';
+  }
+
+  return '/app';
+}
+
+function resolvePostLoginPath(role: Role, redirect?: string): string {
+  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
+    return getHomePathByRole(role);
+  }
+
+  if (role === 'ADMIN') {
+    return redirect.startsWith('/admin') ? redirect : '/admin';
+  }
+
+  if (role === 'LEADER') {
+    return redirect.startsWith('/leader') ? redirect : '/leader/announcements';
+  }
+
+  return redirect.startsWith('/app') ? redirect : '/app';
+}
 
 async function handleSubmit() {
   if (!isValidEmail(form.email)) {
@@ -77,13 +106,13 @@ async function handleSubmit() {
   });
 
   if (isAdminLogin.value && user.role !== 'ADMIN') {
-    ElMessage.warning('当前账号不是管理员，已进入用户端');
-    await router.push('/app');
+    ElMessage.warning('当前账号不是管理员，已进入对应工作台');
+    await router.push(getHomePathByRole(user.role));
     return;
   }
 
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined;
-  await router.push(redirect || (user.role === 'ADMIN' ? '/admin' : '/app'));
+  await router.push(resolvePostLoginPath(user.role, redirect));
 }
 
 async function loginWithMock(account: MockAccount) {

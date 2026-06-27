@@ -3,40 +3,41 @@
     <el-aside width="236px" class="side">
       <div class="side-title">实验室招新</div>
       <el-menu :default-active="activePath" router>
-        <el-menu-item index="/app">
-          <el-icon><House /></el-icon>
-          <span>首页</span>
-        </el-menu-item>
-        <el-menu-item index="/app/applications">
-          <el-icon><EditPen /></el-icon>
-          <span>我的报名</span>
-        </el-menu-item>
-        <el-menu-item index="/app/announcements">
-          <el-icon><Bell /></el-icon>
-          <span>公告</span>
-        </el-menu-item>
-        <el-menu-item index="/app/materials">
-          <el-icon><Reading /></el-icon>
-          <span>学习资料</span>
-        </el-menu-item>
-        <el-menu-item index="/app/groups">
-          <el-icon><User /></el-icon>
-          <span>我的分组</span>
-        </el-menu-item>
-        <el-menu-item index="/app/tasks">
-          <el-icon><Tickets /></el-icon>
-          <span>任务</span>
-        </el-menu-item>
-        <el-menu-item index="/app/scores">
-          <el-icon><Finished /></el-icon>
-          <span>我的成绩</span>
-        </el-menu-item>
-        <el-menu-item index="/app/settings">
-          <el-icon><Setting /></el-icon>
-          <span>个人设置</span>
-        </el-menu-item>
-        <template v-if="authStore.isLeader">
-          <el-divider />
+        <template v-if="!authStore.isLeader">
+          <el-menu-item index="/app">
+            <el-icon><House /></el-icon>
+            <span>首页</span>
+          </el-menu-item>
+          <el-menu-item index="/app/applications">
+            <el-icon><EditPen /></el-icon>
+            <span>我的报名</span>
+          </el-menu-item>
+          <el-menu-item index="/app/announcements">
+            <el-icon><Bell /></el-icon>
+            <span>公告</span>
+          </el-menu-item>
+          <el-menu-item index="/app/materials">
+            <el-icon><Reading /></el-icon>
+            <span>学习资料</span>
+          </el-menu-item>
+          <el-menu-item index="/app/groups">
+            <el-icon><User /></el-icon>
+            <span>我的分组</span>
+          </el-menu-item>
+          <el-menu-item index="/app/tasks">
+            <el-icon><Tickets /></el-icon>
+            <span>任务</span>
+          </el-menu-item>
+          <el-menu-item index="/app/scores">
+            <el-icon><Finished /></el-icon>
+            <span>我的成绩</span>
+          </el-menu-item>
+          <el-menu-item index="/app/settings">
+            <el-icon><Setting /></el-icon>
+            <span>个人设置</span>
+          </el-menu-item>
+        </template>
+        <template v-else>
           <el-menu-item index="/leader/announcements">
             <el-icon><Notification /></el-icon>
             <span>组内公告</span>
