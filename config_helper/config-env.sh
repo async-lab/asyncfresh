@@ -32,16 +32,16 @@ JWT_SECRET=please-change-this-to-a-strong-secret-with-at-least-32-chars
 JWT_COOKIE_SECURE=false
 JWT_COOKIE_SAME_SITE=Strict
 AUTH_CACHE_TYPE=redis
-MAIL_SMTP_HOST=smtp.example.com
+MAIL_SMTP_HOST=smtpdm.aliyun.com
 MAIL_SMTP_PORT=465
 MAIL_SMTP_SSL_ENABLE=true
 MAIL_SMTP_STARTTLS_ENABLE=false
-MAIL_ACCOUNT=your_email@example.com
-MAIL_AUTH_CODE=your_smtp_auth_code
+MAIL_ACCOUNT=epoch@mail.cuit.dev
+MAIL_AUTH_CODE=M7qN2vK8pR4xT9cL6zA3
 DEFAULT_ADMIN_ENABLED=true
-DEFAULT_ADMIN_USERNAME=fresh_admin
-DEFAULT_ADMIN_PASSWORD=AdminPass123
-DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_USERNAME=epochlab
+DEFAULT_ADMIN_PASSWORD=Aa123456
+DEFAULT_ADMIN_EMAIL=epoch@mail.cuit.dev
 EOF
 )
 

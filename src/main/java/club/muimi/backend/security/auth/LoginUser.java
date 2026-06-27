@@ -2,6 +2,7 @@ package club.muimi.backend.security.auth;
 
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,13 +12,19 @@ import java.util.List;
 
 public class LoginUser implements UserDetails {
 
+    @Getter
     private final Long userId;
     private final String username;
+    @Getter
     private final String email;
     private final String passwordHash;
+    @Getter
     private final Role role;
+    @Getter
     private final UserStatus status;
+    @Getter
     private final Long tokenVersion;
+    @Getter
     private final String tokenJti;
     private final List<GrantedAuthority> authorities;
 
@@ -42,32 +49,8 @@ public class LoginUser implements UserDetails {
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    public Long getUserId() {
-        return userId;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public UserStatus getStatus() {
-        return status;
-    }
-
-    public Long getTokenVersion() {
-        return tokenVersion;
-    }
-
-    public String getTokenJti() {
-        return tokenJti;
-    }
-
     public String getDisplayUsername() {
         return username;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     @Override
