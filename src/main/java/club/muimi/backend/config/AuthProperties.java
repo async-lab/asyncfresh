@@ -17,16 +17,18 @@ public class AuthProperties {
     @Setter
     @Getter
     public static class EmailCode {
-        private long ttlSeconds;
-        private long sendCooldownSeconds;
+        private long ttlSeconds = 300;
+        private long sendCooldownSeconds = 60;
+        private int maxVerifyFailCount = 5;
+        private long verifyLockSeconds = 300;
 
     }
 
     @Setter
     @Getter
     public static class Login {
-        private int maxFailCount;
-        private long failLockSeconds;
+        private int maxFailCount = 5;
+        private long failLockSeconds = 900;
 
     }
 
@@ -37,6 +39,15 @@ public class AuthProperties {
         }
         if (cacheType != CacheType.REDIS) {
             throw new IllegalStateException("当前版本仅支持 Redis 作为认证缓存，请将 app.auth.cache-type 配置为 redis");
+        }
+        if (emailCode.getTtlSeconds() <= 0 || emailCode.getSendCooldownSeconds() <= 0) {
+            throw new IllegalStateException("邮箱验证码有效期和发送冷却时间必须为正数");
+        }
+        if (emailCode.getMaxVerifyFailCount() <= 0 || emailCode.getVerifyLockSeconds() <= 0) {
+            throw new IllegalStateException("邮箱验证码错误次数上限和锁定时长必须为正数");
+        }
+        if (login.getMaxFailCount() <= 0 || login.getFailLockSeconds() <= 0) {
+            throw new IllegalStateException("登录失败次数上限和锁定时长必须为正数");
         }
     }
 

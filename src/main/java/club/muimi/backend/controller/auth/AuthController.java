@@ -45,9 +45,10 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResultVo> login(
             @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpServletRequest,
             HttpServletResponse response
     ) {
-        LoginResultVo result = authService.login(request, response);
+        LoginResultVo result = authService.login(request, httpServletRequest, response);
         return ApiResponse.success(result, "登录成功");
     }
 

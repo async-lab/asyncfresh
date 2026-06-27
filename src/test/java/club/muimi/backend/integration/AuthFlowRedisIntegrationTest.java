@@ -91,7 +91,9 @@ class AuthFlowRedisIntegrationTest {
                 .build());
 
         MockHttpServletResponse loginResponse = new MockHttpServletResponse();
-        authService.login(new LoginRequest(createdEmail, password, false), loginResponse);
+        MockHttpServletRequest loginRequest = new MockHttpServletRequest("POST", "/api/v1/auth/login");
+        loginRequest.setRemoteAddr("127.0.0.1");
+        authService.login(new LoginRequest(createdEmail, password, false), loginRequest, loginResponse);
 
         Cookie authCookie = extractCookie(loginResponse, "lab_recruit_token");
         Cookie csrfCookie = extractCookie(loginResponse, "XSRF-TOKEN");

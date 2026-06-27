@@ -45,6 +45,39 @@ public class RedisAuthCacheService implements AuthCacheService {
     }
 
     @Override
+    public void clearEmailCooldown(EmailCodeScene scene, String email) {
+        redisTemplate.delete(emailCooldownKey(scene, email));
+    }
+
+    @Override
+    public long incrementEmailCodeVerifyFailCount(EmailCodeScene scene, String email, Duration ttl) {
+        Long value = redisTemplate.opsForValue().increment(emailCodeVerifyFailKey(scene, email));
+        redisTemplate.expire(emailCodeVerifyFailKey(scene, email), ttl);
+        return value == null ? 0L : value;
+    }
+
+    @Override
+    public void clearEmailCodeVerifyFailCount(EmailCodeScene scene, String email) {
+        redisTemplate.delete(emailCodeVerifyFailKey(scene, email));
+    }
+
+    @Override
+    public void lockEmailCodeVerify(EmailCodeScene scene, String email, Duration ttl) {
+        redisTemplate.opsForValue().set(emailCodeVerifyLockKey(scene, email), "1", ttl);
+    }
+
+    @Override
+    public boolean isEmailCodeVerifyLocked(EmailCodeScene scene, String email) {
+        Boolean result = redisTemplate.hasKey(emailCodeVerifyLockKey(scene, email));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public void clearEmailCodeVerifyLock(EmailCodeScene scene, String email) {
+        redisTemplate.delete(emailCodeVerifyLockKey(scene, email));
+    }
+
+    @Override
     public long incrementLoginFailCount(String email, Duration ttl) {
         Long value = redisTemplate.opsForValue().increment(loginFailKey(email));
         redisTemplate.expire(loginFailKey(email), ttl);
@@ -85,6 +118,14 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     private String emailCooldownKey(EmailCodeScene scene, String email) {
         return "auth:email-send-cooldown:" + scene.name() + ":" + email;
+    }
+
+    private String emailCodeVerifyFailKey(EmailCodeScene scene, String email) {
+        return "auth:email-code:verify-fail:" + scene.name() + ":" + email;
+    }
+
+    private String emailCodeVerifyLockKey(EmailCodeScene scene, String email) {
+        return "auth:email-code:verify-lock:" + scene.name() + ":" + email;
     }
 
     private String loginFailKey(String email) {

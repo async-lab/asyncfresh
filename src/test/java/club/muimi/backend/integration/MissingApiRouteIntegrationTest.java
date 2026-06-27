@@ -95,7 +95,10 @@ class MissingApiRouteIntegrationTest {
                 .build());
 
         MockHttpServletResponse loginResponse = new MockHttpServletResponse();
-        authService.login(new LoginRequest(createdEmail, password, false), loginResponse);
+        org.springframework.mock.web.MockHttpServletRequest loginRequest =
+                new org.springframework.mock.web.MockHttpServletRequest("POST", "/api/v1/auth/login");
+        loginRequest.setRemoteAddr("127.0.0.1");
+        authService.login(new LoginRequest(createdEmail, password, false), loginRequest, loginResponse);
         Cookie authCookie = extractCookie(loginResponse, "lab_recruit_token");
         Cookie csrfCookie = extractCookie(loginResponse, "XSRF-TOKEN");
 
@@ -104,6 +107,13 @@ class MissingApiRouteIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(40400))
                 .andExpect(jsonPath("$.message").value("资源不存在"));
+    }
+
+    @Test
+    void currentUserShouldReturn401WhenAnonymous() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(40100));
     }
 
     private Cookie extractCookie(MockHttpServletResponse response, String cookieName) throws IOException {

@@ -11,6 +11,8 @@ import club.muimi.backend.dto.auth.ResetPasswordRequest;
 import club.muimi.backend.dto.auth.SendEmailCodeRequest;
 import club.muimi.backend.entity.GroupMember;
 import club.muimi.backend.entity.User;
+import club.muimi.backend.exception.ConflictException;
+import club.muimi.backend.exception.TooManyRequestsException;
 import club.muimi.backend.exception.UnauthorizedException;
 import club.muimi.backend.vo.auth.CurrentUserVo;
 import club.muimi.backend.repository.GroupMemberRepository;
@@ -31,7 +33,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -45,7 +49,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +87,8 @@ class AuthServiceTest {
         AuthProperties authProperties = new AuthProperties();
         authProperties.getEmailCode().setTtlSeconds(300);
         authProperties.getEmailCode().setSendCooldownSeconds(60);
+        authProperties.getEmailCode().setMaxVerifyFailCount(5);
+        authProperties.getEmailCode().setVerifyLockSeconds(300);
         authProperties.getLogin().setMaxFailCount(5);
         authProperties.getLogin().setFailLockSeconds(900);
         authService = new AuthService(
@@ -141,14 +150,16 @@ class AuthServiceTest {
                 .status(UserStatus.ACTIVE)
                 .tokenVersion(0L)
                 .build();
-        when(authCacheService.isLoginLocked(user.getEmail())).thenReturn(false);
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(jwtTokenService.generateToken(user, true)).thenReturn("token-value");
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
 
-        var result = authService.login(new LoginRequest(user.getEmail(), "Pass1234", true), new MockHttpServletResponse());
+        var result = authService.login(new LoginRequest(user.getEmail(), "Pass1234", true), request, new MockHttpServletResponse());
 
         assertThat(result.email()).isEqualTo(user.getEmail());
-        verify(authCacheService).clearLoginFailCount(user.getEmail());
+        verify(authCacheService).clearLoginFailCount(anyString());
         verify(authCookieService).writeLoginCookie(any(MockHttpServletResponse.class), anyString(), anyBoolean());
         verify(authCookieService).writeCsrfCookie(any(MockHttpServletResponse.class), anyString());
     }
@@ -165,15 +176,43 @@ class AuthServiceTest {
                 .status(UserStatus.ACTIVE)
                 .tokenVersion(0L)
                 .build();
-        when(authCacheService.isLoginLocked(user.getEmail())).thenReturn(false);
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(authCacheService.incrementLoginFailCount(anyString(), any())).thenReturn(1L);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
 
-        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "wrong", false), new MockHttpServletResponse()))
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "wrong", false), request, new MockHttpServletResponse()))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("邮箱或密码错误");
 
         verify(authCacheService).incrementLoginFailCount(anyString(), any());
+    }
+
+    @Test
+    void loginShouldReturnGenericUnauthorizedWhenAccountDisabled() {
+        User user = User.builder()
+                .id(1L)
+                .username("zhangsan")
+                .email("user@example.com")
+                .passwordHash(passwordEncoder.encode("Pass1234"))
+                .emailVerified(true)
+                .role(Role.FRESHMAN)
+                .status(UserStatus.DISABLED)
+                .tokenVersion(0L)
+                .build();
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(authCacheService.incrementLoginFailCount(anyString(), any())).thenReturn(1L);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "Pass1234", false), request, new MockHttpServletResponse()))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("邮箱或密码错误");
+
+        verify(authCacheService).incrementLoginFailCount(anyString(), any());
+        verify(authCacheService, never()).clearLoginFailCount(anyString());
     }
 
     @Test
@@ -240,6 +279,88 @@ class AuthServiceTest {
         authService.sendEmailCode(request);
 
         verify(authCacheService).markEmailCooldown(any(), anyString(), any());
+    }
+
+    @Test
+    void sendEmailCodeShouldRollbackCacheWhenMailSendFails() {
+        SendEmailCodeRequest request = new SendEmailCodeRequest("exists@example.com", EmailCodeScene.RESET_PASSWORD);
+        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(authCacheService.hasEmailCooldown(request.scene(), request.email())).thenReturn(false);
+        doThrow(new IllegalStateException("smtp down"))
+                .when(mailService)
+                .sendVerificationCode(anyString(), anyString(), any());
+
+        assertThatThrownBy(() -> authService.sendEmailCode(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("smtp down");
+
+        verify(authCacheService).deleteEmailCode(request.scene(), request.email());
+        verify(authCacheService).clearEmailCooldown(request.scene(), request.email());
+    }
+
+    @Test
+    void registerShouldTranslateUniqueConstraintConflictToBusinessConflict() {
+        RegisterRequest request = new RegisterRequest(
+                "zhangsan",
+                "user@example.com",
+                "Pass1234",
+                "Pass1234",
+                "123456"
+        );
+        doNothing().when(periodService).ensureRegistrationOpen();
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(authCacheService.getEmailCode(EmailCodeScene.REGISTER, request.email())).thenReturn(Optional.of("123456"));
+        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("用户名或邮箱已存在");
+
+        verify(authCacheService, never()).deleteEmailCode(EmailCodeScene.REGISTER, request.email());
+    }
+
+    @Test
+    void registerShouldLockVerificationAttemptsWhenWrongCodeReachedLimit() {
+        RegisterRequest request = new RegisterRequest(
+                "zhangsan",
+                "user@example.com",
+                "Pass1234",
+                "Pass1234",
+                "000000"
+        );
+        doNothing().when(periodService).ensureRegistrationOpen();
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(authCacheService.isEmailCodeVerifyLocked(EmailCodeScene.REGISTER, request.email())).thenReturn(false);
+        when(authCacheService.getEmailCode(EmailCodeScene.REGISTER, request.email())).thenReturn(Optional.of("123456"));
+        when(authCacheService.incrementEmailCodeVerifyFailCount(any(), anyString(), any())).thenReturn(5L);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(club.muimi.backend.exception.ValidationException.class)
+                .hasMessage("验证码错误");
+
+        verify(authCacheService).deleteEmailCode(EmailCodeScene.REGISTER, request.email());
+        verify(authCacheService).lockEmailCodeVerify(any(), anyString(), any());
+    }
+
+    @Test
+    void registerShouldRejectWhenVerificationCodeAlreadyLocked() {
+        RegisterRequest request = new RegisterRequest(
+                "zhangsan",
+                "user@example.com",
+                "Pass1234",
+                "Pass1234",
+                "123456"
+        );
+        doNothing().when(periodService).ensureRegistrationOpen();
+        when(userRepository.existsByUsername(request.username())).thenReturn(false);
+        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(authCacheService.isEmailCodeVerifyLocked(EmailCodeScene.REGISTER, request.email())).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage("验证码错误次数过多，请稍后重新获取");
     }
 
     @Test

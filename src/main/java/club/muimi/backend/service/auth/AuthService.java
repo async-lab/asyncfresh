@@ -38,14 +38,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class AuthService {
+
+    private static final String GENERIC_LOGIN_FAILED_MESSAGE = "邮箱或密码错误";
 
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
@@ -110,9 +114,7 @@ public class AuthService {
 
         String code = generateVerificationCode();
         Duration codeTtl = Duration.ofSeconds(authProperties.getEmailCode().getTtlSeconds());
-        authCacheService.saveEmailCode(request.scene(), request.email(), code, codeTtl);
-        authCacheService.markEmailCooldown(request.scene(), request.email(), cooldownTtl);
-        mailService.sendVerificationCode(request.email(), code, request.scene());
+        sendVerificationCodeWithRollback(request, code, codeTtl, cooldownTtl);
     }
 
     @Transactional
@@ -132,33 +134,39 @@ public class AuthService {
                 .tokenVersion(0L)
                 .lastLoginAt(null)
                 .build();
-        userRepository.save(user);
+        saveUserForRegistration(user);
         authCacheService.deleteEmailCode(EmailCodeScene.REGISTER, request.email());
         return new RegisterResultVo(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 
     @Transactional
-    public LoginResultVo login(LoginRequest request, HttpServletResponse response) {
-        if (authCacheService.isLoginLocked(request.email())) {
+    public LoginResultVo login(
+            LoginRequest request,
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse response
+    ) {
+        String loginThrottleKey = buildLoginThrottleKey(request.email(), resolveClientIp(httpServletRequest));
+        if (authCacheService.isLoginLocked(loginThrottleKey)) {
             throw new TooManyRequestsException("登录失败次数过多，请稍后再试");
         }
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> {
-                    recordLoginFailure(request.email());
-                    return new UnauthorizedException("邮箱或密码错误");
+                    recordLoginFailure(loginThrottleKey);
+                    return new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
                 });
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new ForbiddenException("账号已被禁用");
-        }
-
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            recordLoginFailure(request.email());
-            throw new UnauthorizedException("邮箱或密码错误");
+            recordLoginFailure(loginThrottleKey);
+            throw new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
         }
 
-        authCacheService.clearLoginFailCount(request.email());
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            recordLoginFailure(loginThrottleKey);
+            throw new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
+        }
+
+        authCacheService.clearLoginFailCount(loginThrottleKey);
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
@@ -258,11 +266,16 @@ public class AuthService {
     }
 
     private void validateEmailCode(EmailCodeScene scene, String email, String code) {
+        if (authCacheService.isEmailCodeVerifyLocked(scene, email)) {
+            throw new TooManyRequestsException("验证码错误次数过多，请稍后重新获取");
+        }
         String cachedCode = authCacheService.getEmailCode(scene, email)
                 .orElseThrow(() -> new ValidationException("验证码不存在或已过期"));
         if (!cachedCode.equals(code)) {
+            recordEmailCodeFailure(scene, email);
             throw new ValidationException("验证码错误");
         }
+        authCacheService.clearEmailCodeVerifyFailCount(scene, email);
     }
 
     private User ensureUserExists(String email) {
@@ -282,6 +295,15 @@ public class AuthService {
         }
     }
 
+    private void saveUserForRegistration(User user) {
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException exception) {
+            // 并发注册时可能绕过前置查重，统一转换为稳定的 409 业务响应，避免落成 500。
+            throw new ConflictException("用户名或邮箱已存在");
+        }
+    }
+
     private void validatePasswordPair(String password, String confirmPassword) {
         if (!password.equals(confirmPassword)) {
             throw new ValidationException("两次输入的密码不一致");
@@ -298,12 +320,63 @@ public class AuthService {
         }
     }
 
-    private void recordLoginFailure(String email) {
+    private void recordLoginFailure(String loginThrottleKey) {
         Duration ttl = Duration.ofSeconds(authProperties.getLogin().getFailLockSeconds());
-        long failCount = authCacheService.incrementLoginFailCount(email, ttl);
+        long failCount = authCacheService.incrementLoginFailCount(loginThrottleKey, ttl);
         if (failCount >= authProperties.getLogin().getMaxFailCount()) {
-            authCacheService.lockLogin(email, ttl);
+            authCacheService.lockLogin(loginThrottleKey, ttl);
         }
+    }
+
+    private void sendVerificationCodeWithRollback(
+            SendEmailCodeRequest request,
+            String code,
+            Duration codeTtl,
+            Duration cooldownTtl
+    ) {
+        authCacheService.saveEmailCode(request.scene(), request.email(), code, codeTtl);
+        authCacheService.markEmailCooldown(request.scene(), request.email(), cooldownTtl);
+        try {
+            mailService.sendVerificationCode(request.email(), code, request.scene());
+            authCacheService.clearEmailCodeVerifyFailCount(request.scene(), request.email());
+            authCacheService.clearEmailCodeVerifyLock(request.scene(), request.email());
+        } catch (RuntimeException exception) {
+            // 邮件发送失败时回滚 Redis 中的验证码与冷却标记，避免留下用户不可见的脏状态。
+            authCacheService.deleteEmailCode(request.scene(), request.email());
+            authCacheService.clearEmailCooldown(request.scene(), request.email());
+            throw exception;
+        }
+    }
+
+    private void recordEmailCodeFailure(EmailCodeScene scene, String email) {
+        Duration ttl = Duration.ofSeconds(authProperties.getEmailCode().getVerifyLockSeconds());
+        long failCount = authCacheService.incrementEmailCodeVerifyFailCount(scene, email, ttl);
+        if (failCount >= authProperties.getEmailCode().getMaxVerifyFailCount()) {
+            // 达到错误上限后直接废弃当前验证码，并在短时间内拒绝继续试码。
+            authCacheService.deleteEmailCode(scene, email);
+            authCacheService.clearEmailCodeVerifyFailCount(scene, email);
+            authCacheService.lockEmailCodeVerify(scene, email, ttl);
+        }
+    }
+
+    private String buildLoginThrottleKey(String email, String clientIp) {
+        return email.toLowerCase(Locale.ROOT) + "|" + clientIp;
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            String firstIp = forwardedFor.split(",")[0].trim();
+            if (!firstIp.isBlank()) {
+                return firstIp;
+            }
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        String remoteAddr = request.getRemoteAddr();
+        return remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr;
     }
 
     private void blacklistTokenIfNecessary(JwtClaims claims) {

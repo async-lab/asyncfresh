@@ -5,12 +5,14 @@ import club.muimi.backend.entity.User;
 import club.muimi.backend.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,8 +25,11 @@ class DefaultAdminInitializerTest {
     @Test
     void shouldCreateDefaultAdminWhenNoAdminExists() throws Exception {
         UserRepository userRepository = mock(UserRepository.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         DefaultAdminProperties properties = buildProperties();
-        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties);
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties, jdbcTemplate);
+        when(jdbcTemplate.queryForObject(eq("SELECT GET_LOCK(?, ?)"), eq(Integer.class), any(), any())).thenReturn(1);
+        when(jdbcTemplate.queryForObject(eq("SELECT RELEASE_LOCK(?)"), eq(Integer.class), any())).thenReturn(1);
         when(userRepository.existsByRole(Role.ADMIN)).thenReturn(false);
         when(userRepository.existsByUsername(properties.getUsername())).thenReturn(false);
         when(userRepository.existsByEmail(properties.getEmail())).thenReturn(false);
@@ -38,8 +43,11 @@ class DefaultAdminInitializerTest {
     @Test
     void shouldSkipInitializationWhenAdminAlreadyExists() throws Exception {
         UserRepository userRepository = mock(UserRepository.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         DefaultAdminProperties properties = buildProperties();
-        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties);
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties, jdbcTemplate);
+        when(jdbcTemplate.queryForObject(eq("SELECT GET_LOCK(?, ?)"), eq(Integer.class), any(), any())).thenReturn(1);
+        when(jdbcTemplate.queryForObject(eq("SELECT RELEASE_LOCK(?)"), eq(Integer.class), any())).thenReturn(1);
         when(userRepository.existsByRole(Role.ADMIN)).thenReturn(true);
 
         initializer.run(new DefaultApplicationArguments(new String[0]));
@@ -50,8 +58,11 @@ class DefaultAdminInitializerTest {
     @Test
     void shouldFailWhenNoAdminExistsAndConfigMissing() {
         UserRepository userRepository = mock(UserRepository.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         DefaultAdminProperties properties = new DefaultAdminProperties();
-        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties);
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties, jdbcTemplate);
+        when(jdbcTemplate.queryForObject(eq("SELECT GET_LOCK(?, ?)"), eq(Integer.class), any(), any())).thenReturn(1);
+        when(jdbcTemplate.queryForObject(eq("SELECT RELEASE_LOCK(?)"), eq(Integer.class), any())).thenReturn(1);
         when(userRepository.existsByRole(Role.ADMIN)).thenReturn(false);
 
         assertThatThrownBy(() -> initializer.run(new DefaultApplicationArguments(new String[0])))
@@ -62,8 +73,11 @@ class DefaultAdminInitializerTest {
     @Test
     void shouldCreateVerifiedAdminRoleUser() throws Exception {
         UserRepository userRepository = mock(UserRepository.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         DefaultAdminProperties properties = buildProperties();
-        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties);
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties, jdbcTemplate);
+        when(jdbcTemplate.queryForObject(eq("SELECT GET_LOCK(?, ?)"), eq(Integer.class), any(), any())).thenReturn(1);
+        when(jdbcTemplate.queryForObject(eq("SELECT RELEASE_LOCK(?)"), eq(Integer.class), any())).thenReturn(1);
         when(userRepository.existsByRole(Role.ADMIN)).thenReturn(false);
         when(userRepository.existsByUsername(properties.getUsername())).thenReturn(false);
         when(userRepository.existsByEmail(properties.getEmail())).thenReturn(false);
@@ -72,6 +86,19 @@ class DefaultAdminInitializerTest {
         initializer.run(new DefaultApplicationArguments(new String[0]));
 
         verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void shouldFailWhenInitializationLockCannotBeAcquired() {
+        UserRepository userRepository = mock(UserRepository.class);
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        DefaultAdminProperties properties = buildProperties();
+        DefaultAdminInitializer initializer = new DefaultAdminInitializer(userRepository, passwordEncoder, properties, jdbcTemplate);
+        when(jdbcTemplate.queryForObject(eq("SELECT GET_LOCK(?, ?)"), eq(Integer.class), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> initializer.run(new DefaultApplicationArguments(new String[0])))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("初始化锁");
     }
 
     private DefaultAdminProperties buildProperties() {

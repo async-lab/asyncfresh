@@ -17,6 +17,18 @@ public interface AuthCacheService {
 
     boolean hasEmailCooldown(EmailCodeScene scene, String email);
 
+    void clearEmailCooldown(EmailCodeScene scene, String email);
+
+    long incrementEmailCodeVerifyFailCount(EmailCodeScene scene, String email, Duration ttl);
+
+    void clearEmailCodeVerifyFailCount(EmailCodeScene scene, String email);
+
+    void lockEmailCodeVerify(EmailCodeScene scene, String email, Duration ttl);
+
+    boolean isEmailCodeVerifyLocked(EmailCodeScene scene, String email);
+
+    void clearEmailCodeVerifyLock(EmailCodeScene scene, String email);
+
     long incrementLoginFailCount(String email, Duration ttl);
 
     void clearLoginFailCount(String email);
