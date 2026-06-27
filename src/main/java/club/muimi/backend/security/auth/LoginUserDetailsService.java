@@ -3,6 +3,7 @@ package club.muimi.backend.security.auth;
 import club.muimi.backend.entity.User;
 import club.muimi.backend.exception.UnauthorizedException;
 import club.muimi.backend.repository.UserRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class LoginUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public LoginUser loadUserByUsername(String email) {
+    public LoginUser loadUserByUsername(@NonNull String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("用户不存在或已失效"));
         return new LoginUser(
