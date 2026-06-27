@@ -204,8 +204,10 @@ public class AuthService {
                 .stream()
                 .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
                 .toList();
-        Long leaderGroupId = recruitmentGroupRepository.findByLeaderUserId(loginUser.getUserId())
+        Long leaderGroupId = recruitmentGroupRepository.findAllByLeaderUserId(loginUser.getUserId())
+                .stream()
                 .map(RecruitmentGroup::getId)
+                .min(Long::compareTo)
                 .orElse(null);
         return new CurrentUserVo(
                 loginUser.getUserId(),

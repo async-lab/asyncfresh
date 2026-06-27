@@ -344,6 +344,24 @@
             box-shadow: 0 0 0 4px rgba(31, 107, 85, 0.08);
         }
 
+        .field-full textarea {
+            width: 100%;
+            min-height: 130px;
+            border: 1px solid rgba(23, 39, 34, 0.12);
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.86);
+            color: var(--ink);
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .field-full textarea:focus {
+            border-color: rgba(31, 107, 85, 0.45);
+            box-shadow: 0 0 0 4px rgba(31, 107, 85, 0.08);
+        }
+
         .check {
             display: flex;
             align-items: center;
@@ -410,7 +428,7 @@
 
         .probe-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
             margin-bottom: 14px;
         }
@@ -799,6 +817,10 @@
                         <strong>权限策略</strong>
                         <span id="probe-policy">-</span>
                     </div>
+                    <div class="probe-card">
+                        <strong>管理员接口</strong>
+                        <span id="probe-admin">-</span>
+                    </div>
                 </div>
 
                 <div class="button-row">
@@ -835,6 +857,83 @@
                 </div>
 
                 <div class="code-frame" id="current-user-frame">等待读取当前用户...</div>
+            </section>
+
+            <section class="panel sheet">
+                <div class="panel-head">
+                    <div>
+                        <h2 class="panel-title">管理员功能测试区</h2>
+                        <p class="panel-desc">
+                            这里直接联调 `/api/v1/admin/users`、`/api/v1/admin/users/{id}` 和
+                            `PATCH /api/v1/admin/users/{id}/status`。后端返回不会暴露密码哈希，
+                            你可以在这里验证列表查询、单用户详情、启用/禁用，以及“管理员不能禁用自己”这类限制。
+                        </p>
+                    </div>
+                    <span class="badge">Admin Only</span>
+                </div>
+
+                <div class="fields">
+                    <div class="field">
+                        <label for="admin-list-keyword">列表关键字</label>
+                        <input id="admin-list-keyword" placeholder="用户名或邮箱关键字">
+                    </div>
+                    <div class="field">
+                        <label for="admin-list-role">角色筛选</label>
+                        <select id="admin-list-role">
+                            <option value="">全部角色</option>
+                            <option value="FRESHMAN">FRESHMAN</option>
+                            <option value="LEADER">LEADER</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="admin-list-status">状态筛选</label>
+                        <select id="admin-list-status">
+                            <option value="">全部状态</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="DISABLED">DISABLED</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="admin-list-page">列表页码</label>
+                        <input id="admin-list-page" type="number" min="1" value="1">
+                    </div>
+                    <div class="field">
+                        <label for="admin-list-size">每页条数</label>
+                        <input id="admin-list-size" type="number" min="1" max="50" value="10">
+                    </div>
+                    <div class="field">
+                        <label for="admin-detail-user-id">详情用户 ID</label>
+                        <input id="admin-detail-user-id" type="number" min="1" placeholder="例如 1">
+                    </div>
+                    <div class="field">
+                        <label for="admin-status-user-id">状态变更用户 ID</label>
+                        <input id="admin-status-user-id" type="number" min="1" placeholder="例如 2">
+                    </div>
+                    <div class="field">
+                        <label for="admin-status-value">目标状态</label>
+                        <select id="admin-status-value">
+                            <option value="DISABLED">DISABLED</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p class="hint">
+                    如果当前登录身份不是 `ADMIN`，这些按钮通常会返回 `403`。
+                    登录管理员后先点“查询用户列表”，再把目标用户 ID 填到详情或状态变更里。
+                </p>
+
+                <div class="button-row">
+                    <button class="button button-secondary" id="admin-list-users">查询用户列表</button>
+                    <button class="button button-secondary" id="admin-user-detail">读取用户详情</button>
+                    <button class="button button-danger" id="admin-update-status">更新用户状态</button>
+                </div>
+
+                <div class="field-full" style="margin-top: 18px;">
+                    <label for="admin-result-frame">管理员接口结果快照</label>
+                    <textarea id="admin-result-frame" readonly>等待管理员接口请求...</textarea>
+                </div>
             </section>
         </div>
     </section>
@@ -881,10 +980,16 @@
         currentUser: null,
         lastRequestId: "-",
         logs: [],
+        admin: {
+            lastUserList: null,
+            lastUserDetail: null,
+            lastStatusUpdate: null
+        },
         checks: {
             me: "-",
             role: "-",
-            policy: "-"
+            policy: "-",
+            admin: "-"
         },
         flow: {
             registerCodeSent: false,
@@ -911,7 +1016,15 @@
         resetPassword: document.getElementById("reset-password"),
         changeOldPassword: document.getElementById("change-old-password"),
         changeNewPassword: document.getElementById("change-new-password"),
-        changeConfirmPassword: document.getElementById("change-confirm-password")
+        changeConfirmPassword: document.getElementById("change-confirm-password"),
+        adminListKeyword: document.getElementById("admin-list-keyword"),
+        adminListRole: document.getElementById("admin-list-role"),
+        adminListStatus: document.getElementById("admin-list-status"),
+        adminListPage: document.getElementById("admin-list-page"),
+        adminListSize: document.getElementById("admin-list-size"),
+        adminDetailUserId: document.getElementById("admin-detail-user-id"),
+        adminStatusUserId: document.getElementById("admin-status-user-id"),
+        adminStatusValue: document.getElementById("admin-status-value")
     };
 
     const nodes = {
@@ -929,7 +1042,9 @@
         responseBadge: document.getElementById("response-badge"),
         probeMe: document.getElementById("probe-me"),
         probeRole: document.getElementById("probe-role"),
-        probePolicy: document.getElementById("probe-policy")
+        probePolicy: document.getElementById("probe-policy"),
+        probeAdmin: document.getElementById("probe-admin"),
+        adminResultFrame: document.getElementById("admin-result-frame")
     };
 
     const buttons = Array.from(document.querySelectorAll(".button"));
@@ -1051,6 +1166,34 @@
         nodes.currentUserFrame.textContent = safeJson(state.currentUser);
     }
 
+    function renderAdminConsole() {
+        if (!state.currentUser) {
+            nodes.adminResultFrame.value =
+                "当前未登录。\n\n" +
+                "要测试管理员接口，请先使用管理员账号登录，再执行用户列表、详情和状态变更操作。";
+            return;
+        }
+
+        if (state.currentUser.role !== "ADMIN") {
+            nodes.adminResultFrame.value =
+                "当前身份不是 ADMIN。\n\n" +
+                "此区域仍可直接发请求，但预期结果通常是 403。\n" +
+                "当前角色：" + state.currentUser.role;
+            return;
+        }
+
+        nodes.adminResultFrame.value = safeJson({
+            currentAdmin: {
+                id: state.currentUser.id,
+                username: state.currentUser.username,
+                role: state.currentUser.role
+            },
+            lastUserList: state.admin.lastUserList,
+            lastUserDetail: state.admin.lastUserDetail,
+            lastStatusUpdate: state.admin.lastStatusUpdate
+        });
+    }
+
     function renderMetrics() {
         const csrfToken = getCookie("XSRF-TOKEN");
         state.flow.csrfReady = Boolean(csrfToken);
@@ -1062,6 +1205,7 @@
         nodes.probeMe.textContent = state.checks.me;
         nodes.probeRole.textContent = state.checks.role;
         nodes.probePolicy.textContent = state.checks.policy;
+        nodes.probeAdmin.textContent = state.checks.admin;
         buildFlowTags();
         buildTimeline();
     }
@@ -1070,6 +1214,7 @@
         if (!state.currentUser) {
             state.checks.role = "游客";
             state.checks.policy = "仅公开接口";
+            state.checks.admin = "未登录";
             state.flow.permissionGuardVerified = false;
             return;
         }
@@ -1077,13 +1222,16 @@
         state.checks.role = state.currentUser.role;
         switch (state.currentUser.role) {
             case "ADMIN":
-                state.checks.policy = "可访问未来 Admin / Leader 受保护接口";
+                state.checks.policy = "可访问 Admin / Leader 接口";
+                state.checks.admin = "可直接测试用户列表/详情/禁用";
                 break;
             case "LEADER":
                 state.checks.policy = "可访问未来 Leader 接口，不可访问 Admin 接口";
+                state.checks.admin = "预期 403";
                 break;
             default:
                 state.checks.policy = "仅可访问普通用户接口";
+                state.checks.admin = "预期 403";
                 break;
         }
         state.flow.permissionGuardVerified = true;
@@ -1203,6 +1351,15 @@
         fields.changeOldPassword.value = fields.registerPassword.value;
     }
 
+    function syncAdminTargetIdsFromUser(user) {
+        if (!user || typeof user.id === "undefined" || user.id === null) {
+            return;
+        }
+        const userId = String(user.id);
+        fields.adminDetailUserId.value = userId;
+        fields.adminStatusUserId.value = userId;
+    }
+
     function generateDraftIdentity() {
         const stamp = String(Date.now()).slice(-6);
         const username = `fresh_${stamp}`;
@@ -1247,6 +1404,7 @@
         } finally {
             renderMetrics();
             renderCurrentUser();
+            renderAdminConsole();
             setBusy(false);
         }
     }
@@ -1374,9 +1532,79 @@
         }
     }
 
+    async function fetchAdminUsers() {
+        const params = new URLSearchParams();
+        const keyword = fields.adminListKeyword.value.trim();
+        const role = fields.adminListRole.value;
+        const status = fields.adminListStatus.value;
+        const page = fields.adminListPage.value.trim();
+        const size = fields.adminListSize.value.trim();
+
+        if (keyword) {
+            params.set("keyword", keyword);
+        }
+        if (role) {
+            params.set("role", role);
+        }
+        if (status) {
+            params.set("status", status);
+        }
+        if (page) {
+            params.set("page", page);
+        }
+        if (size) {
+            params.set("size", size);
+        }
+
+        const query = params.toString();
+        const result = await apiRequest(`/api/v1/admin/users${query ? `?${query}` : ""}`);
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.admin.lastUserList = result.payload.data;
+            const firstUser = result.payload.data?.list?.[0];
+            if (firstUser) {
+                syncAdminTargetIdsFromUser(firstUser);
+            }
+        }
+    }
+
+    async function fetchAdminUserDetail() {
+        const userId = fields.adminDetailUserId.value.trim();
+        if (!userId) {
+            throw new Error("请先填写要读取详情的用户 ID");
+        }
+
+        const result = await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}`);
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.admin.lastUserDetail = result.payload.data;
+            syncAdminTargetIdsFromUser(result.payload.data);
+        }
+    }
+
+    async function updateAdminUserStatus() {
+        const userId = fields.adminStatusUserId.value.trim();
+        if (!userId) {
+            throw new Error("请先填写要更新状态的用户 ID");
+        }
+
+        const result = await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}/status`, {
+            method: "PATCH",
+            body: {
+                status: fields.adminStatusValue.value
+            }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.admin.lastStatusUpdate = result.payload.data;
+            state.admin.lastUserDetail = result.payload.data;
+            syncAdminTargetIdsFromUser(result.payload.data);
+        }
+    }
+
     async function runProbeSuite() {
         await refreshCurrentUser(true);
         refreshRoleStrategy();
+        if (state.currentUser?.role === "ADMIN") {
+            await fetchAdminUsers();
+        }
     }
 
     function bindEvents() {
@@ -1407,6 +1635,10 @@
             refreshRoleStrategy();
         }));
 
+        document.getElementById("admin-list-users").addEventListener("click", () => runAction(fetchAdminUsers));
+        document.getElementById("admin-user-detail").addEventListener("click", () => runAction(fetchAdminUserDetail));
+        document.getElementById("admin-update-status").addEventListener("click", () => runAction(updateAdminUserStatus));
+
         fields.registerEmail.addEventListener("change", syncAccountFields);
         fields.registerPassword.addEventListener("change", syncAccountFields);
     }
@@ -1417,6 +1649,7 @@
         bindEvents();
         renderMetrics();
         renderCurrentUser();
+        renderAdminConsole();
         runAction(() => refreshCurrentUser(true));
     }
 

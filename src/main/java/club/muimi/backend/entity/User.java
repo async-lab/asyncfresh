@@ -1,5 +1,6 @@
 package club.muimi.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
 import jakarta.persistence.*;
@@ -25,6 +26,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String passwordHash;
 
     @Column(nullable = false, unique = true)

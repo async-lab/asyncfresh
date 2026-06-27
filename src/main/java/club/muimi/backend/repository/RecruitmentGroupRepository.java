@@ -5,13 +5,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface RecruitmentGroupRepository extends JpaRepository<RecruitmentGroup, Long> {
 
     List<RecruitmentGroup> findAllByIdIn(Collection<Long> ids);
 
-    Optional<RecruitmentGroup> findByLeaderUserId(Long leaderUserId);
+    List<RecruitmentGroup> findAllByLeaderUserId(Long leaderUserId);
+
+    List<RecruitmentGroup> findAllByLeaderUserIdIn(Collection<Long> leaderUserIds);
 
     boolean existsByIdAndLeaderUserId(Long id, Long leaderUserId);
 }

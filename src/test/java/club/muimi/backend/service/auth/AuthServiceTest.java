@@ -379,7 +379,7 @@ class AuthServiceTest {
         when(currentUserService.requireCurrentUser()).thenReturn(loginUser);
         when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
         when(groupMemberRepository.findAllByUserId(99L)).thenReturn(List.of());
-        when(recruitmentGroupRepository.findByLeaderUserId(99L)).thenReturn(Optional.empty());
+        when(recruitmentGroupRepository.findAllByLeaderUserId(99L)).thenReturn(List.of());
 
         CurrentUserVo result = authService.getCurrentUser();
 
