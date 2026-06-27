@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -24,9 +25,9 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
 
     @Override
     public void handle(
-            HttpServletRequest request,
+            @NonNull HttpServletRequest request,
             HttpServletResponse response,
-            AccessDeniedException accessDeniedException
+            @NonNull AccessDeniedException accessDeniedException
     ) throws IOException, ServletException {
         response.setStatus(ErrorCode.FORBIDDEN.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

@@ -17,6 +17,7 @@ public class LoginUserDetailsService implements UserDetailsService {
     }
 
     @Override
+    @NonNull
     public LoginUser loadUserByUsername(@NonNull String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("用户不存在或已失效"));
