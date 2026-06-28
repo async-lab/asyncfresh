@@ -33,4 +33,15 @@ p {
   margin: 8px 0 0;
   color: var(--app-muted);
 }
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+}
 </style>

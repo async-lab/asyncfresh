@@ -3,6 +3,7 @@
     :model-value="modelValue"
     :options="options"
     :props="{ value: 'id', label: 'name', children: 'children', emitPath: true }"
+    :disabled="disabled"
     clearable
     filterable
     placeholder="请选择方向"
@@ -17,6 +18,7 @@ import { useMetaStore } from '@/stores/meta';
 
 defineProps<{
   modelValue?: number[];
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{
