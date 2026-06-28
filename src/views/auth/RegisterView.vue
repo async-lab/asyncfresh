@@ -14,7 +14,7 @@
         <el-input v-model="form.email" :disabled="!canRegister" placeholder="user@example.com">
           <template #append>
             <el-button :disabled="!canSendCode || sendingCode" @click="handleSendCode">
-              发送验证码
+              {{ codeButtonText }}
             </el-button>
           </template>
         </el-input>
@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { register, sendEmailCode } from '@/api/auth';
@@ -60,7 +60,8 @@ const router = useRouter();
 const metaStore = useMetaStore();
 const sendingCode = ref(false);
 const submitting = ref(false);
-const canRegister = computed(() => metaStore.period === 'REGISTRATION');
+const codeCooldown = ref(0);
+let cooldownTimer: number | undefined;
 
 const form = reactive({
   username: '',
@@ -70,7 +71,15 @@ const form = reactive({
   code: ''
 });
 
-const canSendCode = computed(() => canRegister.value && isValidEmail(form.email));
+const canRegister = computed(() => metaStore.period === 'REGISTRATION');
+const canSendCode = computed(() => canRegister.value && isValidEmail(form.email) && codeCooldown.value === 0);
+const codeButtonText = computed(() => (codeCooldown.value ? `${codeCooldown.value}s 后重发` : '发送验证码'));
+
+onBeforeUnmount(() => {
+  if (cooldownTimer) {
+    window.clearInterval(cooldownTimer);
+  }
+});
 
 async function handleSendCode() {
   if (!isValidEmail(form.email)) {
@@ -82,6 +91,7 @@ async function handleSendCode() {
   try {
     await sendEmailCode({ email: normalizeEmail(form.email), scene: 'REGISTER' });
     ElMessage.success('验证码已发送');
+    startCodeCooldown();
   } finally {
     sendingCode.value = false;
   }
@@ -102,10 +112,26 @@ async function handleSubmit() {
       code: form.code.trim()
     });
     ElMessage.success('注册成功，请登录');
-    await router.push('/login');
+    await router.push({ path: '/login', query: { email: normalizeEmail(form.email) } });
   } finally {
     submitting.value = false;
   }
+}
+
+function startCodeCooldown() {
+  codeCooldown.value = 60;
+  if (cooldownTimer) {
+    window.clearInterval(cooldownTimer);
+  }
+
+  cooldownTimer = window.setInterval(() => {
+    codeCooldown.value -= 1;
+    if (codeCooldown.value <= 0 && cooldownTimer) {
+      window.clearInterval(cooldownTimer);
+      cooldownTimer = undefined;
+      codeCooldown.value = 0;
+    }
+  }, 1000);
 }
 
 function validateForm() {
