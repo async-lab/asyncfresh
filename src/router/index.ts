@@ -6,6 +6,7 @@ import UserLayout from '@/layouts/UserLayout.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useMetaStore } from '@/stores/meta';
+import { getHomePathByRole } from '@/utils/authRouting';
 
 const LoginView = () => import('@/views/auth/LoginView.vue');
 const RegisterView = () => import('@/views/auth/RegisterView.vue');
@@ -16,6 +17,13 @@ const SettingsView = () => import('@/views/app/SettingsView.vue');
 const ApplicationsView = () => import('@/views/app/ApplicationsView.vue');
 const TasksView = () => import('@/views/app/TasksView.vue');
 const TaskDetailView = () => import('@/views/app/TaskDetailView.vue');
+const AnnouncementListView = () => import('@/views/app/announcements/AnnouncementListView.vue');
+const AnnouncementDetailView = () => import('@/views/app/announcements/AnnouncementDetailView.vue');
+const MaterialListView = () => import('@/views/app/materials/MaterialListView.vue');
+const MaterialDetailView = () => import('@/views/app/materials/MaterialDetailView.vue');
+const MyGroupsView = () => import('@/views/app/groups/MyGroupsView.vue');
+const GroupDetailView = () => import('@/views/app/groups/GroupDetailView.vue');
+const ScoresView = () => import('@/views/app/scores/ScoresView.vue');
 const AdminDashboardView = () => import('@/views/admin/AdminDashboardView.vue');
 const PlaceholderView = () => import('@/views/PlaceholderView.vue');
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue');
@@ -88,7 +96,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'applications/:id',
         name: 'app-application-detail',
-        component: PlaceholderView,
+        component: ApplicationsView,
         meta: {
           title: '报名详情',
           description: '展示报名申请详情、状态和分组结果。',
@@ -99,7 +107,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'announcements',
         name: 'app-announcements',
-        component: PlaceholderView,
+        component: AnnouncementListView,
         meta: {
           title: '公告',
           description: '按全局和组内范围查看可见公告。',
@@ -110,7 +118,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'announcements/:id',
         name: 'app-announcement-detail',
-        component: PlaceholderView,
+        component: AnnouncementDetailView,
         meta: {
           title: '公告详情',
           description: '展示公告 Markdown 内容、发布者和发布时间。',
@@ -121,7 +129,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'materials',
         name: 'app-materials',
-        component: PlaceholderView,
+        component: MaterialListView,
         meta: {
           title: '学习资料',
           description: '按方向筛选学习资料并下载附件。',
@@ -132,7 +140,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'materials/:id',
         name: 'app-material-detail',
-        component: PlaceholderView,
+        component: MaterialDetailView,
         meta: {
           title: '资料详情',
           description: '展示资料正文、方向标签和附件。',
@@ -143,7 +151,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'groups',
         name: 'app-groups',
-        component: PlaceholderView,
+        component: MyGroupsView,
         meta: {
           title: '我的分组',
           description: '展示本人所在分组和分组详情入口。',
@@ -154,7 +162,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'groups/:id',
         name: 'app-group-detail',
-        component: PlaceholderView,
+        component: GroupDetailView,
         meta: {
           title: '分组详情',
           description: '展示分组方向、年级、容量和负责人。',
@@ -188,7 +196,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scores',
         name: 'app-scores',
-        component: PlaceholderView,
+        component: ScoresView,
         meta: {
           title: '我的成绩',
           description: '展示任务成绩、满分、评语和批阅时间。',
@@ -418,17 +426,8 @@ const router = createRouter({
   routes
 });
 
-function getHomePathByRole(role?: string) {
-  if (role === 'ADMIN') {
-    return '/admin';
-  }
+const guestOnlyRouteNames = new Set(['login', 'admin-login', 'register', 'forgot-password', 'reset-password']);
 
-  if (role === 'LEADER') {
-    return '/leader/announcements';
-  }
-
-  return '/app';
-}
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
@@ -436,15 +435,19 @@ router.beforeEach(async (to) => {
 
   document.title = to.meta.title ? `${to.meta.title} - 实验室招新平台` : '实验室招新平台';
 
-  if (!metaStore.currentPeriod) {
-    await metaStore.fetchCurrentPeriod().catch(() => undefined);
+  if (!metaStore.initialized && !metaStore.loading) {
+    await metaStore.bootstrap().catch(() => undefined);
   }
 
   if (!to.meta.requiresAuth) {
+    if (authStore.user && guestOnlyRouteNames.has(String(to.name || ''))) {
+      return getHomePathByRole(authStore.role);
+    }
+
     return true;
   }
 
-  if (!authStore.user && !authStore.loading) {
+  if (!authStore.initialized && !authStore.loading) {
     await authStore.fetchMe().catch(() => undefined);
   }
 
