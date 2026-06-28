@@ -35,6 +35,7 @@ import club.muimi.backend.vo.auth.LoginResultVo;
 import club.muimi.backend.vo.auth.RegisterResultVo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -62,6 +64,7 @@ public class AuthService {
     private final AuthCookieService authCookieService;
     private final AuthProperties authProperties;
     private final CurrentUserService currentUserService;
+    private final List<IpAddressMatcher> trustedProxyMatchers;
 
     public AuthService(
             UserRepository userRepository,
@@ -87,6 +90,11 @@ public class AuthService {
         this.authCookieService = authCookieService;
         this.authProperties = authProperties;
         this.currentUserService = currentUserService;
+        this.trustedProxyMatchers = authProperties.getLogin().getTrustedProxies().stream()
+                .filter(proxy -> proxy != null && !proxy.isBlank())
+                .map(String::trim)
+                .map(IpAddressMatcher::new)
+                .toList();
     }
 
     @Transactional
@@ -366,19 +374,61 @@ public class AuthService {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            String firstIp = forwardedFor.split(",")[0].trim();
-            if (!firstIp.isBlank()) {
-                return firstIp;
+        String remoteAddr = normalizeIpLiteral(request.getRemoteAddr()).orElse("unknown");
+        if (!authProperties.getLogin().isTrustForwardHeaders() || !isTrustedProxy(remoteAddr)) {
+            return remoteAddr;
+        }
+
+        Optional<String> forwardedClientIp = resolveForwardedClientIp(request.getHeader("X-Forwarded-For"));
+        if (forwardedClientIp.isPresent()) {
+            return forwardedClientIp.get();
+        }
+
+        return normalizeIpLiteral(request.getHeader("X-Real-IP")).orElse(remoteAddr);
+    }
+
+    private Optional<String> resolveForwardedClientIp(String forwardedForHeader) {
+        if (forwardedForHeader == null || forwardedForHeader.isBlank()) {
+            return Optional.empty();
+        }
+
+        String[] hops = forwardedForHeader.split(",");
+        for (int i = hops.length - 1; i >= 0; i--) {
+            Optional<String> normalizedHop = normalizeIpLiteral(hops[i]);
+            if (normalizedHop.isEmpty()) {
+                return Optional.empty();
+            }
+            if (!isTrustedProxy(normalizedHop.get())) {
+                return normalizedHop;
             }
         }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
+
+        return normalizeIpLiteral(hops[0]);
+    }
+
+    private Optional<String> normalizeIpLiteral(String rawIp) {
+        if (rawIp == null || rawIp.isBlank()) {
+            return Optional.empty();
         }
-        String remoteAddr = request.getRemoteAddr();
-        return remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr;
+
+        String candidate = rawIp.trim();
+        if (candidate.startsWith("[") && candidate.endsWith("]")) {
+            candidate = candidate.substring(1, candidate.length() - 1).trim();
+        }
+
+        try {
+            if (new IpAddressMatcher(candidate).matches(candidate)) {
+                return Optional.of(candidate);
+            }
+        } catch (IllegalArgumentException ignored) {
+            return Optional.empty();
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isTrustedProxy(String candidateIp) {
+        return trustedProxyMatchers.stream().anyMatch(matcher -> matcher.matches(candidateIp));
     }
 
     private void blacklistTokenIfNecessary(JwtClaims claims) {

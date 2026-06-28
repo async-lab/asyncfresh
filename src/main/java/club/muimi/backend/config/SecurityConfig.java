@@ -59,7 +59,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/send-email-code",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
-                                "/api/v1/meta/current-period"
+                                "/api/v1/meta/current-period",
+                                "/api/v1/directions"
                         ).permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/leader/**").hasAnyRole("LEADER", "ADMIN")

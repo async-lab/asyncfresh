@@ -3,25 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FRESH 权限链路联调台</title>
+    <title>FRESH 招新测试页</title>
     <style>
         :root {
-            --bg: #efe6d6;
-            --panel: rgba(255, 250, 242, 0.9);
-            --panel-strong: rgba(248, 241, 229, 0.96);
-            --ink: #1f1c19;
-            --muted: #6b6259;
-            --accent: #1f6b55;
-            --accent-2: #bc7b31;
-            --accent-3: #12362f;
-            --danger: #b4453e;
-            --ok: #19764c;
-            --warn: #9d6a15;
-            --line: rgba(23, 39, 34, 0.09);
-            --shadow: 0 24px 60px rgba(46, 35, 16, 0.14);
-            --radius-xl: 30px;
-            --radius-lg: 22px;
-            --radius-md: 16px;
+            --bg: #f2f5f7;
+            --panel: rgba(255, 255, 255, 0.88);
+            --panel-strong: #ffffff;
+            --ink: #16212b;
+            --muted: #657180;
+            --line: #d9e1e7;
+            --accent: #2f6c5b;
+            --accent-strong: #214b3f;
+            --warm: #b46a2a;
+            --danger: #b34848;
+            --ok: #1d7a57;
+            --shadow: 0 18px 40px rgba(34, 56, 74, 0.1);
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
         }
 
         * {
@@ -35,106 +34,153 @@
         body {
             margin: 0;
             min-height: 100vh;
+            font-family: "IBM Plex Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
             color: var(--ink);
-            font-family: "Source Han Serif SC", "Songti SC", "Microsoft YaHei", serif;
             background:
-                radial-gradient(circle at top left, rgba(31, 107, 85, 0.18), transparent 28%),
-                radial-gradient(circle at 88% 18%, rgba(188, 123, 49, 0.16), transparent 24%),
-                linear-gradient(135deg, #f7f0e2 0%, #eee3ce 52%, #e4d8c3 100%);
+                radial-gradient(circle at top left, rgba(47, 108, 91, 0.12), transparent 26%),
+                radial-gradient(circle at 85% 8%, rgba(180, 106, 42, 0.08), transparent 20%),
+                linear-gradient(180deg, #f8fafb 0%, #eef2f4 100%);
         }
 
         button,
         input,
-        select {
+        select,
+        textarea {
             font: inherit;
         }
 
         .page {
-            width: min(1400px, calc(100vw - 28px));
+            width: min(1440px, calc(100vw - 28px));
             margin: 0 auto;
-            padding: 28px 0 48px;
+            padding: 20px 0 42px;
         }
 
-        .panel {
+        .glass {
             background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: var(--radius-xl);
+            border: 1px solid rgba(217, 225, 231, 0.95);
             box-shadow: var(--shadow);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(14px);
         }
 
         .hero {
+            border-radius: 32px;
+            overflow: hidden;
             display: grid;
-            grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-            gap: 22px;
+            grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
             margin-bottom: 22px;
+            background:
+                linear-gradient(135deg, rgba(33, 75, 63, 0.92), rgba(22, 33, 43, 0.96)),
+                #14202a;
+            color: #f7fbff;
         }
 
         .hero-main {
             padding: 34px;
-            position: relative;
-            overflow: hidden;
         }
 
-        .hero-main::after {
-            content: "";
-            position: absolute;
-            inset: auto -40px -80px auto;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(31, 107, 85, 0.18), transparent 68%);
-            pointer-events: none;
+        .hero-side {
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.06);
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            display: grid;
+            gap: 14px;
+            align-content: start;
         }
 
         .eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 14px;
+            gap: 8px;
+            padding: 8px 12px;
             border-radius: 999px;
-            color: var(--accent-3);
-            background: rgba(31, 107, 85, 0.08);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
+            color: #d7ebe5;
+            background: rgba(255, 255, 255, 0.08);
         }
 
         h1 {
-            margin: 18px 0 14px;
-            font-size: clamp(34px, 4.8vw, 62px);
+            margin: 18px 0 12px;
+            font-size: clamp(34px, 4.8vw, 58px);
             line-height: 1.02;
-            letter-spacing: -0.04em;
+            letter-spacing: -0.05em;
         }
 
         .lead {
             margin: 0;
             max-width: 760px;
-            color: var(--muted);
-            font-size: 17px;
-            line-height: 1.9;
-        }
-
-        .hero-actions,
-        .button-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+            color: rgba(242, 248, 250, 0.82);
+            line-height: 1.85;
+            font-size: 16px;
         }
 
         .hero-actions {
-            margin-top: 26px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 24px;
+        }
+
+        .hero-note {
+            margin-top: 18px;
+            color: rgba(242, 248, 250, 0.72);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .top-card {
+            padding: 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .top-card strong {
+            display: block;
+            font-size: 12px;
+            color: rgba(233, 244, 247, 0.74);
+            margin-bottom: 8px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .top-card span {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .hero-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.12);
+            color: inherit;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .button {
             border: 0;
-            border-radius: 16px;
-            padding: 12px 18px;
+            border-radius: 14px;
+            padding: 11px 16px;
+            cursor: pointer;
             font-size: 14px;
             font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+            transition: transform 0.14s ease, opacity 0.14s ease, box-shadow 0.14s ease;
         }
 
         .button:hover {
@@ -148,141 +194,64 @@
         }
 
         .button-primary {
-            color: #fffdf8;
-            background: linear-gradient(135deg, var(--accent), var(--accent-3));
-            box-shadow: 0 16px 30px rgba(31, 107, 85, 0.2);
+            color: #f7fbff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            box-shadow: 0 12px 24px rgba(47, 108, 91, 0.2);
         }
 
-        .button-secondary {
-            color: var(--accent-3);
-            background: rgba(31, 107, 85, 0.08);
+        .button-dark {
+            color: #ffffff;
+            background: linear-gradient(135deg, #1f2d3a, #101921);
+        }
+
+        .button-light {
+            color: var(--ink);
+            background: #f5f8fa;
+            border: 1px solid var(--line);
         }
 
         .button-warm {
-            color: #fffaf4;
-            background: linear-gradient(135deg, #be7e33, #8f531b);
-            box-shadow: 0 16px 30px rgba(143, 83, 27, 0.2);
+            color: #fffaf3;
+            background: linear-gradient(135deg, #bb7738, #8d5421);
         }
 
         .button-danger {
-            color: #fff8f6;
-            background: linear-gradient(135deg, #b4453e, #7d2d28);
-            box-shadow: 0 16px 30px rgba(125, 45, 40, 0.18);
+            color: #fff8f8;
+            background: linear-gradient(135deg, #c45b5b, #943535);
         }
 
-        .hero-side {
-            padding: 22px;
+        .shell {
             display: grid;
-            gap: 14px;
-        }
-
-        .stack-card {
-            padding: 18px 18px 16px;
-            border-radius: 22px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 238, 228, 0.92));
-            border: 1px solid rgba(31, 107, 85, 0.1);
-        }
-
-        .stack-card h2,
-        .section-title,
-        .panel-title {
-            margin: 0;
-        }
-
-        .stack-card h2 {
-            font-size: 16px;
-            margin-bottom: 12px;
-        }
-
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .metric {
-            padding: 12px 14px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(23, 39, 34, 0.08);
-        }
-
-        .metric strong {
-            display: block;
-            color: var(--muted);
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
-
-        .metric span {
-            display: block;
-            font-size: 15px;
-            font-weight: 700;
-            word-break: break-all;
-        }
-
-        .tag-cloud {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            border: 1px solid rgba(23, 39, 34, 0.08);
-            background: rgba(255, 255, 255, 0.72);
-        }
-
-        .tag.ok {
-            color: var(--ok);
-            background: rgba(25, 118, 76, 0.08);
-        }
-
-        .tag.warn {
-            color: var(--warn);
-            background: rgba(157, 106, 21, 0.1);
-        }
-
-        .tag.danger {
-            color: var(--danger);
-            background: rgba(180, 69, 62, 0.1);
-        }
-
-        .workspace {
-            display: grid;
-            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+            grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
             gap: 22px;
         }
 
-        .column {
+        .stack {
             display: grid;
             gap: 22px;
             align-content: start;
         }
 
-        .sheet {
-            padding: 24px;
-            background: var(--panel-strong);
+        .panel {
+            border-radius: var(--radius-xl);
+            padding: 22px;
         }
 
         .panel-head {
             display: flex;
             justify-content: space-between;
-            gap: 16px;
+            gap: 14px;
             align-items: flex-start;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
-        .panel-title {
-            font-size: 24px;
+        .panel-head h2,
+        .panel-head h3 {
+            margin: 0;
             letter-spacing: -0.03em;
         }
 
-        .panel-desc {
+        .panel-head p {
             margin: 6px 0 0;
             color: var(--muted);
             line-height: 1.7;
@@ -290,13 +259,56 @@
         }
 
         .badge {
-            padding: 7px 11px;
+            padding: 7px 10px;
             border-radius: 999px;
             font-size: 12px;
             font-weight: 800;
-            color: var(--accent-3);
-            background: rgba(31, 107, 85, 0.08);
+            color: var(--accent-strong);
+            background: rgba(47, 108, 91, 0.08);
             white-space: nowrap;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .tab {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: #f7fafb;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            border-color: transparent;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: grid;
+            gap: 22px;
+        }
+
+        .auth-grid,
+        .main-grid {
+            display: grid;
+            gap: 22px;
+        }
+
+        .main-grid {
+            grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
         }
 
         .fields {
@@ -315,226 +327,346 @@
             grid-column: 1 / -1;
         }
 
-        .field label,
-        .field-full label {
+        label {
             font-size: 13px;
             font-weight: 700;
             color: var(--muted);
         }
 
-        .field input,
-        .field select,
-        .field-full input,
-        .field-full select {
+        input,
+        select,
+        textarea {
             width: 100%;
-            border: 1px solid rgba(23, 39, 34, 0.12);
+            border: 1px solid var(--line);
             border-radius: 14px;
             padding: 12px 14px;
-            background: rgba(255, 255, 255, 0.86);
+            background: #fbfdfe;
             color: var(--ink);
             outline: none;
-            transition: border-color 0.16s ease, box-shadow 0.16s ease;
+            transition: border-color 0.14s ease, box-shadow 0.14s ease;
         }
 
-        .field input:focus,
-        .field select:focus,
-        .field-full input:focus,
-        .field-full select:focus {
-            border-color: rgba(31, 107, 85, 0.45);
-            box-shadow: 0 0 0 4px rgba(31, 107, 85, 0.08);
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(47, 108, 91, 0.5);
+            box-shadow: 0 0 0 4px rgba(47, 108, 91, 0.08);
         }
 
-        .field-full textarea {
-            width: 100%;
-            min-height: 130px;
-            border: 1px solid rgba(23, 39, 34, 0.12);
-            border-radius: 14px;
-            padding: 12px 14px;
-            background: rgba(255, 255, 255, 0.86);
-            color: var(--ink);
-            outline: none;
+        textarea {
+            min-height: 120px;
             resize: vertical;
-            transition: border-color 0.16s ease, box-shadow 0.16s ease;
         }
 
-        .field-full textarea:focus {
-            border-color: rgba(31, 107, 85, 0.45);
-            box-shadow: 0 0 0 4px rgba(31, 107, 85, 0.08);
-        }
-
-        .check {
+        .row {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .muted {
             color: var(--muted);
+        }
+
+        .small {
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .notice {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(47, 108, 91, 0.06);
+            color: var(--accent-strong);
+            font-size: 13px;
+            line-height: 1.8;
+            border: 1px solid rgba(47, 108, 91, 0.12);
+        }
+
+        .status-banner {
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: #f7fafb;
+            border: 1px solid var(--line);
+            display: grid;
+            gap: 8px;
+        }
+
+        .status-banner strong {
             font-size: 14px;
         }
 
-        .hint {
-            margin: 12px 0 0;
-            color: var(--muted);
-            font-size: 13px;
-            line-height: 1.7;
+        .tree {
+            display: grid;
+            gap: 10px;
         }
 
-        .timeline {
-            display: grid;
-            gap: 12px;
-        }
-
-        .timeline-item {
-            display: grid;
-            grid-template-columns: 18px minmax(0, 1fr);
-            gap: 12px;
-            align-items: start;
-            padding: 14px 14px 14px 10px;
+        .tree-item {
+            padding: 12px 14px;
             border-radius: 18px;
-            background: rgba(255, 255, 255, 0.62);
-            border: 1px solid rgba(23, 39, 34, 0.07);
+            background: #f9fbfc;
+            border: 1px solid #e7edf1;
         }
 
-        .timeline-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-top: 4px;
-            background: rgba(107, 98, 89, 0.25);
-        }
-
-        .timeline-item.done .timeline-dot {
-            background: var(--ok);
-        }
-
-        .timeline-item.wait .timeline-dot {
-            background: var(--warn);
-        }
-
-        .timeline-item.off .timeline-dot {
-            background: rgba(107, 98, 89, 0.25);
-        }
-
-        .timeline-item strong {
+        .tree-item strong {
             display: block;
-            font-size: 15px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
 
-        .timeline-item span {
-            display: block;
-            color: var(--muted);
-            font-size: 13px;
-            line-height: 1.7;
+        .tree-children {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        .probe-grid {
+        .mini-chip {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #edf3f6;
+            color: var(--ink);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            padding: 16px;
+            border-radius: 20px;
+            background: var(--panel-strong);
+            border: 1px solid #e4ebef;
+        }
+
+        .card.active {
+            border-color: rgba(47, 108, 91, 0.42);
+            box-shadow: 0 0 0 4px rgba(47, 108, 91, 0.07);
+        }
+
+        .card-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 17px;
+            letter-spacing: -0.03em;
+        }
+
+        .pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #edf3f6;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .pill.ok {
+            color: var(--ok);
+            background: rgba(29, 122, 87, 0.11);
+        }
+
+        .pill.warn {
+            color: var(--warm);
+            background: rgba(180, 106, 42, 0.11);
+        }
+
+        .pill.danger {
+            color: var(--danger);
+            background: rgba(179, 72, 72, 0.11);
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .meta-box {
+            padding: 11px 12px;
+            border-radius: 16px;
+            background: #f6f9fb;
+            border: 1px solid #e7edf1;
+        }
+
+        .meta-box strong {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .meta-box span {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+            gap: 22px;
+            margin-top: 22px;
+        }
+
+        .admin-stack {
+            display: grid;
+            gap: 22px;
+            align-content: start;
+        }
+
+        .subpanel {
+            padding: 18px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, #ffffff, #f7fafb);
+            border: 1px solid #e4ebef;
+        }
+
+        .subpanel h3 {
+            margin: 0;
+            letter-spacing: -0.03em;
+        }
+
+        .subpanel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             gap: 12px;
             margin-bottom: 14px;
         }
 
-        .probe-card {
-            padding: 14px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.68);
-            border: 1px solid rgba(23, 39, 34, 0.08);
-        }
-
-        .probe-card strong {
-            display: block;
-            color: var(--muted);
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
-
-        .probe-card span {
-            display: block;
-            font-size: 26px;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-
-        .mini-note {
-            margin: 0;
+        .subpanel-head p {
+            margin: 6px 0 0;
             color: var(--muted);
             font-size: 13px;
             line-height: 1.7;
         }
 
-        .shell {
-            margin-top: 22px;
-            display: grid;
-            grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
-            gap: 22px;
-        }
-
-        .log-list {
-            display: grid;
-            gap: 12px;
-            max-height: 620px;
-            overflow: auto;
-            padding-right: 4px;
-        }
-
-        .log-item {
-            padding: 14px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.68);
-            border: 1px solid rgba(23, 39, 34, 0.08);
-        }
-
-        .log-head {
+        .admin-actions {
             display: flex;
-            justify-content: space-between;
             gap: 10px;
-            margin-bottom: 8px;
-            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 14px;
+        }
+
+        .compact-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .compact-fields .field-full {
+            grid-column: 1 / -1;
+        }
+
+        .section-gap {
+            margin-top: 22px;
+        }
+
+        .sticky-note {
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: rgba(180, 106, 42, 0.08);
+            border: 1px solid rgba(180, 106, 42, 0.14);
+            color: #8d5421;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .inline-input {
+            width: 100%;
+            min-width: 160px;
+        }
+
+        .row-end {
+            justify-content: flex-end;
+        }
+
+        .summary-box {
+            padding: 16px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff, #f5f9fb);
+            border: 1px solid #e4ebef;
+        }
+
+        .summary-box strong {
+            display: block;
             font-size: 12px;
             color: var(--muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
 
-        .log-route {
+        .summary-box span {
+            display: block;
+            font-size: 30px;
             font-weight: 800;
-            color: var(--accent-3);
+            letter-spacing: -0.05em;
         }
 
-        .log-status {
-            padding: 5px 8px;
-            border-radius: 999px;
-            font-weight: 800;
-        }
-
-        .status-2xx {
-            color: var(--ok);
-            background: rgba(25, 118, 76, 0.09);
-        }
-
-        .status-4xx {
-            color: var(--warn);
-            background: rgba(157, 106, 21, 0.12);
-        }
-
-        .status-5xx {
-            color: var(--danger);
-            background: rgba(180, 69, 62, 0.12);
-        }
-
-        .log-message {
+        .table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 14px;
-            line-height: 1.7;
-            color: var(--ink);
-            word-break: break-word;
         }
 
-        .code-frame {
-            min-height: 620px;
-            padding: 22px;
-            border-radius: 24px;
-            background:
-                linear-gradient(180deg, rgba(16, 24, 22, 0.98), rgba(19, 31, 28, 0.98));
-            color: #dbeee5;
-            border: 1px solid rgba(97, 113, 101, 0.28);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        .table th,
+        .table td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ebf0f4;
+            vertical-align: top;
+        }
+
+        .table th {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid #e7edf1;
+            background: #fbfdfe;
+        }
+
+        .empty {
+            padding: 18px;
+            border-radius: 18px;
+            background: #f7fafb;
+            color: var(--muted);
+            border: 1px dashed #d5e0e8;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .console {
+            min-height: 300px;
+            padding: 18px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #13202b, #101922);
+            color: #d7e6ef;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             font-family: Consolas, "Courier New", monospace;
             font-size: 13px;
             line-height: 1.8;
@@ -543,52 +675,34 @@
             overflow: auto;
         }
 
-        .route-strip {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 18px;
+        .hidden {
+            display: none !important;
         }
 
-        .route-pill {
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            background: rgba(255, 255, 255, 0.65);
-            border: 1px solid rgba(23, 39, 34, 0.08);
-        }
-
-        .footer-note {
-            margin-top: 16px;
-            color: var(--muted);
-            font-size: 13px;
-            line-height: 1.8;
-        }
-
-        @media (max-width: 1160px) {
+        @media (max-width: 1220px) {
             .hero,
-            .workspace,
-            .shell {
+            .shell,
+            .main-grid,
+            .admin-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 760px) {
+        @media (max-width: 820px) {
             .page {
-                width: min(calc(100vw - 16px), 1400px);
+                width: min(calc(100vw - 16px), 1440px);
                 padding-top: 10px;
             }
 
             .hero-main,
-            .sheet,
-            .hero-side {
-                padding: 20px;
+            .hero-side,
+            .panel {
+                padding: 18px;
             }
 
             .fields,
-            .metrics,
-            .probe-grid {
+            .summary-grid,
+            .meta-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -597,410 +711,697 @@
             }
 
             h1 {
-                font-size: 34px;
+                font-size: 36px;
             }
         }
     </style>
 </head>
 <body>
 <main class="page">
-    <section class="hero">
-        <article class="panel hero-main">
-            <div class="eyebrow">FRESH · Auth Flow Console</div>
-            <h1>把登录、注册、CSRF 与权限验证整条链路直接摆到页面上</h1>
+    <section class="hero glass">
+        <div class="hero-main">
+            <div class="eyebrow">FRESH Test Surface</div>
+            <h1>一页走完登录、注册、报名和分组</h1>
             <p class="lead">
-                这个单文件页面不依赖任何前端构建工具，直接作为未来 Vue 单页应用的回退入口。
-                现在它已经能完整联调公开接口、登录态、当前用户、登出、改密、忘记密码，并根据
-                当前登录角色直接展示后续受保护业务接口应采用的权限策略。
+                这不是接口调试台，而是一张可以模拟真实使用流程的招新测试页。
+                游客先看方向和当前时期，再完成注册与登录；新生登录后直接报名；
+                管理员或负责人登录后立即进入分组工作台。
             </p>
             <div class="hero-actions">
-                <button class="button button-primary" id="generate-demo">生成测试账号草稿</button>
-                <button class="button button-secondary" id="refresh-session">刷新当前会话</button>
-                <button class="button button-warm" id="run-probe-suite">运行会话检查</button>
+                <button class="button button-primary" id="fill-demo">生成一组测试资料</button>
+                <button class="button button-light" id="refresh-all">刷新页面数据</button>
+                <button class="button button-dark" id="logout-top">退出登录</button>
             </div>
-            <div class="route-strip">
-                <span class="route-pill" id="current-route-pill">Route: /</span>
-                <span class="route-pill">SPA 回退入口已生效</span>
-                <span class="route-pill">所有请求默认携带 Cookie</span>
-                <span class="route-pill">写操作自动附带 CSRF Header</span>
-            </div>
-        </article>
+            <p class="hero-note">
+                邮箱验证码仍由后端邮件服务发出。开发联调阶段，你可以直接从后端日志里复制 6 位验证码填回页面。
+            </p>
+        </div>
 
-        <aside class="panel hero-side">
-            <section class="stack-card">
-                <h2>会话快照</h2>
-                <div class="metrics">
-                    <div class="metric">
-                        <strong>当前路径</strong>
-                        <span id="metric-path">/</span>
-                    </div>
-                    <div class="metric">
-                        <strong>登录身份</strong>
-                        <span id="metric-user">游客</span>
-                    </div>
-                    <div class="metric">
-                        <strong>角色</strong>
-                        <span id="metric-role">未登录</span>
-                    </div>
-                    <div class="metric">
-                        <strong>CSRF 状态</strong>
-                        <span id="metric-csrf">未就绪</span>
-                    </div>
+        <aside class="hero-side">
+            <div class="top-card">
+                <strong>当前时期</strong>
+                <span id="hero-period">加载中</span>
+            </div>
+            <div class="top-card">
+                <strong>当前身份</strong>
+                <span id="hero-user">游客</span>
+            </div>
+            <div class="top-card">
+                <strong>登录角色</strong>
+                <span id="hero-role">未登录</span>
+            </div>
+            <div class="top-card">
+                <strong>所在分组</strong>
+                <div class="hero-groups" id="hero-groups">
+                    <span class="chip">暂无</span>
                 </div>
-            </section>
-
-            <section class="stack-card">
-                <h2>链路状态</h2>
-                <div class="tag-cloud" id="flow-tags"></div>
-            </section>
-
-            <section class="stack-card">
-                <h2>开发提示</h2>
-                <p class="mini-note">
-                    当前验证码由后端开发邮件服务写到服务端日志中。你发送注册码或重置码后，
-                    从后端控制台复制 6 位验证码填回本页即可完成整条联调链路。
-                </p>
-            </section>
+            </div>
         </aside>
     </section>
 
-    <section class="workspace">
-        <div class="column">
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">注册链路</h2>
-                        <p class="panel-desc">
-                            先发注册验证码，再提交注册。默认注册角色是 `FRESHMAN`，
-                            后续用它去验证登录态、角色识别和权限策略提示是否正常。
-                        </p>
-                    </div>
-                    <span class="badge">公开接口</span>
-                </div>
-
-                <div class="fields">
-                    <div class="field">
-                        <label for="register-username">用户名</label>
-                        <input id="register-username" placeholder="fresh_demo_001">
-                    </div>
-                    <div class="field">
-                        <label for="register-email">邮箱</label>
-                        <input id="register-email" type="email" placeholder="fresh_demo_001@example.com">
-                    </div>
-                    <div class="field">
-                        <label for="register-password">密码</label>
-                        <input id="register-password" type="password" placeholder="Pass1234">
-                    </div>
-                    <div class="field">
-                        <label for="register-code">验证码</label>
-                        <input id="register-code" placeholder="从后端日志复制 6 位数字">
-                    </div>
-                </div>
-
-                <p class="hint">
-                    注册流程会调用 `/api/v1/auth/send-email-code` 和 `/api/v1/auth/register`。
-                </p>
-
-                <div class="button-row">
-                    <button class="button button-secondary" id="send-register-code">发送注册验证码</button>
-                    <button class="button button-primary" id="submit-register">提交注册</button>
-                </div>
-            </section>
-
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">登录与会话</h2>
-                        <p class="panel-desc">
-                            登录成功后，后端会下发 HttpOnly 登录 Cookie 与可读的 `XSRF-TOKEN`。
-                            本页随后会主动调用 `/api/v1/auth/me` 回读当前用户。
-                        </p>
-                    </div>
-                    <span class="badge">Cookie + JWT</span>
-                </div>
-
-                <div class="fields">
-                    <div class="field">
-                        <label for="login-email">邮箱</label>
-                        <input id="login-email" type="email" placeholder="登录邮箱">
-                    </div>
-                    <div class="field">
-                        <label for="login-password">密码</label>
-                        <input id="login-password" type="password" placeholder="登录密码">
-                    </div>
-                    <div class="field-full">
-                        <label class="check">
-                            <input id="remember-me" type="checkbox">
-                            <span>记住我</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="button-row">
-                    <button class="button button-primary" id="submit-login">登录</button>
-                    <button class="button button-secondary" id="fetch-me">读取当前用户</button>
-                    <button class="button button-danger" id="submit-logout">安全登出</button>
-                </div>
-            </section>
-
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">找回与改密</h2>
-                        <p class="panel-desc">
-                            这里同时覆盖忘记密码、重置密码和已登录用户改密三条分支，
-                            用来验证验证码链路与 CSRF 保护是否一并工作。
-                        </p>
-                    </div>
-                    <span class="badge">验证码 + CSRF</span>
-                </div>
-
-                <div class="fields">
-                    <div class="field">
-                        <label for="reset-email">重置邮箱</label>
-                        <input id="reset-email" type="email" placeholder="用于找回密码">
-                    </div>
-                    <div class="field">
-                        <label for="reset-code">重置验证码</label>
-                        <input id="reset-code" placeholder="从后端日志复制 6 位数字">
-                    </div>
-                    <div class="field">
-                        <label for="reset-password">新密码</label>
-                        <input id="reset-password" type="password" placeholder="NewPass123">
-                    </div>
-                    <div class="field">
-                        <label for="change-old-password">旧密码</label>
-                        <input id="change-old-password" type="password" placeholder="当前登录密码">
-                    </div>
-                    <div class="field">
-                        <label for="change-new-password">改密新密码</label>
-                        <input id="change-new-password" type="password" placeholder="Changed123">
-                    </div>
-                    <div class="field">
-                        <label for="change-confirm-password">确认新密码</label>
-                        <input id="change-confirm-password" type="password" placeholder="Changed123">
-                    </div>
-                </div>
-
-                <div class="button-row">
-                    <button class="button button-secondary" id="send-reset-code">发送重置验证码</button>
-                    <button class="button button-warm" id="submit-reset-password">提交重置密码</button>
-                    <button class="button button-primary" id="submit-change-password">已登录用户改密</button>
-                </div>
-            </section>
-        </div>
-
-        <div class="column">
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">会话与角色检查</h2>
-                        <p class="panel-desc">
-                            当前版本不再依赖虚构的 `leader/admin probe` 接口。
-                            页面会通过真实的 `/api/v1/auth/me` 返回结果与当前角色，
-                            直接展示后续受保护业务接口应采用的权限策略。
-                        </p>
-                    </div>
-                    <span class="badge">200 / 401 / 角色策略</span>
-                </div>
-
-                <div class="probe-grid">
-                    <div class="probe-card">
-                        <strong>`/api/v1/auth/me`</strong>
-                        <span id="probe-me">-</span>
-                    </div>
-                    <div class="probe-card">
-                        <strong>当前角色</strong>
-                        <span id="probe-role">-</span>
-                    </div>
-                    <div class="probe-card">
-                        <strong>权限策略</strong>
-                        <span id="probe-policy">-</span>
-                    </div>
-                    <div class="probe-card">
-                        <strong>管理员接口</strong>
-                        <span id="probe-admin">-</span>
-                    </div>
-                </div>
-
-                <div class="button-row">
-                    <button class="button button-secondary" id="probe-auth">验证当前用户接口</button>
-                    <button class="button button-secondary" id="probe-role-button">刷新角色策略</button>
-                    <button class="button button-warm" id="probe-suite-inline">整套会话检查</button>
-                </div>
-            </section>
-
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">链路看板</h2>
-                        <p class="panel-desc">
-                            用一步一格的形式观察当前页面是否已经完整跑通注册、登录、会话校验、
-                            权限拦截、登出回收这几段关键路径。
-                        </p>
-                    </div>
-                    <span class="badge">Flow</span>
-                </div>
-
-                <div class="timeline" id="flow-timeline"></div>
-            </section>
-
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">当前用户视图</h2>
-                        <p class="panel-desc">
-                            成功调用 `/api/v1/auth/me` 后，这里会展开当前用户对象；未登录时会直接显示游客态。
-                        </p>
-                    </div>
-                    <span class="badge">CurrentUserVo</span>
-                </div>
-
-                <div class="code-frame" id="current-user-frame">等待读取当前用户...</div>
-            </section>
-
-            <section class="panel sheet">
-                <div class="panel-head">
-                    <div>
-                        <h2 class="panel-title">管理员功能测试区</h2>
-                        <p class="panel-desc">
-                            这里直接联调 `/api/v1/admin/users`、`/api/v1/admin/users/{id}` 和
-                            `PATCH /api/v1/admin/users/{id}/status`。后端返回不会暴露密码哈希，
-                            你可以在这里验证列表查询、单用户详情、启用/禁用，以及“管理员不能禁用自己”这类限制。
-                        </p>
-                    </div>
-                    <span class="badge">Admin Only</span>
-                </div>
-
-                <div class="fields">
-                    <div class="field">
-                        <label for="admin-list-keyword">列表关键字</label>
-                        <input id="admin-list-keyword" placeholder="用户名或邮箱关键字">
-                    </div>
-                    <div class="field">
-                        <label for="admin-list-role">角色筛选</label>
-                        <select id="admin-list-role">
-                            <option value="">全部角色</option>
-                            <option value="FRESHMAN">FRESHMAN</option>
-                            <option value="LEADER">LEADER</option>
-                            <option value="ADMIN">ADMIN</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="admin-list-status">状态筛选</label>
-                        <select id="admin-list-status">
-                            <option value="">全部状态</option>
-                            <option value="ACTIVE">ACTIVE</option>
-                            <option value="DISABLED">DISABLED</option>
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label for="admin-list-page">列表页码</label>
-                        <input id="admin-list-page" type="number" min="1" value="1">
-                    </div>
-                    <div class="field">
-                        <label for="admin-list-size">每页条数</label>
-                        <input id="admin-list-size" type="number" min="1" max="50" value="10">
-                    </div>
-                    <div class="field">
-                        <label for="admin-detail-user-id">详情用户 ID</label>
-                        <input id="admin-detail-user-id" type="number" min="1" placeholder="例如 1">
-                    </div>
-                    <div class="field">
-                        <label for="admin-status-user-id">状态变更用户 ID</label>
-                        <input id="admin-status-user-id" type="number" min="1" placeholder="例如 2">
-                    </div>
-                    <div class="field">
-                        <label for="admin-status-value">目标状态</label>
-                        <select id="admin-status-value">
-                            <option value="DISABLED">DISABLED</option>
-                            <option value="ACTIVE">ACTIVE</option>
-                        </select>
-                    </div>
-                </div>
-
-                <p class="hint">
-                    如果当前登录身份不是 `ADMIN`，这些按钮通常会返回 `403`。
-                    登录管理员后先点“查询用户列表”，再把目标用户 ID 填到详情或状态变更里。
-                </p>
-
-                <div class="button-row">
-                    <button class="button button-secondary" id="admin-list-users">查询用户列表</button>
-                    <button class="button button-secondary" id="admin-user-detail">读取用户详情</button>
-                    <button class="button button-danger" id="admin-update-status">更新用户状态</button>
-                </div>
-
-                <div class="field-full" style="margin-top: 18px;">
-                    <label for="admin-result-frame">管理员接口结果快照</label>
-                    <textarea id="admin-result-frame" readonly>等待管理员接口请求...</textarea>
-                </div>
-            </section>
-        </div>
-    </section>
-
     <section class="shell">
-        <section class="panel sheet">
-            <div class="panel-head">
-                <div>
-                    <h2 class="panel-title">请求时间线</h2>
-                    <p class="panel-desc">
-                        每次点击都会把请求结果记录在这里，便于观察验证码、登录态、权限判断和请求 ID。
-                    </p>
+        <aside class="stack">
+            <section class="panel glass">
+                <div class="panel-head">
+                    <div>
+                        <h2>公共信息</h2>
+                        <p>不登录也可以看当前时期和方向树，用来完成报名前的基础选择。</p>
+                    </div>
+                    <span class="badge">公开</span>
                 </div>
-                <span class="badge" id="request-count">0 Requests</span>
-            </div>
-
-            <div class="log-list" id="request-log"></div>
-            <p class="footer-note">
-                页面会自动发送 `credentials: "include"`；对所有写操作会尝试从 `XSRF-TOKEN`
-                Cookie 里读取值并追加到 `X-CSRF-TOKEN` 请求头。
-            </p>
-        </section>
-
-        <section class="panel sheet">
-            <div class="panel-head">
-                <div>
-                    <h2 class="panel-title">响应检查台</h2>
-                    <p class="panel-desc">
-                        这里展示最近一次请求的完整结构，包含 HTTP 状态、业务码、请求 ID 和返回体。
-                    </p>
+                <div class="status-banner">
+                    <strong id="period-title">当前阶段</strong>
+                    <span class="muted small" id="period-time">服务器时间加载中</span>
                 </div>
-                <span class="badge" id="response-badge">Last Response</span>
-            </div>
+                <div class="list" id="direction-tree" style="margin-top: 14px;"></div>
+            </section>
 
-            <div class="code-frame" id="response-frame">等待请求...</div>
+            <section class="panel glass">
+                <div class="panel-head">
+                    <div>
+                        <h2>会话状态</h2>
+                        <p>这里显示当前登录用户、可访问模块和最近一次接口返回。</p>
+                    </div>
+                    <span class="badge">实时</span>
+                </div>
+                <div class="list">
+                    <div class="meta-box">
+                        <strong>会话摘要</strong>
+                        <span id="session-summary">未登录</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>可用模块</strong>
+                        <span id="session-capabilities">公共信息 / 注册 / 登录</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>CSRF Token</strong>
+                        <span id="session-csrf">未就绪</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel glass">
+                <div class="panel-head">
+                    <div>
+                        <h2>最近响应</h2>
+                        <p>保留最后一次请求的状态和返回体，方便快速定位是权限、校验还是业务冲突。</p>
+                    </div>
+                    <span class="badge" id="response-badge">Idle</span>
+                </div>
+                <pre class="console" id="response-console">等待操作…</pre>
+            </section>
+        </aside>
+
+        <section class="stack">
+            <section class="panel glass">
+                <div class="tabs">
+                    <button class="tab active" data-tab="auth">账号</button>
+                    <button class="tab" data-tab="apply">报名</button>
+                    <button class="tab" data-tab="group">分组</button>
+                </div>
+
+                <div class="view active" id="view-auth">
+                    <div class="auth-grid">
+                        <section class="panel" style="padding:0; background:none; box-shadow:none; border:0;">
+                            <div class="panel-head">
+                                <div>
+                                    <h2>注册 / 登录</h2>
+                                    <p>建议先发送注册验证码，完成注册后直接登录，再进入后面的报名或分组流程。</p>
+                                </div>
+                                <span class="badge">主流程</span>
+                            </div>
+                            <div class="main-grid">
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title">新生注册</h3>
+                                        </div>
+                                        <span class="pill ok">FRESHMAN</span>
+                                    </div>
+                                    <div class="fields">
+                                        <div class="field">
+                                            <label for="register-username">用户名</label>
+                                            <input id="register-username" placeholder="fresh_demo_001">
+                                        </div>
+                                        <div class="field">
+                                            <label for="register-email">邮箱</label>
+                                            <input id="register-email" type="email" placeholder="fresh_demo_001@example.com">
+                                        </div>
+                                        <div class="field">
+                                            <label for="register-password">密码</label>
+                                            <input id="register-password" type="password" placeholder="至少 8 位，字母数字混合">
+                                        </div>
+                                        <div class="field">
+                                            <label for="register-code">验证码</label>
+                                            <input id="register-code" placeholder="从后端日志复制 6 位验证码">
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-top: 14px;">
+                                        <button class="button button-light" id="send-register-code">发送注册验证码</button>
+                                        <button class="button button-primary" id="submit-register">完成注册</button>
+                                    </div>
+                                    <p class="notice" style="margin-top: 14px;">
+                                        当前注册默认创建 `FRESHMAN` 账号，正好可以直接验证报名模块。
+                                    </p>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title">登录与密码工具</h3>
+                                        </div>
+                                        <span class="pill">通用</span>
+                                    </div>
+                                    <div class="fields">
+                                        <div class="field">
+                                            <label for="login-email">登录邮箱</label>
+                                            <input id="login-email" type="email" placeholder="输入注册邮箱或管理员邮箱">
+                                        </div>
+                                        <div class="field">
+                                            <label for="login-password">登录密码</label>
+                                            <input id="login-password" type="password" placeholder="输入密码">
+                                        </div>
+                                        <div class="field">
+                                            <label for="reset-email">找回密码邮箱</label>
+                                            <input id="reset-email" type="email" placeholder="发送重置验证码">
+                                        </div>
+                                        <div class="field">
+                                            <label for="reset-code">重置验证码</label>
+                                            <input id="reset-code" placeholder="6 位验证码">
+                                        </div>
+                                        <div class="field">
+                                            <label for="reset-password">新密码</label>
+                                            <input id="reset-password" type="password" placeholder="重置后的密码">
+                                        </div>
+                                        <div class="field">
+                                            <label for="change-old-password">当前密码</label>
+                                            <input id="change-old-password" type="password" placeholder="已登录后改密使用">
+                                        </div>
+                                        <div class="field">
+                                            <label for="change-new-password">修改后新密码</label>
+                                            <input id="change-new-password" type="password" placeholder="输入新密码">
+                                        </div>
+                                        <div class="field">
+                                            <label for="remember-me">记住我</label>
+                                            <select id="remember-me">
+                                                <option value="false">否</option>
+                                                <option value="true">是</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-top: 14px;">
+                                        <button class="button button-primary" id="submit-login">登录</button>
+                                        <button class="button button-light" id="load-me">读取当前用户</button>
+                                        <button class="button button-danger" id="submit-logout">退出</button>
+                                    </div>
+                                    <div class="row" style="margin-top: 12px;">
+                                        <button class="button button-light" id="send-reset-code">发送重置验证码</button>
+                                        <button class="button button-warm" id="submit-reset-password">重置密码</button>
+                                        <button class="button button-light" id="submit-change-password">修改密码</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+
+                <div class="view" id="view-apply">
+                    <section class="panel" style="padding:0; background:none; box-shadow:none; border:0;">
+                        <div class="panel-head">
+                            <div>
+                                <h2>报名模块</h2>
+                                <p>适合用新生账号完整验证创建、修改、撤回和已分组展示。方向树会自动带入到一级 / 二级下拉框。</p>
+                            </div>
+                            <span class="badge">FRESHMAN</span>
+                        </div>
+
+                        <div id="apply-guard" class="empty">
+                            当前不是新生账号。登录 `FRESHMAN` 账号后，这里会显示报名列表、汇总和报名表单。
+                        </div>
+
+                        <div id="apply-content" class="hidden">
+                            <div class="summary-grid">
+                                <div class="summary-box">
+                                    <strong>申请总数</strong>
+                                    <span id="summary-count">0</span>
+                                </div>
+                                <div class="summary-box">
+                                    <strong>待处理</strong>
+                                    <span id="summary-submitted">0</span>
+                                </div>
+                                <div class="summary-box">
+                                    <strong>已分组</strong>
+                                    <span id="summary-grouped">0</span>
+                                </div>
+                                <div class="summary-box">
+                                    <strong>关联分组</strong>
+                                    <span id="summary-groups">0</span>
+                                </div>
+                            </div>
+
+                            <div class="main-grid" style="margin-top: 22px;">
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title">我的报名列表</h3>
+                                        </div>
+                                        <div class="row">
+                                            <button class="button button-light" id="reload-applications">刷新报名</button>
+                                            <button class="button button-primary" id="new-application">新建报名</button>
+                                        </div>
+                                    </div>
+                                    <div id="application-list" class="list"></div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title" id="application-form-title">新建报名</h3>
+                                        </div>
+                                        <span class="pill" id="application-form-mode">CREATE</span>
+                                    </div>
+                                    <div class="fields">
+                                        <div class="field">
+                                            <label for="app-real-name">真实姓名</label>
+                                            <input id="app-real-name" placeholder="张三">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-phone">手机号</label>
+                                            <input id="app-phone" placeholder="13800000000">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-college">学院</label>
+                                            <input id="app-college" placeholder="计算机学院">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-major">专业</label>
+                                            <input id="app-major" placeholder="软件工程">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-class-name">班级</label>
+                                            <input id="app-class-name" placeholder="软工 1 班">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-grade">年级</label>
+                                            <select id="app-grade">
+                                                <option value="YEAR_1">大一</option>
+                                                <option value="YEAR_2">大二</option>
+                                                <option value="YEAR_3">大三</option>
+                                                <option value="YEAR_4">大四</option>
+                                                <option value="GRADUATED">已毕业</option>
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-admission-year">入学年份</label>
+                                            <input id="app-admission-year" type="number" placeholder="2026">
+                                        </div>
+                                        <div class="field">
+                                            <label for="app-direction-1">一级方向</label>
+                                            <select id="app-direction-1"></select>
+                                        </div>
+                                        <div class="field-full">
+                                            <label for="app-direction-2">二级方向</label>
+                                            <select id="app-direction-2"></select>
+                                        </div>
+                                        <div class="field-full">
+                                            <label for="app-introduction">自我介绍</label>
+                                            <textarea id="app-introduction" placeholder="简单描述你的经历、兴趣和目标。"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-top: 14px;">
+                                        <button class="button button-primary" id="save-application">提交报名</button>
+                                        <button class="button button-light" id="reset-application-form">重置表单</button>
+                                        <button class="button button-danger hidden" id="withdraw-application">撤回当前报名</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="view" id="view-group">
+                    <section class="panel" style="padding:0; background:none; box-shadow:none; border:0;">
+                        <div class="panel-head">
+                            <div>
+                                <h2>分组工作台</h2>
+                                <p>管理员和负责人都能看到未分组申请。负责人只能把申请放进自己管理的组，管理员则不受限制。</p>
+                            </div>
+                            <span class="badge">ADMIN / LEADER</span>
+                        </div>
+
+                        <div id="group-guard" class="empty">
+                            当前不是管理员或负责人。登录 `ADMIN` 或 `LEADER` 账号后，这里会显示分组列表、未分组申请和组员详情。
+                        </div>
+
+                        <div id="group-content" class="hidden">
+                            <div class="main-grid">
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title">可管理分组</h3>
+                                        </div>
+                                        <button class="button button-light" id="reload-groups">刷新分组</button>
+                                    </div>
+                                    <div id="group-list" class="list"></div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-head">
+                                        <div>
+                                            <h3 class="card-title">当前分组详情</h3>
+                                        </div>
+                                        <span class="pill" id="selected-group-name">未选择</span>
+                                    </div>
+                                    <div id="group-detail" class="empty">
+                                        先从左侧选择一个分组，再查看组员列表并开始处理未分组申请。
+                                    </div>
+                                    <div class="field-full section-gap">
+                                        <label for="group-action-remark">分组备注 / 审核备注</label>
+                                        <textarea id="group-action-remark" placeholder="取消分组或拒绝申请时，这里的备注会一并提交。"></textarea>
+                                    </div>
+                                    <div id="group-members-wrap" class="hidden" style="margin-top: 14px;">
+                                        <div class="table-wrap">
+                                            <table class="table">
+                                                <thead>
+                                                <tr>
+                                                    <th>用户名</th>
+                                                    <th>真实姓名</th>
+                                                    <th>申请 ID</th>
+                                                    <th>方向</th>
+                                                    <th>年级</th>
+                                                    <th>状态</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody id="group-members"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card" style="margin-top: 22px;">
+                                <div class="panel-head">
+                                    <div>
+                                        <h3>未分组申请</h3>
+                                        <p>选择左侧分组后，这里会把符合条件和不符合条件的申请一起列出，由后端兜底校验。</p>
+                                    </div>
+                                    <button class="button button-light" id="reload-ungrouped">刷新未分组申请</button>
+                                </div>
+                                <div id="ungrouped-list" class="list"></div>
+                            </div>
+
+                            <div id="admin-workspace" class="hidden">
+                                <div class="admin-grid">
+                                    <div class="admin-stack">
+                                        <section class="subpanel">
+                                            <div class="subpanel-head">
+                                                <div>
+                                                    <h3>时期配置</h3>
+                                                    <p>直接维护报名期、选拔期、面试期。测试页按完整三段一次性保存。</p>
+                                                </div>
+                                                <button class="button button-light" id="reload-admin-periods">刷新时期</button>
+                                            </div>
+                                            <div class="compact-fields">
+                                                <div class="field">
+                                                    <label for="period-registration-start">报名期开始</label>
+                                                    <input id="period-registration-start" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-registration-end">报名期结束</label>
+                                                    <input id="period-registration-end" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-registration-enabled">报名期开关</label>
+                                                    <select id="period-registration-enabled">
+                                                        <option value="true">启用</option>
+                                                        <option value="false">禁用</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-selection-enabled">选拔期开关</label>
+                                                    <select id="period-selection-enabled">
+                                                        <option value="true">启用</option>
+                                                        <option value="false">禁用</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-selection-start">选拔期开始</label>
+                                                    <input id="period-selection-start" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-selection-end">选拔期结束</label>
+                                                    <input id="period-selection-end" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-interview-start">面试期开始</label>
+                                                    <input id="period-interview-start" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-interview-end">面试期结束</label>
+                                                    <input id="period-interview-end" type="datetime-local">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="period-interview-enabled">面试期开关</label>
+                                                    <select id="period-interview-enabled">
+                                                        <option value="true">启用</option>
+                                                        <option value="false">禁用</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="admin-actions">
+                                                <button class="button button-primary" id="save-admin-periods">保存时期配置</button>
+                                            </div>
+                                        </section>
+
+                                        <section class="subpanel">
+                                            <div class="subpanel-head">
+                                                <div>
+                                                    <h3>方向管理</h3>
+                                                    <p>支持新建、修改、删除。点树节点即可把数据带入右侧表单。</p>
+                                                </div>
+                                                <button class="button button-light" id="reload-admin-directions">刷新方向</button>
+                                            </div>
+                                            <div id="admin-direction-tree" class="list"></div>
+                                            <div class="compact-fields section-gap">
+                                                <div class="field-full">
+                                                    <label for="admin-direction-parent">父级方向</label>
+                                                    <select id="admin-direction-parent"></select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-direction-name">方向名</label>
+                                                    <input id="admin-direction-name" placeholder="后端 / Java">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-direction-sort">排序值</label>
+                                                    <input id="admin-direction-sort" type="number" value="0">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-direction-enabled">启用状态</label>
+                                                    <select id="admin-direction-enabled">
+                                                        <option value="true">启用</option>
+                                                        <option value="false">禁用</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-direction-current-id">当前编辑方向 ID</label>
+                                                    <input id="admin-direction-current-id" placeholder="新建模式" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="admin-actions">
+                                                <button class="button button-primary" id="save-admin-direction">保存方向</button>
+                                                <button class="button button-light" id="reset-admin-direction">重置表单</button>
+                                                <button class="button button-danger" id="delete-admin-direction">删除当前方向</button>
+                                            </div>
+                                        </section>
+                                    </div>
+
+                                    <div class="admin-stack">
+                                        <section class="subpanel">
+                                            <div class="subpanel-head">
+                                                <div>
+                                                    <h3>分组后台面板</h3>
+                                                    <p>这里是管理员专用的分组维护区，可直接对当前选中组做修改、删除和负责人操作。</p>
+                                                </div>
+                                                <button class="button button-light" id="use-selected-group">带入当前选中组</button>
+                                            </div>
+                                            <div class="sticky-note" id="admin-group-mode">当前是新建分组模式。</div>
+                                            <div class="compact-fields section-gap">
+                                                <div class="field-full">
+                                                    <label for="admin-group-name">分组名称</label>
+                                                    <input id="admin-group-name" placeholder="后端-Java-1组">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-direction-1">一级方向</label>
+                                                    <select id="admin-group-direction-1"></select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-direction-2">二级方向</label>
+                                                    <select id="admin-group-direction-2"></select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-grade">年级</label>
+                                                    <select id="admin-group-grade">
+                                                        <option value="YEAR_1">大一</option>
+                                                        <option value="YEAR_2">大二</option>
+                                                        <option value="YEAR_3">大三</option>
+                                                        <option value="YEAR_4">大四</option>
+                                                        <option value="GRADUATED">已毕业</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-admission-year">入学年份</label>
+                                                    <input id="admin-group-admission-year" type="number" placeholder="2026">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-max-size">人数上限</label>
+                                                    <input id="admin-group-max-size" type="number" value="20">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-leader-id">负责人用户 ID</label>
+                                                    <input id="admin-group-leader-id" type="number" placeholder="可选">
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-group-current-id">当前编辑分组 ID</label>
+                                                    <input id="admin-group-current-id" placeholder="新建模式" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="admin-actions">
+                                                <button class="button button-primary" id="save-admin-group">保存分组</button>
+                                                <button class="button button-light" id="new-admin-group">新建分组</button>
+                                                <button class="button button-warm" id="assign-admin-group-leader">设置负责人</button>
+                                                <button class="button button-light" id="remove-admin-group-leader">撤销负责人</button>
+                                                <button class="button button-danger" id="delete-admin-group">删除当前分组</button>
+                                            </div>
+                                        </section>
+
+                                        <section class="subpanel">
+                                            <div class="subpanel-head">
+                                                <div>
+                                                    <h3>管理员用户接口</h3>
+                                                    <p>用于联调用户列表、详情和状态修改。点列表行可读取详情。</p>
+                                                </div>
+                                                <button class="button button-light" id="reload-admin-users">刷新用户</button>
+                                            </div>
+                                            <div class="compact-fields">
+                                                <div class="field">
+                                                    <label for="admin-user-role">角色过滤</label>
+                                                    <select id="admin-user-role">
+                                                        <option value="">全部</option>
+                                                        <option value="FRESHMAN">FRESHMAN</option>
+                                                        <option value="LEADER">LEADER</option>
+                                                        <option value="ADMIN">ADMIN</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field">
+                                                    <label for="admin-user-status">状态过滤</label>
+                                                    <select id="admin-user-status">
+                                                        <option value="">全部</option>
+                                                        <option value="ACTIVE">ACTIVE</option>
+                                                        <option value="DISABLED">DISABLED</option>
+                                                    </select>
+                                                </div>
+                                                <div class="field-full">
+                                                    <label for="admin-user-keyword">关键字</label>
+                                                    <input id="admin-user-keyword" placeholder="用户名或邮箱">
+                                                </div>
+                                            </div>
+                                            <div class="admin-actions">
+                                                <button class="button button-primary" id="search-admin-users">查询用户</button>
+                                            </div>
+                                            <div id="admin-user-list" class="list section-gap"></div>
+                                            <div id="admin-user-detail" class="empty section-gap">点击上方用户卡片后，这里会显示详情。</div>
+                                            <div class="admin-actions">
+                                                <button class="button button-warm" id="disable-admin-user">禁用当前用户</button>
+                                                <button class="button button-primary" id="enable-admin-user">启用当前用户</button>
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
         </section>
     </section>
 </main>
 
 <script>
-    const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+    const GRADE_LABELS = {
+        YEAR_1: "大一",
+        YEAR_2: "大二",
+        YEAR_3: "大三",
+        YEAR_4: "大四",
+        GRADUATED: "已毕业"
+    };
+
+    const PERIOD_LABELS = {
+        REGISTRATION: "报名期",
+        SELECTION: "选拔期",
+        INTERVIEW: "面试期",
+        NOT_OPEN: "未开启",
+        FINISHED: "已结束"
+    };
+
     const state = {
         busy: false,
-        currentUser: null,
-        lastRequestId: "-",
-        logs: [],
-        admin: {
-            lastUserList: null,
-            lastUserDetail: null,
-            lastStatusUpdate: null
-        },
-        checks: {
-            me: "-",
-            role: "-",
-            policy: "-",
-            admin: "-"
-        },
-        flow: {
-            registerCodeSent: false,
-            registered: false,
-            loggedIn: false,
-            csrfReady: false,
-            resetCodeSent: false,
-            resetDone: false,
-            permissionGuardVerified: false,
-            logoutVerified: false
-        }
+        currentTab: "auth",
+        period: null,
+        directions: [],
+        directionRoots: [],
+        me: null,
+        response: null,
+        applications: [],
+        applicationSummary: null,
+        selectedApplicationId: null,
+        groups: [],
+        selectedGroupId: null,
+        selectedGroupDetail: null,
+        groupMembers: [],
+        ungroupedApplications: [],
+        adminUsers: [],
+        selectedAdminUserId: null,
+        selectedAdminUserDetail: null,
+        adminPeriods: [],
+        adminDirections: []
+    };
+
+    const nodes = {
+        heroPeriod: document.getElementById("hero-period"),
+        heroUser: document.getElementById("hero-user"),
+        heroRole: document.getElementById("hero-role"),
+        heroGroups: document.getElementById("hero-groups"),
+        periodTitle: document.getElementById("period-title"),
+        periodTime: document.getElementById("period-time"),
+        directionTree: document.getElementById("direction-tree"),
+        sessionSummary: document.getElementById("session-summary"),
+        sessionCapabilities: document.getElementById("session-capabilities"),
+        sessionCsrf: document.getElementById("session-csrf"),
+        responseBadge: document.getElementById("response-badge"),
+        responseConsole: document.getElementById("response-console"),
+        applyGuard: document.getElementById("apply-guard"),
+        applyContent: document.getElementById("apply-content"),
+        groupGuard: document.getElementById("group-guard"),
+        groupContent: document.getElementById("group-content"),
+        adminWorkspace: document.getElementById("admin-workspace"),
+        applicationList: document.getElementById("application-list"),
+        applicationFormTitle: document.getElementById("application-form-title"),
+        applicationFormMode: document.getElementById("application-form-mode"),
+        summaryCount: document.getElementById("summary-count"),
+        summarySubmitted: document.getElementById("summary-submitted"),
+        summaryGrouped: document.getElementById("summary-grouped"),
+        summaryGroups: document.getElementById("summary-groups"),
+        groupList: document.getElementById("group-list"),
+        selectedGroupName: document.getElementById("selected-group-name"),
+        groupDetail: document.getElementById("group-detail"),
+        groupMembersWrap: document.getElementById("group-members-wrap"),
+        groupMembers: document.getElementById("group-members"),
+        ungroupedList: document.getElementById("ungrouped-list"),
+        adminDirectionTree: document.getElementById("admin-direction-tree"),
+        adminGroupMode: document.getElementById("admin-group-mode"),
+        adminUserList: document.getElementById("admin-user-list"),
+        adminUserDetail: document.getElementById("admin-user-detail")
     };
 
     const fields = {
@@ -1010,295 +1411,165 @@
         registerCode: document.getElementById("register-code"),
         loginEmail: document.getElementById("login-email"),
         loginPassword: document.getElementById("login-password"),
-        rememberMe: document.getElementById("remember-me"),
         resetEmail: document.getElementById("reset-email"),
         resetCode: document.getElementById("reset-code"),
         resetPassword: document.getElementById("reset-password"),
         changeOldPassword: document.getElementById("change-old-password"),
         changeNewPassword: document.getElementById("change-new-password"),
-        changeConfirmPassword: document.getElementById("change-confirm-password"),
-        adminListKeyword: document.getElementById("admin-list-keyword"),
-        adminListRole: document.getElementById("admin-list-role"),
-        adminListStatus: document.getElementById("admin-list-status"),
-        adminListPage: document.getElementById("admin-list-page"),
-        adminListSize: document.getElementById("admin-list-size"),
-        adminDetailUserId: document.getElementById("admin-detail-user-id"),
-        adminStatusUserId: document.getElementById("admin-status-user-id"),
-        adminStatusValue: document.getElementById("admin-status-value")
+        rememberMe: document.getElementById("remember-me"),
+        appRealName: document.getElementById("app-real-name"),
+        appPhone: document.getElementById("app-phone"),
+        appCollege: document.getElementById("app-college"),
+        appMajor: document.getElementById("app-major"),
+        appClassName: document.getElementById("app-class-name"),
+        appGrade: document.getElementById("app-grade"),
+        appAdmissionYear: document.getElementById("app-admission-year"),
+        appDirection1: document.getElementById("app-direction-1"),
+        appDirection2: document.getElementById("app-direction-2"),
+        appIntroduction: document.getElementById("app-introduction"),
+        groupActionRemark: document.getElementById("group-action-remark"),
+        periodRegistrationStart: document.getElementById("period-registration-start"),
+        periodRegistrationEnd: document.getElementById("period-registration-end"),
+        periodRegistrationEnabled: document.getElementById("period-registration-enabled"),
+        periodSelectionStart: document.getElementById("period-selection-start"),
+        periodSelectionEnd: document.getElementById("period-selection-end"),
+        periodSelectionEnabled: document.getElementById("period-selection-enabled"),
+        periodInterviewStart: document.getElementById("period-interview-start"),
+        periodInterviewEnd: document.getElementById("period-interview-end"),
+        periodInterviewEnabled: document.getElementById("period-interview-enabled"),
+        adminDirectionParent: document.getElementById("admin-direction-parent"),
+        adminDirectionName: document.getElementById("admin-direction-name"),
+        adminDirectionSort: document.getElementById("admin-direction-sort"),
+        adminDirectionEnabled: document.getElementById("admin-direction-enabled"),
+        adminDirectionCurrentId: document.getElementById("admin-direction-current-id"),
+        adminGroupName: document.getElementById("admin-group-name"),
+        adminGroupDirection1: document.getElementById("admin-group-direction-1"),
+        adminGroupDirection2: document.getElementById("admin-group-direction-2"),
+        adminGroupGrade: document.getElementById("admin-group-grade"),
+        adminGroupAdmissionYear: document.getElementById("admin-group-admission-year"),
+        adminGroupMaxSize: document.getElementById("admin-group-max-size"),
+        adminGroupLeaderId: document.getElementById("admin-group-leader-id"),
+        adminGroupCurrentId: document.getElementById("admin-group-current-id"),
+        adminUserRole: document.getElementById("admin-user-role"),
+        adminUserStatus: document.getElementById("admin-user-status"),
+        adminUserKeyword: document.getElementById("admin-user-keyword")
     };
 
-    const nodes = {
-        currentRoutePill: document.getElementById("current-route-pill"),
-        metricPath: document.getElementById("metric-path"),
-        metricUser: document.getElementById("metric-user"),
-        metricRole: document.getElementById("metric-role"),
-        metricCsrf: document.getElementById("metric-csrf"),
-        flowTags: document.getElementById("flow-tags"),
-        flowTimeline: document.getElementById("flow-timeline"),
-        currentUserFrame: document.getElementById("current-user-frame"),
-        requestLog: document.getElementById("request-log"),
-        requestCount: document.getElementById("request-count"),
-        responseFrame: document.getElementById("response-frame"),
-        responseBadge: document.getElementById("response-badge"),
-        probeMe: document.getElementById("probe-me"),
-        probeRole: document.getElementById("probe-role"),
-        probePolicy: document.getElementById("probe-policy"),
-        probeAdmin: document.getElementById("probe-admin"),
-        adminResultFrame: document.getElementById("admin-result-frame")
-    };
-
-    const buttons = Array.from(document.querySelectorAll(".button"));
+    function setBusy(flag) {
+        state.busy = flag;
+        document.querySelectorAll("button").forEach(button => {
+            button.disabled = flag;
+        });
+    }
 
     function getCookie(name) {
         return document.cookie
             .split(";")
             .map(item => item.trim())
-            .filter(Boolean)
-            .map(item => {
-                const eqIndex = item.indexOf("=");
-                if (eqIndex === -1) {
-                    return [item, ""];
-                }
-                return [item.slice(0, eqIndex), decodeURIComponent(item.slice(eqIndex + 1))];
-            })
-            .find(entry => entry[0] === name)?.[1] || "";
+            .find(item => item.startsWith(name + "="))
+            ?.slice(name.length + 1) || "";
     }
 
-    function previewValue(value, limit = 18) {
-        if (!value) {
+    function safeJson(value) {
+        return JSON.stringify(value, null, 2);
+    }
+
+    function preview(text) {
+        if (!text) {
             return "未就绪";
         }
-        return value.length <= limit ? value : value.slice(0, limit) + "...";
+        return text.length > 18 ? text.slice(0, 8) + "…" + text.slice(-6) : text;
     }
 
-    function safeJson(data) {
-        return JSON.stringify(data, null, 2);
-    }
-
-    function setBusy(nextBusy) {
-        state.busy = nextBusy;
-        buttons.forEach(button => {
-            button.disabled = nextBusy;
-        });
-    }
-
-    function buildFlowTags() {
-        const tags = [
-            state.flow.registerCodeSent ? ["注册验证码已发", "ok"] : ["等待注册验证码", "warn"],
-            state.flow.registered ? ["注册完成", "ok"] : ["尚未注册", "warn"],
-            state.flow.loggedIn ? ["已登录", "ok"] : ["未登录", "warn"],
-            state.flow.csrfReady ? ["CSRF 已就绪", "ok"] : ["CSRF 未就绪", "warn"],
-            state.flow.permissionGuardVerified ? ["角色策略已识别", "ok"] : ["尚未识别角色策略", "warn"],
-            state.flow.logoutVerified ? ["已验证登出回收", "ok"] : ["尚未验证登出", "warn"]
-        ];
-
-        nodes.flowTags.innerHTML = tags
-            .map(([label, type]) => `<span class="tag ${type}">${label}</span>`)
-            .join("");
-    }
-
-    function buildTimeline() {
-        const items = [
-            {
-                done: state.flow.registerCodeSent,
-                title: "1. 获取注册验证码",
-                text: "调用 `/api/v1/auth/send-email-code`，验证码从后端日志复制回来。"
-            },
-            {
-                done: state.flow.registered,
-                title: "2. 完成注册",
-                text: "调用 `/api/v1/auth/register`，默认注册角色应为 `FRESHMAN`。"
-            },
-            {
-                done: state.flow.loggedIn,
-                title: "3. 完成登录",
-                text: "调用 `/api/v1/auth/login`，浏览器应收到登录 Cookie。"
-            },
-            {
-                done: state.flow.csrfReady,
-                title: "4. 获取 CSRF Token",
-                text: "登录后浏览器应出现 `XSRF-TOKEN`，写操作会自动带上 `X-CSRF-TOKEN`。"
-            },
-            {
-                done: state.currentUser !== null,
-                title: "5. 回读当前用户",
-                text: "调用 `/api/v1/auth/me`，验证当前会话确实已经建立。"
-            },
-            {
-                done: state.flow.permissionGuardVerified,
-                title: "6. 校验角色与权限策略",
-                text: "调用 `/api/v1/auth/me` 后，页面会根据当前角色展示后续受保护业务接口应采用的权限策略。"
-            },
-            {
-                done: state.flow.logoutVerified,
-                title: "7. 安全登出与回收会话",
-                text: "调用 `/api/v1/auth/logout` 后再次访问 `/me` 应返回 `401`。"
-            }
-        ];
-
-        nodes.flowTimeline.innerHTML = items
-            .map(item => {
-                const status = item.done ? "done" : "wait";
-                return `
-                    <div class="timeline-item ${status}">
-                        <div class="timeline-dot"></div>
-                        <div>
-                            <strong>${item.title}</strong>
-                            <span>${item.text}</span>
-                        </div>
-                    </div>
-                `;
-            })
-            .join("");
-    }
-
-    function renderCurrentUser() {
-        if (!state.currentUser) {
-            nodes.currentUserFrame.textContent =
-                "当前状态：游客\n\n" +
-                "建议按以下顺序联调：\n" +
-                "1. 发送注册验证码\n" +
-                "2. 在后端日志中复制验证码并完成注册\n" +
-                "3. 登录后再次点击“读取当前用户”";
-            return;
+    function formatTime(value) {
+        if (!value) {
+            return "-";
         }
-
-        nodes.currentUserFrame.textContent = safeJson(state.currentUser);
-    }
-
-    function renderAdminConsole() {
-        if (!state.currentUser) {
-            nodes.adminResultFrame.value =
-                "当前未登录。\n\n" +
-                "要测试管理员接口，请先使用管理员账号登录，再执行用户列表、详情和状态变更操作。";
-            return;
+        try {
+            return new Date(value).toLocaleString("zh-CN", { hour12: false });
+        } catch (error) {
+            return String(value);
         }
+    }
 
-        if (state.currentUser.role !== "ADMIN") {
-            nodes.adminResultFrame.value =
-                "当前身份不是 ADMIN。\n\n" +
-                "此区域仍可直接发请求，但预期结果通常是 403。\n" +
-                "当前角色：" + state.currentUser.role;
-            return;
+    function toLocalInputValue(value) {
+        if (!value) {
+            return "";
         }
-
-        nodes.adminResultFrame.value = safeJson({
-            currentAdmin: {
-                id: state.currentUser.id,
-                username: state.currentUser.username,
-                role: state.currentUser.role
-            },
-            lastUserList: state.admin.lastUserList,
-            lastUserDetail: state.admin.lastUserDetail,
-            lastStatusUpdate: state.admin.lastStatusUpdate
-        });
-    }
-
-    function renderMetrics() {
-        const csrfToken = getCookie("XSRF-TOKEN");
-        state.flow.csrfReady = Boolean(csrfToken);
-        nodes.metricPath.textContent = window.location.pathname || "/";
-        nodes.metricUser.textContent = state.currentUser ? state.currentUser.username : "游客";
-        nodes.metricRole.textContent = state.currentUser ? state.currentUser.role : "未登录";
-        nodes.metricCsrf.textContent = previewValue(csrfToken);
-        nodes.currentRoutePill.textContent = "Route: " + (window.location.pathname || "/");
-        nodes.probeMe.textContent = state.checks.me;
-        nodes.probeRole.textContent = state.checks.role;
-        nodes.probePolicy.textContent = state.checks.policy;
-        nodes.probeAdmin.textContent = state.checks.admin;
-        buildFlowTags();
-        buildTimeline();
-    }
-
-    function refreshRoleStrategy() {
-        if (!state.currentUser) {
-            state.checks.role = "游客";
-            state.checks.policy = "仅公开接口";
-            state.checks.admin = "未登录";
-            state.flow.permissionGuardVerified = false;
-            return;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return "";
         }
+        const pad = number => String(number).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
 
-        state.checks.role = state.currentUser.role;
-        switch (state.currentUser.role) {
-            case "ADMIN":
-                state.checks.policy = "可访问 Admin / Leader 接口";
-                state.checks.admin = "可直接测试用户列表/详情/禁用";
-                break;
-            case "LEADER":
-                state.checks.policy = "可访问未来 Leader 接口，不可访问 Admin 接口";
-                state.checks.admin = "预期 403";
-                break;
-            default:
-                state.checks.policy = "仅可访问普通用户接口";
-                state.checks.admin = "预期 403";
-                break;
+    function toOffsetDateTime(value) {
+        if (!value) {
+            return null;
         }
-        state.flow.permissionGuardVerified = true;
-    }
-
-    function pushLog(entry) {
-        state.logs.unshift(entry);
-        state.logs = state.logs.slice(0, 30);
-        nodes.requestCount.textContent = `${state.logs.length} Requests`;
-
-        nodes.requestLog.innerHTML = state.logs.map(item => {
-            const statusClass = item.status >= 500 ? "status-5xx" : item.status >= 400 ? "status-4xx" : "status-2xx";
-            return `
-                <article class="log-item">
-                    <div class="log-head">
-                        <span class="log-route">${item.method} ${item.path}</span>
-                        <span class="log-status ${statusClass}">${item.status}</span>
-                    </div>
-                    <div class="log-message">${item.summary}</div>
-                    <div class="log-head" style="margin-top: 10px;">
-                        <span>RequestId: ${item.requestId || "-"}</span>
-                        <span>${item.time}</span>
-                    </div>
-                </article>
-            `;
-        }).join("");
-    }
-
-    function setResponseFrame(result) {
-        const badgeText = `${result.method} ${result.path} · HTTP ${result.status}`;
-        nodes.responseBadge.textContent = badgeText;
-        nodes.responseFrame.textContent = safeJson({
-            method: result.method,
-            path: result.path,
-            status: result.status,
-            requestId: result.requestId,
-            payload: result.payload,
-            raw: result.raw
-        });
-    }
-
-    function responseSummary(result) {
-        if (result.payload && typeof result.payload === "object") {
-            const message = result.payload.message || "无 message";
-            const code = result.payload.code;
-            return `业务码 ${code ?? "N/A"} · ${message}`;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            throw new Error("时间格式不正确");
         }
-        return "返回的不是 JSON，通常意味着命中了默认错误页或空响应。";
+        const pad = number => String(Math.trunc(Math.abs(number))).padStart(2, "0");
+        const offsetMinutes = -date.getTimezoneOffset();
+        const sign = offsetMinutes >= 0 ? "+" : "-";
+        const offsetHour = pad(offsetMinutes / 60);
+        const offsetMinute = pad(offsetMinutes % 60);
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00${sign}${offsetHour}:${offsetMinute}`;
     }
 
-    async function apiRequest(path, options = {}) {
+    function statusPill(status) {
+        const kind = status === "GROUPED"
+            ? "ok"
+            : status === "SUBMITTED"
+                ? "warn"
+                : "danger";
+        return `<span class="pill ${kind}">${status}</span>`;
+    }
+
+    function gradeLabel(value) {
+        return GRADE_LABELS[value] || value || "-";
+    }
+
+    function periodLabel(value) {
+        return PERIOD_LABELS[value] || value || "-";
+    }
+
+    function groupApiBase() {
+        if (!state.me) {
+            return null;
+        }
+        return state.me.role === "ADMIN" ? "/api/v1/admin/groups" : "/api/v1/leader/groups";
+    }
+
+    function reviewApiBase() {
+        if (!state.me) {
+            return null;
+        }
+        return state.me.role === "ADMIN" ? "/api/v1/admin/applications" : "/api/v1/leader/applications";
+    }
+
+    function isAdmin() {
+        return state.me?.role === "ADMIN";
+    }
+
+    async function api(path, options = {}) {
         const method = options.method || "GET";
         const headers = {
             Accept: "application/json",
             ...(options.headers || {})
         };
-        const isSafeMethod = SAFE_METHODS.has(method.toUpperCase());
 
         if (options.body !== undefined) {
             headers["Content-Type"] = "application/json";
         }
 
-        // 所有写操作默认自动补上 CSRF Header，确保能联调 logout/change-password 等接口。
-        if (!isSafeMethod && options.useCsrf !== false) {
-            const csrfToken = getCookie("XSRF-TOKEN");
-            if (csrfToken) {
-                headers["X-CSRF-TOKEN"] = csrfToken;
+        if (!["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())) {
+            const csrf = getCookie("XSRF-TOKEN");
+            if (csrf) {
+                headers["X-CSRF-TOKEN"] = csrf;
             }
         }
 
@@ -1317,190 +1588,822 @@
             payload = null;
         }
 
-        const requestId = payload?.requestId || response.headers.get("X-Request-Id") || "-";
-        const result = {
+        state.response = {
             method,
             path,
             status: response.status,
-            ok: response.ok,
-            requestId,
             payload,
             raw,
-            time: new Date().toLocaleTimeString("zh-CN", { hour12: false })
+            requestId: payload?.requestId || response.headers.get("X-Request-Id") || "-"
         };
-
-        state.lastRequestId = requestId;
-        pushLog({
-            method,
-            path,
-            status: response.status,
-            requestId,
-            time: result.time,
-            summary: responseSummary(result)
-        });
-        setResponseFrame(result);
-        renderMetrics();
-        return result;
+        renderResponse();
+        return state.response;
     }
 
-    function syncAccountFields() {
-        fields.loginEmail.value = fields.registerEmail.value;
-        fields.loginPassword.value = fields.registerPassword.value;
-        fields.resetEmail.value = fields.registerEmail.value;
-        fields.resetPassword.value = fields.registerPassword.value;
-        fields.changeOldPassword.value = fields.registerPassword.value;
-    }
-
-    function syncAdminTargetIdsFromUser(user) {
-        if (!user || typeof user.id === "undefined" || user.id === null) {
-            return;
-        }
-        const userId = String(user.id);
-        fields.adminDetailUserId.value = userId;
-        fields.adminStatusUserId.value = userId;
-    }
-
-    function generateDraftIdentity() {
-        const stamp = String(Date.now()).slice(-6);
-        const username = `fresh_${stamp}`;
-        const email = `fresh_${stamp}@example.com`;
-        const password = `Pass${stamp}`;
-
-        fields.registerUsername.value = username;
-        fields.registerEmail.value = email;
-        fields.registerPassword.value = password;
-        fields.registerCode.value = "";
-        fields.loginPassword.value = password;
-        fields.loginEmail.value = email;
-        fields.resetEmail.value = email;
-        fields.resetPassword.value = `New${stamp}99`;
-        fields.resetCode.value = "";
-        fields.changeOldPassword.value = password;
-        fields.changeNewPassword.value = `Changed${stamp}`;
-        fields.changeConfirmPassword.value = `Changed${stamp}`;
-        fields.rememberMe.checked = true;
-    }
-
-    // 统一处理页面上的异步动作，避免按钮状态和日志逻辑散落在各处。
-    async function runAction(action) {
+    async function run(task) {
         if (state.busy) {
             return;
         }
         setBusy(true);
         try {
-            await action();
+            await task();
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            pushLog({
+            state.response = {
                 method: "UI",
                 path: "frontend",
                 status: 500,
-                requestId: "-",
-                time: new Date().toLocaleTimeString("zh-CN", { hour12: false }),
-                summary: `前端脚本异常：${message}`
-            });
-            nodes.responseBadge.textContent = "Frontend Error";
-            nodes.responseFrame.textContent = message;
+                payload: { message: error instanceof Error ? error.message : String(error) },
+                raw: String(error),
+                requestId: "-"
+            };
+            renderResponse();
         } finally {
-            renderMetrics();
-            renderCurrentUser();
-            renderAdminConsole();
             setBusy(false);
         }
     }
 
-    async function refreshCurrentUser(silent = false) {
-        const result = await apiRequest("/api/v1/auth/me");
-        state.checks.me = String(result.status);
+    function renderResponse() {
+        if (!state.response) {
+            nodes.responseBadge.textContent = "Idle";
+            nodes.responseConsole.textContent = "等待操作…";
+            return;
+        }
+        nodes.responseBadge.textContent = `${state.response.method} ${state.response.path} · ${state.response.status}`;
+        nodes.responseConsole.textContent = safeJson({
+            status: state.response.status,
+            requestId: state.response.requestId,
+            payload: state.response.payload,
+            raw: state.response.raw
+        });
+    }
 
-        if (result.status === 200 && result.payload?.code === 0) {
-            state.currentUser = result.payload.data;
-            state.flow.loggedIn = true;
-            refreshRoleStrategy();
-            if (!silent) {
-                syncAccountFields();
-            }
+    function renderPublicData() {
+        const currentPeriod = state.period?.currentPeriod || "NOT_OPEN";
+        nodes.heroPeriod.textContent = periodLabel(currentPeriod);
+        nodes.periodTitle.textContent = "当前阶段：" + periodLabel(currentPeriod);
+        nodes.periodTime.textContent = state.period
+            ? "服务器时间：" + formatTime(state.period.serverTime)
+            : "服务器时间加载中";
+
+        if (!state.directionRoots.length) {
+            nodes.directionTree.innerHTML = `<div class="empty">还没有可用方向。</div>`;
+            return;
+        }
+
+        nodes.directionTree.innerHTML = state.directionRoots.map(root => `
+            <article class="tree-item">
+                <strong>${root.name}</strong>
+                <div class="tree-children">
+                    ${(root.children || []).map(child => `<span class="mini-chip">${child.name}</span>`).join("")}
+                </div>
+            </article>
+        `).join("");
+    }
+
+    function renderSession() {
+        if (!state.me) {
+            nodes.heroUser.textContent = "游客";
+            nodes.heroRole.textContent = "未登录";
+            nodes.sessionSummary.textContent = "未登录";
+            nodes.sessionCapabilities.textContent = "公共信息 / 注册 / 登录";
+            nodes.heroGroups.innerHTML = `<span class="chip">暂无</span>`;
         } else {
-            state.currentUser = null;
-            state.flow.loggedIn = false;
-            refreshRoleStrategy();
+            nodes.heroUser.textContent = `${state.me.username} · ${state.me.email}`;
+            nodes.heroRole.textContent = state.me.role;
+            nodes.sessionSummary.textContent = `${state.me.username} / ${state.me.role} / ${state.me.status}`;
+            nodes.sessionCapabilities.textContent = capabilitiesText(state.me.role);
+            const groups = state.me.groups || [];
+            nodes.heroGroups.innerHTML = groups.length
+                ? groups.map(group => `<span class="chip">${group.name}</span>`).join("")
+                : `<span class="chip">暂无</span>`;
+        }
+        nodes.sessionCsrf.textContent = preview(getCookie("XSRF-TOKEN"));
+
+        const showApply = state.me?.role === "FRESHMAN";
+        nodes.applyGuard.classList.toggle("hidden", showApply);
+        nodes.applyContent.classList.toggle("hidden", !showApply);
+
+        const showGroup = state.me?.role === "ADMIN" || state.me?.role === "LEADER";
+        nodes.groupGuard.classList.toggle("hidden", showGroup);
+        nodes.groupContent.classList.toggle("hidden", !showGroup);
+        nodes.adminWorkspace.classList.toggle("hidden", !isAdmin());
+    }
+
+    function capabilitiesText(role) {
+        if (role === "FRESHMAN") {
+            return "读取当前用户 / 报名 CRUD / 查看自己的分组";
+        }
+        if (role === "ADMIN") {
+            return "用户管理 / 时期配置 / 方向配置 / 分组管理 / 审核与分组";
+        }
+        if (role === "LEADER") {
+            return "查看未分组申请 / 仅向自己负责的组分配 / 拒绝申请 / 取消分组";
+        }
+        return "公共信息 / 注册 / 登录";
+    }
+
+    function renderApplications() {
+        if (state.me?.role !== "FRESHMAN") {
+            return;
+        }
+
+        nodes.summaryCount.textContent = String(state.applicationSummary?.applicationCount || 0);
+        nodes.summarySubmitted.textContent = String(state.applicationSummary?.submittedCount || 0);
+        nodes.summaryGrouped.textContent = String(state.applicationSummary?.groupedCount || 0);
+        nodes.summaryGroups.textContent = String((state.applicationSummary?.groupIds || []).length);
+
+        if (!state.applications.length) {
+            nodes.applicationList.innerHTML = `<div class="empty">当前还没有报名记录。右侧填写表单后可以直接创建。</div>`;
+            return;
+        }
+
+        nodes.applicationList.innerHTML = state.applications.map(item => `
+            <article class="card ${state.selectedApplicationId === item.id ? "active" : ""}">
+                <div class="card-head">
+                    <div>
+                        <h3 class="card-title">${item.realName} · ${item.directionLevel2Name}</h3>
+                        <p class="muted small">申请 ID：${item.id} · 创建时间：${formatTime(item.createdAt)}</p>
+                    </div>
+                    ${statusPill(item.status)}
+                </div>
+                <div class="meta-grid">
+                    <div class="meta-box">
+                        <strong>学院 / 专业</strong>
+                        <span>${item.college} / ${item.major}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>班级 / 年级</strong>
+                        <span>${item.className} / ${gradeLabel(item.grade)}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>入学年份</strong>
+                        <span>${item.admissionYear}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>分组状态</strong>
+                        <span>${item.groupName || "暂未分组"}</span>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 14px;">
+                    <button class="button button-light" data-edit-application="${item.id}">编辑</button>
+                    <button class="button button-danger" data-withdraw-application="${item.id}">撤回</button>
+                </div>
+            </article>
+        `).join("");
+    }
+
+    function renderGroups() {
+        if (!(state.me?.role === "ADMIN" || state.me?.role === "LEADER")) {
+            return;
+        }
+
+        if (!state.groups.length) {
+            nodes.groupList.innerHTML = `<div class="empty">当前没有你可管理的分组。</div>`;
+        } else {
+            nodes.groupList.innerHTML = state.groups.map(group => `
+                <article class="card ${state.selectedGroupId === group.id ? "active" : ""}">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="card-title">${group.name}</h3>
+                            <p class="muted small">${group.directionLevel1Name} / ${group.directionLevel2Name}</p>
+                        </div>
+                        <span class="pill ${group.currentSize >= group.maxSize ? "danger" : "ok"}">
+                            ${group.currentSize} / ${group.maxSize}
+                        </span>
+                    </div>
+                    <div class="meta-grid">
+                        <div class="meta-box">
+                            <strong>年级</strong>
+                            <span>${gradeLabel(group.grade)}</span>
+                        </div>
+                        <div class="meta-box">
+                            <strong>入学年份</strong>
+                            <span>${group.admissionYear}</span>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top: 14px;">
+                        <button class="button button-primary" data-pick-group="${group.id}">选择此组</button>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        if (!state.selectedGroupDetail) {
+            nodes.selectedGroupName.textContent = "未选择";
+            nodes.groupDetail.innerHTML = "先从左侧选择一个分组，再查看详情。";
+            nodes.groupMembersWrap.classList.add("hidden");
+        } else {
+            nodes.selectedGroupName.textContent = state.selectedGroupDetail.name;
+            nodes.groupDetail.innerHTML = `
+                <div class="meta-grid">
+                    <div class="meta-box">
+                        <strong>方向</strong>
+                        <span>${state.selectedGroupDetail.directionLevel1Name} / ${state.selectedGroupDetail.directionLevel2Name}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>人数</strong>
+                        <span>${state.selectedGroupDetail.currentSize} / ${state.selectedGroupDetail.maxSize}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>年级</strong>
+                        <span>${gradeLabel(state.selectedGroupDetail.grade)}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>入学年份</strong>
+                        <span>${state.selectedGroupDetail.admissionYear}</span>
+                    </div>
+                    <div class="meta-box">
+                        <strong>负责人</strong>
+                        <span>${state.selectedGroupDetail.leaderUserId || "未设置"}</span>
+                    </div>
+                </div>
+            `;
+            nodes.groupMembersWrap.classList.remove("hidden");
+            nodes.groupMembers.innerHTML = state.groupMembers.length
+                ? state.groupMembers.map(member => `
+                    <tr>
+                        <td>${member.username || "-"}</td>
+                        <td>${member.realName || "-"}</td>
+                        <td>${member.applicationId}</td>
+                        <td>${member.directionLevel1Name || "-"} / ${member.directionLevel2Name || "-"}</td>
+                        <td>${gradeLabel(member.grade)} / ${member.admissionYear}</td>
+                        <td>${member.applicationStatus}</td>
+                        <td>
+                            <button class="button button-light" data-unassign-application="${member.applicationId}">
+                                取消分组
+                            </button>
+                        </td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="7" class="muted">当前组还没有成员。</td></tr>`;
+        }
+
+        if (!state.ungroupedApplications.length) {
+            nodes.ungroupedList.innerHTML = `<div class="empty">当前没有未分组申请。</div>`;
+            return;
+        }
+
+        nodes.ungroupedList.innerHTML = state.ungroupedApplications.map(item => {
+            const match = matchesSelectedGroup(item);
+            return `
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="card-title">${item.realName} · ${item.directionLevel2Name}</h3>
+                            <p class="muted small">${item.username} / ${item.email} · 申请 ID：${item.id}</p>
+                        </div>
+                        <span class="pill ${match ? "ok" : "warn"}">${match ? "条件匹配" : "需后端校验"}</span>
+                    </div>
+                    <div class="meta-grid">
+                        <div class="meta-box">
+                            <strong>学院 / 专业</strong>
+                            <span>${item.college} / ${item.major}</span>
+                        </div>
+                        <div class="meta-box">
+                            <strong>班级 / 年级</strong>
+                            <span>${item.className} / ${gradeLabel(item.grade)}</span>
+                        </div>
+                        <div class="meta-box">
+                            <strong>方向</strong>
+                            <span>${item.directionLevel1Name} / ${item.directionLevel2Name}</span>
+                        </div>
+                        <div class="meta-box">
+                            <strong>入学年份</strong>
+                            <span>${item.admissionYear}</span>
+                        </div>
+                    </div>
+                    <p class="muted small" style="margin: 12px 0 0;">${item.introduction || "无自我介绍"}</p>
+                    <div class="row" style="margin-top: 14px;">
+                        <button class="button button-primary" data-assign-application="${item.id}" ${state.selectedGroupId ? "" : "disabled"}>
+                            分配到当前选中组
+                        </button>
+                        <button class="button button-danger" data-reject-application="${item.id}">
+                            拒绝申请
+                        </button>
+                    </div>
+                </article>
+            `;
+        }).join("");
+    }
+
+    function renderAdminWorkspace() {
+        if (!isAdmin()) {
+            return;
+        }
+
+        renderAdminUsers();
+        renderAdminPeriods();
+        renderAdminDirections();
+        renderAdminGroupFormState();
+    }
+
+    function renderAdminUsers() {
+        if (!state.adminUsers.length) {
+            nodes.adminUserList.innerHTML = `<div class="empty">当前筛选条件下没有用户。</div>`;
+        } else {
+            nodes.adminUserList.innerHTML = state.adminUsers.map(user => `
+                <article class="card ${state.selectedAdminUserId === user.id ? "active" : ""}">
+                    <div class="card-head">
+                        <div>
+                            <h3 class="card-title">${user.username}</h3>
+                            <p class="muted small">${user.email}</p>
+                        </div>
+                        <span class="pill ${user.status === "ACTIVE" ? "ok" : "danger"}">${user.role}</span>
+                    </div>
+                    <div class="meta-grid">
+                        <div class="meta-box">
+                            <strong>状态</strong>
+                            <span>${user.status}</span>
+                        </div>
+                        <div class="meta-box">
+                            <strong>申请数 / 组数</strong>
+                            <span>${user.applicationCount} / ${user.groupCount}</span>
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <button class="button button-light" data-admin-user="${user.id}">查看详情</button>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        if (!state.selectedAdminUserDetail) {
+            nodes.adminUserDetail.innerHTML = "点击上方用户卡片后，这里会显示详情。";
+            return;
+        }
+
+        const detail = state.selectedAdminUserDetail;
+        nodes.adminUserDetail.innerHTML = `
+            <div class="meta-grid">
+                <div class="meta-box">
+                    <strong>用户</strong>
+                    <span>${detail.username} / ${detail.role}</span>
+                </div>
+                <div class="meta-box">
+                    <strong>状态</strong>
+                    <span>${detail.status}</span>
+                </div>
+                <div class="meta-box">
+                    <strong>邮箱</strong>
+                    <span>${detail.email}</span>
+                </div>
+                <div class="meta-box">
+                    <strong>Leader 组</strong>
+                    <span>${detail.leaderGroupId || "无"}</span>
+                </div>
+                <div class="meta-box">
+                    <strong>最近登录</strong>
+                    <span>${formatTime(detail.lastLoginAt)}</span>
+                </div>
+                <div class="meta-box">
+                    <strong>创建时间</strong>
+                    <span>${formatTime(detail.createdAt)}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderAdminPeriods() {
+        const map = Object.fromEntries((state.adminPeriods || []).map(period => [period.periodType, period]));
+        fillPeriodField("REGISTRATION", map.REGISTRATION);
+        fillPeriodField("SELECTION", map.SELECTION);
+        fillPeriodField("INTERVIEW", map.INTERVIEW);
+    }
+
+    function fillPeriodField(type, period) {
+        const key = type.charAt(0) + type.slice(1).toLowerCase();
+        const prefix = key === "Registration" ? "periodRegistration"
+            : key === "Selection" ? "periodSelection"
+                : "periodInterview";
+        fields[`${prefix}Start`].value = toLocalInputValue(period?.startTime);
+        fields[`${prefix}End`].value = toLocalInputValue(period?.endTime);
+        fields[`${prefix}Enabled`].value = String(period?.enabled ?? true);
+    }
+
+    function renderAdminDirections() {
+        renderAdminDirectionTree();
+        populateAdminDirectionSelectors();
+        if (!fields.adminDirectionCurrentId.value && !fields.adminDirectionName.value) {
+            resetAdminDirectionForm();
+        }
+        if (!fields.adminGroupCurrentId.value && !fields.adminGroupName.value) {
+            resetAdminGroupForm();
         }
     }
 
-    async function sendRegisterCode() {
-        const result = await apiRequest("/api/v1/auth/send-email-code", {
+    function renderAdminDirectionTree() {
+        if (!state.adminDirections.length) {
+            nodes.adminDirectionTree.innerHTML = `<div class="empty">当前还没有方向配置。</div>`;
+            return;
+        }
+
+        nodes.adminDirectionTree.innerHTML = state.adminDirections.map(root => `
+            <article class="tree-item">
+                <div class="card-head" style="margin-bottom: 0;">
+                    <div>
+                        <strong>${root.name}</strong>
+                        <p class="muted small">ID ${root.id} · ${root.enabled ? "启用" : "禁用"} · sort ${root.sortOrder}</p>
+                    </div>
+                    <button class="button button-light" data-edit-direction="${root.id}">编辑</button>
+                </div>
+                <div class="list" style="margin-top: 10px;">
+                    ${(root.children || []).map(child => `
+                        <div class="card">
+                            <div class="card-head" style="margin-bottom: 0;">
+                                <div>
+                                    <h4 class="card-title" style="font-size: 15px;">${child.name}</h4>
+                                    <p class="muted small">ID ${child.id} · ${child.enabled ? "启用" : "禁用"} · sort ${child.sortOrder}</p>
+                                </div>
+                                <button class="button button-light" data-edit-direction="${child.id}">编辑</button>
+                            </div>
+                        </div>
+                    `).join("") || `<div class="empty">当前一级方向下还没有二级方向。</div>`}
+                </div>
+            </article>
+        `).join("");
+    }
+
+    function populateAdminDirectionSelectors() {
+        const roots = (state.adminDirections || []).filter(item => item.level === 1);
+        fields.adminDirectionParent.innerHTML = [
+            `<option value="">作为一级方向</option>`,
+            ...roots.map(root => `<option value="${root.id}">${root.name}</option>`)
+        ].join("");
+
+        fields.adminGroupDirection1.innerHTML = roots.map(root => `<option value="${root.id}">${root.name}</option>`).join("");
+        refreshAdminGroupDirectionOptions();
+    }
+
+    function refreshAdminGroupDirectionOptions(selectedId) {
+        const rootId = Number(fields.adminGroupDirection1.value);
+        const root = (state.adminDirections || []).find(item => item.id === rootId);
+        const children = root?.children || [];
+        fields.adminGroupDirection2.innerHTML = children.map(child => `<option value="${child.id}">${child.name}</option>`).join("");
+        if (selectedId) {
+            fields.adminGroupDirection2.value = String(selectedId);
+        }
+    }
+
+    function renderAdminGroupFormState() {
+        const currentId = fields.adminGroupCurrentId.value.trim();
+        nodes.adminGroupMode.textContent = currentId
+            ? `当前编辑分组 #${currentId}。保存会走更新接口。`
+            : "当前是新建分组模式。";
+    }
+
+    function matchesSelectedGroup(application) {
+        if (!state.selectedGroupDetail) {
+            return false;
+        }
+        return application.directionLevel1Id === state.selectedGroupDetail.directionLevel1Id
+            && application.directionLevel2Id === state.selectedGroupDetail.directionLevel2Id
+            && application.grade === state.selectedGroupDetail.grade
+            && application.admissionYear === state.selectedGroupDetail.admissionYear;
+    }
+
+    function flattenDirections() {
+        state.directionRoots = (state.directions || []).map(root => ({
+            ...root,
+            children: root.children || []
+        }));
+    }
+
+    function populateDirectionSelectors() {
+        const roots = state.directionRoots;
+        fields.appDirection1.innerHTML = roots.map(root => `<option value="${root.id}">${root.name}</option>`).join("");
+        refreshSecondDirectionOptions();
+    }
+
+    function refreshSecondDirectionOptions(selectedId) {
+        const rootId = Number(fields.appDirection1.value);
+        const root = state.directionRoots.find(item => item.id === rootId) || state.directionRoots[0];
+        const children = root?.children || [];
+        fields.appDirection2.innerHTML = children.map(child => `<option value="${child.id}">${child.name}</option>`).join("");
+        if (selectedId) {
+            fields.appDirection2.value = String(selectedId);
+        }
+    }
+
+    function resetApplicationForm() {
+        state.selectedApplicationId = null;
+        nodes.applicationFormTitle.textContent = "新建报名";
+        nodes.applicationFormMode.textContent = "CREATE";
+        document.getElementById("withdraw-application").classList.add("hidden");
+        fields.appRealName.value = "";
+        fields.appPhone.value = "";
+        fields.appCollege.value = "";
+        fields.appMajor.value = "";
+        fields.appClassName.value = "";
+        fields.appGrade.value = "YEAR_1";
+        fields.appAdmissionYear.value = new Date().getFullYear();
+        if (state.directionRoots.length) {
+            fields.appDirection1.value = String(state.directionRoots[0].id);
+            refreshSecondDirectionOptions();
+        }
+        fields.appIntroduction.value = "";
+        renderApplications();
+    }
+
+    function fillApplicationForm(application) {
+        state.selectedApplicationId = application.id;
+        nodes.applicationFormTitle.textContent = `编辑报名 #${application.id}`;
+        nodes.applicationFormMode.textContent = "UPDATE";
+        document.getElementById("withdraw-application").classList.remove("hidden");
+        fields.appRealName.value = application.realName || "";
+        fields.appPhone.value = application.phone || "";
+        fields.appCollege.value = application.college || "";
+        fields.appMajor.value = application.major || "";
+        fields.appClassName.value = application.className || "";
+        fields.appGrade.value = application.grade || "YEAR_1";
+        fields.appAdmissionYear.value = application.admissionYear || "";
+        fields.appDirection1.value = String(application.directionLevel1Id);
+        refreshSecondDirectionOptions(application.directionLevel2Id);
+        fields.appIntroduction.value = application.introduction || "";
+        renderApplications();
+    }
+
+    async function loadPublicData() {
+        const [periodResult, directionResult] = await Promise.all([
+            api("/api/v1/meta/current-period"),
+            api("/api/v1/directions")
+        ]);
+
+        if (periodResult.status === 200 && periodResult.payload?.code === 0) {
+            state.period = periodResult.payload.data;
+        }
+        if (directionResult.status === 200 && directionResult.payload?.code === 0) {
+            state.directions = directionResult.payload.data || [];
+            flattenDirections();
+            populateDirectionSelectors();
+        }
+        renderPublicData();
+    }
+
+    async function loadSession() {
+        const result = await api("/api/v1/auth/me");
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.me = result.payload.data;
+        } else {
+            state.me = null;
+        }
+        renderSession();
+    }
+
+    async function loadApplications() {
+        if (state.me?.role !== "FRESHMAN") {
+            state.applications = [];
+            state.applicationSummary = null;
+            renderApplications();
+            return;
+        }
+
+        const [listResult, summaryResult] = await Promise.all([
+            api("/api/v1/applications"),
+            api("/api/v1/applications/summary")
+        ]);
+
+        state.applications = listResult.status === 200 && listResult.payload?.code === 0
+            ? (listResult.payload.data || [])
+            : [];
+        state.applicationSummary = summaryResult.status === 200 && summaryResult.payload?.code === 0
+            ? summaryResult.payload.data
+            : null;
+
+        if (!state.selectedApplicationId) {
+            resetApplicationForm();
+        }
+        renderApplications();
+    }
+
+    async function loadGroups() {
+        if (!(state.me?.role === "ADMIN" || state.me?.role === "LEADER")) {
+            state.groups = [];
+            state.selectedGroupId = null;
+            state.selectedGroupDetail = null;
+            state.groupMembers = [];
+            state.ungroupedApplications = [];
+            renderGroups();
+            return;
+        }
+
+        const base = groupApiBase();
+        const [groupsResult, ungroupedResult] = await Promise.all([
+            api(base),
+            api(base + "/ungrouped-applications")
+        ]);
+
+        state.groups = groupsResult.status === 200 && groupsResult.payload?.code === 0
+            ? (groupsResult.payload.data || [])
+            : [];
+        state.ungroupedApplications = ungroupedResult.status === 200 && ungroupedResult.payload?.code === 0
+            ? (ungroupedResult.payload.data || [])
+            : [];
+
+        const stillSelected = state.groups.some(group => group.id === state.selectedGroupId);
+        if (state.selectedGroupId && stillSelected) {
+            await loadSelectedGroup(state.selectedGroupId);
+        } else if (state.groups.length) {
+            await loadSelectedGroup(state.groups[0].id);
+        } else {
+            state.selectedGroupDetail = null;
+            state.groupMembers = [];
+        }
+        renderGroups();
+    }
+
+    async function loadSelectedGroup(groupId) {
+        state.selectedGroupId = groupId;
+        const [detailResult, membersResult] = await Promise.all([
+            api(`/api/v1/groups/${groupId}`),
+            api(`/api/v1/groups/${groupId}/members`)
+        ]);
+
+        state.selectedGroupDetail = detailResult.status === 200 && detailResult.payload?.code === 0
+            ? detailResult.payload.data
+            : null;
+        state.groupMembers = membersResult.status === 200 && membersResult.payload?.code === 0
+            ? (membersResult.payload.data || [])
+            : [];
+        renderGroups();
+    }
+
+    async function loadAdminWorkspace() {
+        if (!isAdmin()) {
+            state.adminUsers = [];
+            state.selectedAdminUserId = null;
+            state.selectedAdminUserDetail = null;
+            state.adminPeriods = [];
+            state.adminDirections = [];
+            renderAdminWorkspace();
+            return;
+        }
+
+        const [usersResult, periodsResult, directionsResult] = await Promise.all([
+            api(buildAdminUserListPath()),
+            api("/api/v1/admin/periods"),
+            api("/api/v1/admin/directions")
+        ]);
+
+        state.adminUsers = usersResult.status === 200 && usersResult.payload?.code === 0
+            ? (usersResult.payload.data?.list || [])
+            : [];
+        state.adminPeriods = periodsResult.status === 200 && periodsResult.payload?.code === 0
+            ? (periodsResult.payload.data || [])
+            : [];
+        state.adminDirections = directionsResult.status === 200 && directionsResult.payload?.code === 0
+            ? (directionsResult.payload.data || [])
+            : [];
+        renderAdminWorkspace();
+    }
+
+    async function loadAdminUserDetail(userId) {
+        const result = await api(`/api/v1/admin/users/${userId}`);
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.selectedAdminUserId = userId;
+            state.selectedAdminUserDetail = result.payload.data;
+            renderAdminWorkspace();
+        }
+    }
+
+    function buildAdminUserListPath() {
+        const params = new URLSearchParams({
+            page: "1",
+            size: "8"
+        });
+        if (fields.adminUserRole.value) {
+            params.set("role", fields.adminUserRole.value);
+        }
+        if (fields.adminUserStatus.value) {
+            params.set("status", fields.adminUserStatus.value);
+        }
+        if (fields.adminUserKeyword.value.trim()) {
+            params.set("keyword", fields.adminUserKeyword.value.trim());
+        }
+        return `/api/v1/admin/users?${params.toString()}`;
+    }
+
+    function resetAdminDirectionForm() {
+        fields.adminDirectionCurrentId.value = "";
+        fields.adminDirectionParent.value = "";
+        fields.adminDirectionName.value = "";
+        fields.adminDirectionSort.value = "0";
+        fields.adminDirectionEnabled.value = "true";
+    }
+
+    function fillAdminDirectionForm(directionId) {
+        const direction = findAdminDirectionById(directionId, state.adminDirections);
+        if (!direction) {
+            return;
+        }
+        fields.adminDirectionCurrentId.value = String(direction.id);
+        fields.adminDirectionParent.value = direction.parentId == null ? "" : String(direction.parentId);
+        fields.adminDirectionName.value = direction.name || "";
+        fields.adminDirectionSort.value = String(direction.sortOrder ?? 0);
+        fields.adminDirectionEnabled.value = String(Boolean(direction.enabled));
+    }
+
+    function findAdminDirectionById(directionId, roots) {
+        for (const root of roots || []) {
+            if (root.id === directionId) {
+                return root;
+            }
+            const child = findAdminDirectionById(directionId, root.children || []);
+            if (child) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    function resetAdminGroupForm() {
+        fields.adminGroupCurrentId.value = "";
+        fields.adminGroupName.value = "";
+        if (fields.adminGroupDirection1.options.length) {
+            fields.adminGroupDirection1.value = fields.adminGroupDirection1.options[0].value;
+            refreshAdminGroupDirectionOptions();
+        }
+        fields.adminGroupGrade.value = "YEAR_1";
+        fields.adminGroupAdmissionYear.value = new Date().getFullYear();
+        fields.adminGroupMaxSize.value = "20";
+        fields.adminGroupLeaderId.value = "";
+        renderAdminGroupFormState();
+    }
+
+    function fillAdminGroupFormFromSelected() {
+        if (!state.selectedGroupDetail) {
+            throw new Error("请先在左侧选择一个分组");
+        }
+        const group = state.selectedGroupDetail;
+        fields.adminGroupCurrentId.value = String(group.id);
+        fields.adminGroupName.value = group.name || "";
+        fields.adminGroupDirection1.value = String(group.directionLevel1Id);
+        refreshAdminGroupDirectionOptions(group.directionLevel2Id);
+        fields.adminGroupGrade.value = group.grade;
+        fields.adminGroupAdmissionYear.value = group.admissionYear;
+        fields.adminGroupMaxSize.value = group.maxSize;
+        fields.adminGroupLeaderId.value = group.leaderUserId || "";
+        renderAdminGroupFormState();
+    }
+
+    async function handleRegisterCode() {
+        await api("/api/v1/auth/send-email-code", {
             method: "POST",
             body: {
                 email: fields.registerEmail.value.trim(),
                 scene: "REGISTER"
             }
         });
-        if (result.status === 200 && result.payload?.code === 0) {
-            state.flow.registerCodeSent = true;
-        }
     }
 
-    async function submitRegister() {
-        const result = await apiRequest("/api/v1/auth/register", {
+    async function handleRegister() {
+        const password = fields.registerPassword.value;
+        const result = await api("/api/v1/auth/register", {
             method: "POST",
             body: {
                 username: fields.registerUsername.value.trim(),
                 email: fields.registerEmail.value.trim(),
-                password: fields.registerPassword.value,
-                confirmPassword: fields.registerPassword.value,
+                password,
+                confirmPassword: password,
                 code: fields.registerCode.value.trim()
             }
         });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.flow.registered = true;
-            syncAccountFields();
+            fields.loginEmail.value = fields.registerEmail.value.trim();
+            fields.loginPassword.value = password;
+            fields.resetEmail.value = fields.registerEmail.value.trim();
+            fields.changeOldPassword.value = password;
         }
     }
 
-    async function submitLogin() {
-        const result = await apiRequest("/api/v1/auth/login", {
+    async function handleLogin() {
+        const result = await api("/api/v1/auth/login", {
             method: "POST",
             body: {
                 email: fields.loginEmail.value.trim(),
                 password: fields.loginPassword.value,
-                rememberMe: fields.rememberMe.checked
+                rememberMe: fields.rememberMe.value === "true"
             }
         });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.flow.loggedIn = true;
-            await refreshCurrentUser(true);
             fields.changeOldPassword.value = fields.loginPassword.value;
+            await afterAuthRefresh();
         }
     }
 
-    async function submitLogout() {
-        const result = await apiRequest("/api/v1/auth/logout", {
-            method: "POST"
-        });
-        if (result.status === 200 && result.payload?.code === 0) {
-            state.currentUser = null;
-            state.flow.loggedIn = false;
-            await refreshCurrentUser(true);
-            if (state.checks.me === "401") {
-                state.flow.logoutVerified = true;
-            }
-        }
+    async function handleLogout() {
+        await api("/api/v1/auth/logout", { method: "POST" });
+        await afterAuthRefresh();
     }
 
-    async function sendResetCode() {
-        const result = await apiRequest("/api/v1/auth/forgot-password", {
+    async function handleResetCode() {
+        await api("/api/v1/auth/forgot-password", {
             method: "POST",
-            body: {
-                email: fields.resetEmail.value.trim()
-            }
+            body: { email: fields.resetEmail.value.trim() }
         });
-        if (result.status === 200 && result.payload?.code === 0) {
-            state.flow.resetCodeSent = true;
-        }
     }
 
-    async function submitResetPassword() {
-        const result = await apiRequest("/api/v1/auth/reset-password", {
+    async function handleResetPassword() {
+        const result = await api("/api/v1/auth/reset-password", {
             method: "POST",
             body: {
                 email: fields.resetEmail.value.trim(),
@@ -1510,19 +2413,18 @@
             }
         });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.flow.resetDone = true;
             fields.loginPassword.value = fields.resetPassword.value;
             fields.changeOldPassword.value = fields.resetPassword.value;
         }
     }
 
-    async function submitChangePassword() {
-        const result = await apiRequest("/api/v1/auth/change-password", {
+    async function handleChangePassword() {
+        const result = await api("/api/v1/auth/change-password", {
             method: "POST",
             body: {
                 oldPassword: fields.changeOldPassword.value,
                 newPassword: fields.changeNewPassword.value,
-                confirmPassword: fields.changeConfirmPassword.value
+                confirmPassword: fields.changeNewPassword.value
             }
         });
         if (result.status === 200 && result.payload?.code === 0) {
@@ -1532,125 +2434,427 @@
         }
     }
 
-    async function fetchAdminUsers() {
-        const params = new URLSearchParams();
-        const keyword = fields.adminListKeyword.value.trim();
-        const role = fields.adminListRole.value;
-        const status = fields.adminListStatus.value;
-        const page = fields.adminListPage.value.trim();
-        const size = fields.adminListSize.value.trim();
+    async function saveApplication() {
+        const body = {
+            realName: fields.appRealName.value.trim(),
+            phone: fields.appPhone.value.trim(),
+            college: fields.appCollege.value.trim(),
+            major: fields.appMajor.value.trim(),
+            className: fields.appClassName.value.trim(),
+            grade: fields.appGrade.value,
+            admissionYear: Number(fields.appAdmissionYear.value),
+            directionLevel1Id: Number(fields.appDirection1.value),
+            directionLevel2Id: Number(fields.appDirection2.value),
+            introduction: fields.appIntroduction.value.trim()
+        };
 
-        if (keyword) {
-            params.set("keyword", keyword);
-        }
-        if (role) {
-            params.set("role", role);
-        }
-        if (status) {
-            params.set("status", status);
-        }
-        if (page) {
-            params.set("page", page);
-        }
-        if (size) {
-            params.set("size", size);
-        }
-
-        const query = params.toString();
-        const result = await apiRequest(`/api/v1/admin/users${query ? `?${query}` : ""}`);
+        const editing = Boolean(state.selectedApplicationId);
+        const path = editing ? `/api/v1/applications/${state.selectedApplicationId}` : "/api/v1/applications";
+        const method = editing ? "PUT" : "POST";
+        const result = await api(path, { method, body });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.admin.lastUserList = result.payload.data;
-            const firstUser = result.payload.data?.list?.[0];
-            if (firstUser) {
-                syncAdminTargetIdsFromUser(firstUser);
+            await loadApplications();
+            if (editing) {
+                const latest = state.applications.find(item => item.id === state.selectedApplicationId);
+                if (latest) {
+                    fillApplicationForm(latest);
+                }
+            } else {
+                resetApplicationForm();
             }
         }
     }
 
-    async function fetchAdminUserDetail() {
-        const userId = fields.adminDetailUserId.value.trim();
-        if (!userId) {
-            throw new Error("请先填写要读取详情的用户 ID");
-        }
-
-        const result = await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}`);
+    async function withdrawApplication(applicationId) {
+        const result = await api(`/api/v1/applications/${applicationId}`, { method: "DELETE" });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.admin.lastUserDetail = result.payload.data;
-            syncAdminTargetIdsFromUser(result.payload.data);
+            if (state.selectedApplicationId === applicationId) {
+                resetApplicationForm();
+            }
+            await loadApplications();
         }
     }
 
-    async function updateAdminUserStatus() {
-        const userId = fields.adminStatusUserId.value.trim();
-        if (!userId) {
-            throw new Error("请先填写要更新状态的用户 ID");
+    async function assignApplication(applicationId) {
+        if (!state.selectedGroupId) {
+            throw new Error("请先选择一个目标分组");
         }
-
-        const result = await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}/status`, {
-            method: "PATCH",
-            body: {
-                status: fields.adminStatusValue.value
-            }
+        const result = await api(`${groupApiBase()}/${state.selectedGroupId}/applications/${applicationId}`, {
+            method: "POST"
         });
         if (result.status === 200 && result.payload?.code === 0) {
-            state.admin.lastStatusUpdate = result.payload.data;
-            state.admin.lastUserDetail = result.payload.data;
-            syncAdminTargetIdsFromUser(result.payload.data);
+            await loadGroups();
         }
     }
 
-    async function runProbeSuite() {
-        await refreshCurrentUser(true);
-        refreshRoleStrategy();
-        if (state.currentUser?.role === "ADMIN") {
-            await fetchAdminUsers();
+    async function rejectApplication(applicationId) {
+        const remark = fields.groupActionRemark.value.trim();
+        if (!remark) {
+            throw new Error("请先填写分组备注 / 审核备注，再执行拒绝");
+        }
+        const result = await api(`${reviewApiBase()}/${applicationId}/reject`, {
+            method: "POST",
+            body: { remark }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            await loadGroups();
         }
     }
 
-    function bindEvents() {
-        document.getElementById("generate-demo").addEventListener("click", () => runAction(async () => {
-            generateDraftIdentity();
-            syncAccountFields();
-            renderMetrics();
-            renderCurrentUser();
-        }));
-
-        document.getElementById("refresh-session").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
-        document.getElementById("run-probe-suite").addEventListener("click", () => runAction(runProbeSuite));
-        document.getElementById("probe-suite-inline").addEventListener("click", () => runAction(runProbeSuite));
-
-        document.getElementById("send-register-code").addEventListener("click", () => runAction(sendRegisterCode));
-        document.getElementById("submit-register").addEventListener("click", () => runAction(submitRegister));
-        document.getElementById("submit-login").addEventListener("click", () => runAction(submitLogin));
-        document.getElementById("fetch-me").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
-        document.getElementById("submit-logout").addEventListener("click", () => runAction(submitLogout));
-
-        document.getElementById("send-reset-code").addEventListener("click", () => runAction(sendResetCode));
-        document.getElementById("submit-reset-password").addEventListener("click", () => runAction(submitResetPassword));
-        document.getElementById("submit-change-password").addEventListener("click", () => runAction(submitChangePassword));
-
-        document.getElementById("probe-auth").addEventListener("click", () => runAction(() => refreshCurrentUser(true)));
-        document.getElementById("probe-role-button").addEventListener("click", () => runAction(async () => {
-            await refreshCurrentUser(true);
-            refreshRoleStrategy();
-        }));
-
-        document.getElementById("admin-list-users").addEventListener("click", () => runAction(fetchAdminUsers));
-        document.getElementById("admin-user-detail").addEventListener("click", () => runAction(fetchAdminUserDetail));
-        document.getElementById("admin-update-status").addEventListener("click", () => runAction(updateAdminUserStatus));
-
-        fields.registerEmail.addEventListener("change", syncAccountFields);
-        fields.registerPassword.addEventListener("change", syncAccountFields);
+    async function unassignApplication(applicationId) {
+        if (!state.selectedGroupId) {
+            throw new Error("当前没有选中的分组");
+        }
+        const result = await api(`${groupApiBase()}/${state.selectedGroupId}/applications/${applicationId}/unassign`, {
+            method: "POST",
+            body: { remark: fields.groupActionRemark.value.trim() || null }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            await loadGroups();
+        }
     }
 
-    function init() {
-        generateDraftIdentity();
-        syncAccountFields();
-        bindEvents();
-        renderMetrics();
-        renderCurrentUser();
-        renderAdminConsole();
-        runAction(() => refreshCurrentUser(true));
+    async function saveAdminPeriods() {
+        const periods = [
+            {
+                periodType: "REGISTRATION",
+                startTime: toOffsetDateTime(fields.periodRegistrationStart.value),
+                endTime: toOffsetDateTime(fields.periodRegistrationEnd.value),
+                enabled: fields.periodRegistrationEnabled.value === "true"
+            },
+            {
+                periodType: "SELECTION",
+                startTime: toOffsetDateTime(fields.periodSelectionStart.value),
+                endTime: toOffsetDateTime(fields.periodSelectionEnd.value),
+                enabled: fields.periodSelectionEnabled.value === "true"
+            },
+            {
+                periodType: "INTERVIEW",
+                startTime: toOffsetDateTime(fields.periodInterviewStart.value),
+                endTime: toOffsetDateTime(fields.periodInterviewEnd.value),
+                enabled: fields.periodInterviewEnabled.value === "true"
+            }
+        ];
+
+        const result = await api("/api/v1/admin/periods", {
+            method: "POST",
+            body: { periods }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.adminPeriods = result.payload.data || [];
+            renderAdminWorkspace();
+            await loadPublicData();
+        }
+    }
+
+    async function saveAdminDirection() {
+        const directionId = fields.adminDirectionCurrentId.value.trim();
+        const path = directionId ? `/api/v1/admin/directions/${directionId}` : "/api/v1/admin/directions";
+        const method = directionId ? "PUT" : "POST";
+        const body = {
+            parentId: fields.adminDirectionParent.value ? Number(fields.adminDirectionParent.value) : null,
+            name: fields.adminDirectionName.value.trim(),
+            sortOrder: Number(fields.adminDirectionSort.value || 0),
+            enabled: fields.adminDirectionEnabled.value === "true"
+        };
+        const result = await api(path, { method, body });
+        if (result.status === 200 && result.payload?.code === 0) {
+            resetAdminDirectionForm();
+            await loadPublicData();
+            await loadAdminWorkspace();
+        }
+    }
+
+    async function deleteAdminDirection() {
+        const directionId = fields.adminDirectionCurrentId.value.trim();
+        if (!directionId) {
+            throw new Error("当前没有选中的方向");
+        }
+        const result = await api(`/api/v1/admin/directions/${directionId}`, { method: "DELETE" });
+        if (result.status === 200 && result.payload?.code === 0) {
+            resetAdminDirectionForm();
+            await loadPublicData();
+            await loadAdminWorkspace();
+        }
+    }
+
+    async function saveAdminGroup() {
+        const groupId = fields.adminGroupCurrentId.value.trim();
+        const path = groupId ? `/api/v1/admin/groups/${groupId}` : "/api/v1/admin/groups";
+        const method = groupId ? "PUT" : "POST";
+        const body = {
+            name: fields.adminGroupName.value.trim(),
+            directionLevel1Id: Number(fields.adminGroupDirection1.value),
+            directionLevel2Id: Number(fields.adminGroupDirection2.value),
+            grade: fields.adminGroupGrade.value,
+            admissionYear: Number(fields.adminGroupAdmissionYear.value),
+            maxSize: Number(fields.adminGroupMaxSize.value)
+        };
+        const result = await api(path, { method, body });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.selectedGroupId = result.payload.data.id;
+            await loadGroups();
+            await loadSelectedGroup(result.payload.data.id);
+            fillAdminGroupFormFromSelected();
+        }
+    }
+
+    async function deleteAdminGroup() {
+        const groupId = fields.adminGroupCurrentId.value.trim() || String(state.selectedGroupId || "");
+        if (!groupId) {
+            throw new Error("当前没有选中的分组");
+        }
+        const result = await api(`/api/v1/admin/groups/${groupId}`, { method: "DELETE" });
+        if (result.status === 200 && result.payload?.code === 0) {
+            resetAdminGroupForm();
+            await loadGroups();
+        }
+    }
+
+    async function assignAdminGroupLeader() {
+        const groupId = fields.adminGroupCurrentId.value.trim() || String(state.selectedGroupId || "");
+        if (!groupId) {
+            throw new Error("当前没有选中的分组");
+        }
+        const leaderUserId = Number(fields.adminGroupLeaderId.value);
+        if (!leaderUserId) {
+            throw new Error("请填写负责人用户 ID");
+        }
+        const result = await api(`/api/v1/admin/groups/${groupId}/leader`, {
+            method: "PUT",
+            body: { leaderUserId }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            await loadGroups();
+            fillAdminGroupFormFromSelected();
+        }
+    }
+
+    async function removeAdminGroupLeader() {
+        const groupId = fields.adminGroupCurrentId.value.trim() || String(state.selectedGroupId || "");
+        if (!groupId) {
+            throw new Error("当前没有选中的分组");
+        }
+        const result = await api(`/api/v1/admin/groups/${groupId}/leader`, { method: "DELETE" });
+        if (result.status === 200 && result.payload?.code === 0) {
+            await loadGroups();
+            fillAdminGroupFormFromSelected();
+        }
+    }
+
+    async function searchAdminUsers() {
+        if (!isAdmin()) {
+            return;
+        }
+        const result = await api(buildAdminUserListPath());
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.adminUsers = result.payload.data?.list || [];
+            renderAdminWorkspace();
+        }
+    }
+
+    async function updateAdminUserStatus(status) {
+        if (!state.selectedAdminUserId) {
+            throw new Error("请先选择一个用户");
+        }
+        const result = await api(`/api/v1/admin/users/${state.selectedAdminUserId}/status`, {
+            method: "PATCH",
+            body: { status }
+        });
+        if (result.status === 200 && result.payload?.code === 0) {
+            state.selectedAdminUserDetail = result.payload.data;
+            await searchAdminUsers();
+        }
+    }
+
+    async function afterAuthRefresh() {
+        await loadSession();
+        await Promise.all([
+            loadApplications(),
+            loadGroups(),
+            loadAdminWorkspace()
+        ]);
+        if (state.me?.role === "FRESHMAN") {
+            switchTab("apply");
+        } else if (state.me?.role === "ADMIN" || state.me?.role === "LEADER") {
+            switchTab("group");
+        } else {
+            switchTab("auth");
+        }
+    }
+
+    function switchTab(tab) {
+        state.currentTab = tab;
+        document.querySelectorAll(".tab").forEach(node => {
+            node.classList.toggle("active", node.dataset.tab === tab);
+        });
+        document.querySelectorAll(".view").forEach(node => {
+            node.classList.toggle("active", node.id === `view-${tab}`);
+        });
+    }
+
+    function fillDemoData() {
+        const stamp = String(Date.now()).slice(-6);
+        const username = `fresh_${stamp}`;
+        const email = `${username}@example.com`;
+        const password = `Pass${stamp}99`;
+
+        fields.registerUsername.value = username;
+        fields.registerEmail.value = email;
+        fields.registerPassword.value = password;
+        fields.registerCode.value = "";
+        fields.loginEmail.value = email;
+        fields.loginPassword.value = password;
+        fields.resetEmail.value = email;
+        fields.resetCode.value = "";
+        fields.resetPassword.value = `Reset${stamp}66`;
+        fields.changeOldPassword.value = password;
+        fields.changeNewPassword.value = `Change${stamp}77`;
+        fields.rememberMe.value = "true";
+        fields.appRealName.value = "测试同学";
+        fields.appPhone.value = "13800000000";
+        fields.appCollege.value = "计算机学院";
+        fields.appMajor.value = "软件工程";
+        fields.appClassName.value = "软工 1 班";
+        fields.appGrade.value = "YEAR_1";
+        fields.appAdmissionYear.value = new Date().getFullYear();
+        fields.appIntroduction.value = "希望通过这个页面完整验证报名和分组流程。";
+    }
+
+    function bindStaticEvents() {
+        document.querySelectorAll(".tab").forEach(button => {
+            button.addEventListener("click", () => switchTab(button.dataset.tab));
+        });
+
+        fields.appDirection1.addEventListener("change", () => refreshSecondDirectionOptions());
+        fields.adminGroupDirection1.addEventListener("change", () => refreshAdminGroupDirectionOptions());
+
+        document.getElementById("fill-demo").addEventListener("click", () => run(async () => {
+            fillDemoData();
+        }));
+        document.getElementById("refresh-all").addEventListener("click", () => run(async () => {
+            await loadPublicData();
+            await afterAuthRefresh();
+        }));
+        document.getElementById("logout-top").addEventListener("click", () => run(handleLogout));
+        document.getElementById("send-register-code").addEventListener("click", () => run(handleRegisterCode));
+        document.getElementById("submit-register").addEventListener("click", () => run(handleRegister));
+        document.getElementById("submit-login").addEventListener("click", () => run(handleLogin));
+        document.getElementById("load-me").addEventListener("click", () => run(afterAuthRefresh));
+        document.getElementById("submit-logout").addEventListener("click", () => run(handleLogout));
+        document.getElementById("send-reset-code").addEventListener("click", () => run(handleResetCode));
+        document.getElementById("submit-reset-password").addEventListener("click", () => run(handleResetPassword));
+        document.getElementById("submit-change-password").addEventListener("click", () => run(handleChangePassword));
+        document.getElementById("reload-applications").addEventListener("click", () => run(loadApplications));
+        document.getElementById("new-application").addEventListener("click", () => run(async () => resetApplicationForm()));
+        document.getElementById("save-application").addEventListener("click", () => run(saveApplication));
+        document.getElementById("reset-application-form").addEventListener("click", () => run(async () => resetApplicationForm()));
+        document.getElementById("withdraw-application").addEventListener("click", () => run(async () => {
+            if (!state.selectedApplicationId) {
+                throw new Error("当前没有选中的报名");
+            }
+            await withdrawApplication(state.selectedApplicationId);
+        }));
+        document.getElementById("reload-groups").addEventListener("click", () => run(loadGroups));
+        document.getElementById("reload-ungrouped").addEventListener("click", () => run(loadGroups));
+        document.getElementById("reload-admin-users").addEventListener("click", () => run(searchAdminUsers));
+        document.getElementById("search-admin-users").addEventListener("click", () => run(searchAdminUsers));
+        document.getElementById("reload-admin-periods").addEventListener("click", () => run(loadAdminWorkspace));
+        document.getElementById("save-admin-periods").addEventListener("click", () => run(saveAdminPeriods));
+        document.getElementById("reload-admin-directions").addEventListener("click", () => run(loadAdminWorkspace));
+        document.getElementById("save-admin-direction").addEventListener("click", () => run(saveAdminDirection));
+        document.getElementById("reset-admin-direction").addEventListener("click", () => run(async () => {
+            resetAdminDirectionForm();
+        }));
+        document.getElementById("delete-admin-direction").addEventListener("click", () => run(deleteAdminDirection));
+        document.getElementById("use-selected-group").addEventListener("click", () => run(async () => {
+            fillAdminGroupFormFromSelected();
+        }));
+        document.getElementById("new-admin-group").addEventListener("click", () => run(async () => {
+            resetAdminGroupForm();
+        }));
+        document.getElementById("save-admin-group").addEventListener("click", () => run(saveAdminGroup));
+        document.getElementById("delete-admin-group").addEventListener("click", () => run(deleteAdminGroup));
+        document.getElementById("assign-admin-group-leader").addEventListener("click", () => run(assignAdminGroupLeader));
+        document.getElementById("remove-admin-group-leader").addEventListener("click", () => run(removeAdminGroupLeader));
+        document.getElementById("disable-admin-user").addEventListener("click", () => run(() => updateAdminUserStatus("DISABLED")));
+        document.getElementById("enable-admin-user").addEventListener("click", () => run(() => updateAdminUserStatus("ACTIVE")));
+
+        nodes.applicationList.addEventListener("click", event => {
+            const editButton = event.target.closest("[data-edit-application]");
+            if (editButton) {
+                const applicationId = Number(editButton.dataset.editApplication);
+                const application = state.applications.find(item => item.id === applicationId);
+                if (application) {
+                    fillApplicationForm(application);
+                }
+                return;
+            }
+
+            const withdrawButton = event.target.closest("[data-withdraw-application]");
+            if (withdrawButton) {
+                const applicationId = Number(withdrawButton.dataset.withdrawApplication);
+                run(() => withdrawApplication(applicationId));
+            }
+        });
+
+        nodes.groupList.addEventListener("click", event => {
+            const groupButton = event.target.closest("[data-pick-group]");
+            if (groupButton) {
+                const groupId = Number(groupButton.dataset.pickGroup);
+                run(() => loadSelectedGroup(groupId));
+            }
+        });
+
+        nodes.ungroupedList.addEventListener("click", event => {
+            const assignButton = event.target.closest("[data-assign-application]");
+            if (assignButton) {
+                const applicationId = Number(assignButton.dataset.assignApplication);
+                run(() => assignApplication(applicationId));
+                return;
+            }
+
+            const rejectButton = event.target.closest("[data-reject-application]");
+            if (rejectButton) {
+                const applicationId = Number(rejectButton.dataset.rejectApplication);
+                run(() => rejectApplication(applicationId));
+            }
+        });
+
+        nodes.groupMembers.addEventListener("click", event => {
+            const unassignButton = event.target.closest("[data-unassign-application]");
+            if (unassignButton) {
+                const applicationId = Number(unassignButton.dataset.unassignApplication);
+                run(() => unassignApplication(applicationId));
+            }
+        });
+
+        nodes.adminDirectionTree.addEventListener("click", event => {
+            const editDirectionButton = event.target.closest("[data-edit-direction]");
+            if (editDirectionButton) {
+                const directionId = Number(editDirectionButton.dataset.editDirection);
+                run(async () => fillAdminDirectionForm(directionId));
+            }
+        });
+
+        nodes.adminUserList.addEventListener("click", event => {
+            const userButton = event.target.closest("[data-admin-user]");
+            if (userButton) {
+                const userId = Number(userButton.dataset.adminUser);
+                run(() => loadAdminUserDetail(userId));
+            }
+        });
+    }
+
+    async function init() {
+        fillDemoData();
+        bindStaticEvents();
+        await loadPublicData();
+        await afterAuthRefresh();
+        renderResponse();
+        resetApplicationForm();
+        resetAdminDirectionForm();
+        resetAdminGroupForm();
     }
 
     init();

@@ -80,17 +80,22 @@ class AuthServiceTest {
     private CurrentUserService currentUserService;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private AuthProperties authProperties;
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        AuthProperties authProperties = new AuthProperties();
+        authProperties = new AuthProperties();
         authProperties.getEmailCode().setTtlSeconds(300);
         authProperties.getEmailCode().setSendCooldownSeconds(60);
         authProperties.getEmailCode().setMaxVerifyFailCount(5);
         authProperties.getEmailCode().setVerifyLockSeconds(300);
         authProperties.getLogin().setMaxFailCount(5);
         authProperties.getLogin().setFailLockSeconds(900);
+        rebuildAuthService();
+    }
+
+    private void rebuildAuthService() {
         authService = new AuthService(
                 userRepository,
                 groupMemberRepository,
@@ -162,6 +167,100 @@ class AuthServiceTest {
         verify(authCacheService).clearLoginFailCount(anyString());
         verify(authCookieService).writeLoginCookie(any(MockHttpServletResponse.class), anyString(), anyBoolean());
         verify(authCookieService).writeCsrfCookie(any(MockHttpServletResponse.class), anyString());
+    }
+
+    @Test
+    void loginShouldIgnoreForwardedHeadersWhenProxyTrustDisabled() {
+        User user = User.builder()
+                .id(1L)
+                .username("zhangsan")
+                .email("user@example.com")
+                .passwordHash(passwordEncoder.encode("Pass1234"))
+                .emailVerified(true)
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .build();
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(authCacheService.incrementLoginFailCount(anyString(), any())).thenReturn(1L);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+        request.addHeader("X-Forwarded-For", "198.51.100.8");
+        request.addHeader("X-Real-IP", "203.0.113.9");
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "wrong", false), request, new MockHttpServletResponse()))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("邮箱或密码错误");
+
+        ArgumentCaptor<String> throttleKeyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(authCacheService).incrementLoginFailCount(throttleKeyCaptor.capture(), any());
+        assertThat(throttleKeyCaptor.getValue()).isEqualTo("user@example.com|127.0.0.1");
+    }
+
+    @Test
+    void loginShouldUseForwardedChainWhenRemoteAddrIsTrustedProxy() {
+        authProperties.getLogin().setTrustForwardHeaders(true);
+        authProperties.getLogin().setTrustedProxies(List.of("127.0.0.1", "198.51.100.20"));
+        rebuildAuthService();
+
+        User user = User.builder()
+                .id(1L)
+                .username("zhangsan")
+                .email("user@example.com")
+                .passwordHash(passwordEncoder.encode("Pass1234"))
+                .emailVerified(true)
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .build();
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(authCacheService.incrementLoginFailCount(anyString(), any())).thenReturn(1L);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+        request.addHeader("X-Forwarded-For", "203.0.113.10, 198.51.100.20");
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "wrong", false), request, new MockHttpServletResponse()))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("邮箱或密码错误");
+
+        ArgumentCaptor<String> throttleKeyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(authCacheService).incrementLoginFailCount(throttleKeyCaptor.capture(), any());
+        assertThat(throttleKeyCaptor.getValue()).isEqualTo("user@example.com|203.0.113.10");
+    }
+
+    @Test
+    void loginShouldFallbackToRemoteAddrWhenForwardedChainInvalid() {
+        authProperties.getLogin().setTrustForwardHeaders(true);
+        authProperties.getLogin().setTrustedProxies(List.of("127.0.0.1"));
+        rebuildAuthService();
+
+        User user = User.builder()
+                .id(1L)
+                .username("zhangsan")
+                .email("user@example.com")
+                .passwordHash(passwordEncoder.encode("Pass1234"))
+                .emailVerified(true)
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .build();
+        when(authCacheService.isLoginLocked(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(authCacheService.incrementLoginFailCount(anyString(), any())).thenReturn(1L);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("127.0.0.1");
+        request.addHeader("X-Forwarded-For", "not-an-ip");
+        request.addHeader("X-Real-IP", "also-not-an-ip");
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "wrong", false), request, new MockHttpServletResponse()))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("邮箱或密码错误");
+
+        ArgumentCaptor<String> throttleKeyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(authCacheService).incrementLoginFailCount(throttleKeyCaptor.capture(), any());
+        assertThat(throttleKeyCaptor.getValue()).isEqualTo("user@example.com|127.0.0.1");
     }
 
     @Test

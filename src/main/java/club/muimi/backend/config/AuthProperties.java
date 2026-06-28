@@ -4,6 +4,10 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @ConfigurationProperties(prefix = "app.auth")
@@ -29,6 +33,8 @@ public class AuthProperties {
     public static class Login {
         private int maxFailCount = 5;
         private long failLockSeconds = 900;
+        private boolean trustForwardHeaders = false;
+        private List<String> trustedProxies = new ArrayList<>();
 
     }
 
@@ -48,6 +54,16 @@ public class AuthProperties {
         }
         if (login.getMaxFailCount() <= 0 || login.getFailLockSeconds() <= 0) {
             throw new IllegalStateException("登录失败次数上限和锁定时长必须为正数");
+        }
+        for (String trustedProxy : login.getTrustedProxies()) {
+            if (trustedProxy == null || trustedProxy.isBlank()) {
+                continue;
+            }
+            try {
+                new IpAddressMatcher(trustedProxy.trim());
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalStateException("app.auth.login.trusted-proxies 中存在非法代理地址或网段: " + trustedProxy, exception);
+            }
         }
     }
 

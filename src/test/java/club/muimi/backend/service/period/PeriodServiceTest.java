@@ -1,7 +1,9 @@
 package club.muimi.backend.service.period;
 
 import club.muimi.backend.common.enums.PeriodType;
+import club.muimi.backend.dto.admin.PeriodConfigRequest;
 import club.muimi.backend.entity.RecruitmentPeriod;
+import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.exception.PeriodNotAllowedException;
 import club.muimi.backend.repository.RecruitmentPeriodRepository;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -146,5 +149,79 @@ class PeriodServiceTest {
         PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
 
         assertThat(periodService.getCurrentPeriod()).isEqualTo(PeriodType.FINISHED);
+    }
+
+    @Test
+    void listPeriodsShouldUseBusinessOrder() {
+        Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
+        when(recruitmentPeriodRepository.findAll()).thenReturn(List.of(
+                RecruitmentPeriod.builder()
+                        .id(2L)
+                        .periodType(PeriodType.SELECTION)
+                        .startTime(LocalDateTime.of(2026, 7, 1, 0, 0))
+                        .endTime(LocalDateTime.of(2026, 7, 10, 0, 0))
+                        .enabled(true)
+                        .build(),
+                RecruitmentPeriod.builder()
+                        .id(1L)
+                        .periodType(PeriodType.REGISTRATION)
+                        .startTime(LocalDateTime.of(2026, 6, 20, 0, 0))
+                        .endTime(LocalDateTime.of(2026, 6, 30, 0, 0))
+                        .enabled(true)
+                        .build()
+        ));
+
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+
+        var result = periodService.listPeriods();
+
+        assertThat(result).extracting(item -> item.periodType())
+                .containsExactly(PeriodType.REGISTRATION, PeriodType.SELECTION);
+    }
+
+    @Test
+    void savePeriodsShouldRejectOverlappingPeriods() {
+        Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
+        when(recruitmentPeriodRepository.findAll()).thenReturn(List.of());
+
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+
+        assertThatThrownBy(() -> periodService.savePeriods(List.of(
+                new PeriodConfigRequest(
+                        PeriodType.REGISTRATION,
+                        OffsetDateTime.parse("2026-06-20T00:00:00+08:00"),
+                        OffsetDateTime.parse("2026-06-30T00:00:00+08:00"),
+                        true
+                ),
+                new PeriodConfigRequest(
+                        PeriodType.SELECTION,
+                        OffsetDateTime.parse("2026-06-29T00:00:00+08:00"),
+                        OffsetDateTime.parse("2026-07-10T00:00:00+08:00"),
+                        true
+                )
+        ))).isInstanceOf(ConflictException.class)
+                .hasMessage("时期时间不能重叠");
+    }
+
+    @Test
+    void updatePeriodShouldRejectChangingPeriodType() {
+        Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
+        when(recruitmentPeriodRepository.findById(1L)).thenReturn(Optional.of(RecruitmentPeriod.builder()
+                .id(1L)
+                .periodType(PeriodType.REGISTRATION)
+                .startTime(LocalDateTime.of(2026, 6, 20, 0, 0))
+                .endTime(LocalDateTime.of(2026, 6, 30, 0, 0))
+                .enabled(true)
+                .build()));
+
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+
+        assertThatThrownBy(() -> periodService.updatePeriod(1L, new PeriodConfigRequest(
+                PeriodType.SELECTION,
+                OffsetDateTime.parse("2026-07-01T00:00:00+08:00"),
+                OffsetDateTime.parse("2026-07-10T00:00:00+08:00"),
+                true
+        ))).isInstanceOf(ConflictException.class)
+                .hasMessage("不允许修改时期类型");
     }
 }
