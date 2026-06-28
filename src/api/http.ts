@@ -116,7 +116,7 @@ function handleBusinessError(body: ApiResponse<unknown>) {
   ElMessage.error(body.message || `请求失败：${body.code}`);
 }
 
-export async function getData<T>(url: string, params?: Record<string, unknown>): Promise<T> {
+export async function getData<T>(url: string, params?: object): Promise<T> {
   const response = await http.get<ApiResponse<T>>(url, { params });
   return response.data.data;
 }

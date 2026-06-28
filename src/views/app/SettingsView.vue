@@ -1,6 +1,10 @@
 <template>
   <div class="page">
-    <PageHeader title="个人设置" description="查看账号信息、修改登录密码。" />
+    <PageHeader title="个人设置" description="查看账号信息、修改登录密码。">
+      <template #actions>
+        <el-button type="danger" plain :loading="logoutLoading" @click="handleLogout">退出登录</el-button>
+      </template>
+    </PageHeader>
 
     <div class="settings-grid">
       <section class="page-section">
@@ -55,18 +59,19 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
-import { passwordRuleMessage, isValidPassword } from '@/utils/authValidation';
+import { isValidPassword, passwordRuleMessage } from '@/utils/authValidation';
 import { roleLabels, userStatusLabels } from '@/utils/labels';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const submitting = ref(false);
+const logoutLoading = ref(false);
 const form = reactive({
   oldPassword: '',
   newPassword: '',
@@ -98,6 +103,35 @@ async function handleChangePassword() {
   }
 }
 
+async function handleLogout() {
+  const confirmed = await confirmLogout();
+
+  if (!confirmed) {
+    return;
+  }
+
+  logoutLoading.value = true;
+  try {
+    await authStore.logout();
+    await router.push('/login');
+  } finally {
+    logoutLoading.value = false;
+  }
+}
+
+async function confirmLogout() {
+  try {
+    await ElMessageBox.confirm('确认退出当前账号？', '退出登录', {
+      confirmButtonText: '退出',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function validateForm() {
   if (!form.oldPassword) {
     ElMessage.warning('请输入旧密码');
@@ -106,6 +140,11 @@ function validateForm() {
 
   if (!isValidPassword(form.newPassword)) {
     ElMessage.warning(passwordRuleMessage);
+    return false;
+  }
+
+  if (form.oldPassword === form.newPassword) {
+    ElMessage.warning('新密码不能与旧密码相同');
     return false;
   }
 

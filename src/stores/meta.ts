@@ -7,21 +7,36 @@ interface MetaState {
   currentPeriod: CurrentPeriod | null;
   directions: Direction[];
   loading: boolean;
+  initialized: boolean;
 }
+
+let bootstrapPromise: Promise<void> | null = null;
 
 export const useMetaStore = defineStore('meta', {
   state: (): MetaState => ({
     currentPeriod: null,
     directions: [],
-    loading: false
+    loading: false,
+    initialized: false
   }),
   getters: {
     period: (state): PeriodType | undefined => state.currentPeriod?.currentPeriod,
     isRegistration: (state) => state.currentPeriod?.currentPeriod === 'REGISTRATION',
-    isSelection: (state) => state.currentPeriod?.currentPeriod === 'SELECTION'
+    isSelection: (state) => state.currentPeriod?.currentPeriod === 'SELECTION',
+    isPeriodActive: (state) => (periods?: PeriodType[]) => {
+      if (!periods?.length) {
+        return true;
+      }
+
+      return Boolean(state.currentPeriod?.currentPeriod && periods.includes(state.currentPeriod.currentPeriod));
+    }
   },
   actions: {
-    async fetchCurrentPeriod() {
+    async fetchCurrentPeriod(force = false) {
+      if (this.currentPeriod && !force) {
+        return this.currentPeriod;
+      }
+
       this.currentPeriod = await getCurrentPeriod();
       return this.currentPeriod;
     },
@@ -33,13 +48,26 @@ export const useMetaStore = defineStore('meta', {
       this.directions = await getDirections(true);
       return this.directions;
     },
-    async bootstrap() {
-      this.loading = true;
-      try {
-        await Promise.all([this.fetchCurrentPeriod(), this.fetchDirections()]);
-      } finally {
-        this.loading = false;
+    async bootstrap(force = false) {
+      if (this.initialized && !force) {
+        return;
       }
+
+      if (bootstrapPromise && !force) {
+        return bootstrapPromise;
+      }
+
+      this.loading = true;
+
+      bootstrapPromise = (async () => {
+        await Promise.all([this.fetchCurrentPeriod(), this.fetchDirections()]);
+        this.initialized = true;
+      })().finally(() => {
+        this.loading = false;
+        bootstrapPromise = null;
+      });
+
+      return bootstrapPromise;
     }
   }
 });

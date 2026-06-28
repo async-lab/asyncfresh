@@ -60,7 +60,7 @@ async function handleSubmit() {
       confirmPassword: form.confirmPassword
     });
     ElMessage.success('密码已重置，请登录');
-    await router.push('/login');
+    await router.push({ path: '/login', query: { email: normalizeEmail(form.email) } });
   } finally {
     submitting.value = false;
   }

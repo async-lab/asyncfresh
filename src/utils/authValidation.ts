@@ -1,7 +1,7 @@
 export const passwordRuleMessage = '密码至少 8 位，且必须同时包含字母和数字';
 
 export function normalizeEmail(value: string) {
-  return value.trim();
+  return value.trim().toLowerCase();
 }
 
 export function isValidEmail(value: string) {

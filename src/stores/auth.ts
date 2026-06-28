@@ -11,6 +11,7 @@ import type { Role, User } from '@/types/api';
 import { clearMockUser, findMockUser, loadMockUser, saveMockUser } from '@/utils/mockAuth';
 
 const enableMockAuth = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+const useMockApi = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 interface AuthState {
   user: User | null;
@@ -36,7 +37,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const normalizedPayload = {
           ...payload,
-          email: payload.email.trim(),
+          email: payload.email.trim().toLowerCase(),
           rememberMe: Boolean(payload.rememberMe)
         };
         const mockUser = enableMockAuth ? findMockUser(normalizedPayload) : null;
@@ -48,7 +49,9 @@ export const useAuthStore = defineStore('auth', {
         }
 
         this.user = await loginApi(normalizedPayload);
-        clearMockUser();
+        if (!useMockApi) {
+          clearMockUser();
+        }
         this.initialized = true;
         return this.user;
       } finally {

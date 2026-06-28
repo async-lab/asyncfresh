@@ -2,6 +2,8 @@ import type { LoginPayload } from '@/api/auth';
 import type { User } from '@/types/api';
 
 const MOCK_SESSION_KEY = 'lab_recruit_mock_user';
+const MOCK_REGISTERED_ACCOUNTS_KEY = 'lab_recruit_mock_registered_accounts';
+const MOCK_PASSWORD_OVERRIDES_KEY = 'lab_recruit_mock_password_overrides';
 
 export interface MockAccount {
   label: string;
@@ -22,7 +24,7 @@ export const mockAccounts: MockAccount[] = [
       role: 'FRESHMAN',
       status: 'ACTIVE',
       emailVerified: true,
-      groups: []
+      groups: [{ id: 10, name: '后端-Java-1组' }]
     }
   },
   {
@@ -57,32 +59,118 @@ export const mockAccounts: MockAccount[] = [
 ];
 
 export function findMockUser(payload: LoginPayload): User | null {
-  const account = mockAccounts.find(
-    (item) => item.email === payload.email.trim() && item.password === payload.password
-  );
+  const email = normalizeMockEmail(payload.email);
+  const account = getAllMockAccounts().find((item) => item.email === email);
 
-  return account ? { ...account.user } : null;
+  if (!account) {
+    return null;
+  }
+
+  const password = getMockPassword(email) || account.password;
+  return password === payload.password ? cloneUser(account.user) : null;
+}
+
+export function hasMockAccount(email: string) {
+  const normalizedEmail = normalizeMockEmail(email);
+  return getAllMockAccounts().some((item) => item.email === normalizedEmail);
+}
+
+export function registerMockAccount(user: User, password: string) {
+  const normalizedEmail = normalizeMockEmail(user.email);
+  const account: MockAccount = {
+    label: user.username,
+    email: normalizedEmail,
+    password,
+    user: cloneUser({ ...user, email: normalizedEmail })
+  };
+
+  const accounts = loadRegisteredAccounts().filter((item) => item.email !== normalizedEmail);
+  accounts.push(account);
+  localStorage.setItem(MOCK_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+  saveMockPassword(normalizedEmail, password);
+}
+
+export function updateMockPassword(email: string, password: string) {
+  const normalizedEmail = normalizeMockEmail(email);
+  const accounts = loadRegisteredAccounts();
+  const account = accounts.find((item) => item.email === normalizedEmail);
+
+  if (account) {
+    account.password = password;
+    localStorage.setItem(MOCK_REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts));
+  }
+
+  saveMockPassword(normalizedEmail, password);
+}
+
+export function verifyMockPassword(email: string, password: string) {
+  const normalizedEmail = normalizeMockEmail(email);
+  const account = getAllMockAccounts().find((item) => item.email === normalizedEmail);
+
+  if (!account) {
+    return false;
+  }
+
+  return (getMockPassword(normalizedEmail) || account.password) === password;
 }
 
 export function saveMockUser(user: User) {
-  localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(user));
+  localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(cloneUser(user)));
 }
 
 export function loadMockUser(): User | null {
-  const raw = localStorage.getItem(MOCK_SESSION_KEY);
+  return readJson<User>(MOCK_SESSION_KEY);
+}
+
+export function clearMockUser() {
+  localStorage.removeItem(MOCK_SESSION_KEY);
+}
+
+export function getAllMockAccounts() {
+  return [...mockAccounts, ...loadRegisteredAccounts()].map((item) => ({
+    ...item,
+    email: normalizeMockEmail(item.email),
+    user: cloneUser(item.user)
+  }));
+}
+
+function loadRegisteredAccounts() {
+  return readJson<MockAccount[]>(MOCK_REGISTERED_ACCOUNTS_KEY) || [];
+}
+
+function getMockPassword(email: string) {
+  const passwords = readJson<Record<string, string>>(MOCK_PASSWORD_OVERRIDES_KEY) || {};
+  return passwords[normalizeMockEmail(email)];
+}
+
+function saveMockPassword(email: string, password: string) {
+  const passwords = readJson<Record<string, string>>(MOCK_PASSWORD_OVERRIDES_KEY) || {};
+  passwords[normalizeMockEmail(email)] = password;
+  localStorage.setItem(MOCK_PASSWORD_OVERRIDES_KEY, JSON.stringify(passwords));
+}
+
+function readJson<T>(key: string): T | null {
+  const raw = localStorage.getItem(key);
 
   if (!raw) {
     return null;
   }
 
   try {
-    return JSON.parse(raw) as User;
+    return JSON.parse(raw) as T;
   } catch {
-    localStorage.removeItem(MOCK_SESSION_KEY);
+    localStorage.removeItem(key);
     return null;
   }
 }
 
-export function clearMockUser() {
-  localStorage.removeItem(MOCK_SESSION_KEY);
+function normalizeMockEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function cloneUser(user: User): User {
+  return {
+    ...user,
+    groups: user.groups?.map((group) => ({ ...group }))
+  };
 }

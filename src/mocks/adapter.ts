@@ -1,7 +1,17 @@
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-import type { ApiResponse, Application, Group, Material, Task, User } from '@/types/api';
-import { clearMockUser, findMockUser, loadMockUser, mockAccounts, saveMockUser } from '@/utils/mockAuth';
+import type { ApiResponse, Announcement, Application, Group, Material, Task, User } from '@/types/api';
+import {
+  clearMockUser,
+  findMockUser,
+  hasMockAccount,
+  loadMockUser,
+  mockAccounts,
+  registerMockAccount,
+  saveMockUser,
+  updateMockPassword,
+  verifyMockPassword
+} from '@/utils/mockAuth';
 import {
   mockAnnouncements,
   mockApplications,
@@ -45,6 +55,10 @@ class MockApiError extends Error {
   }
 }
 
+function getCurrentMockUser() {
+  return loadMockUser() || mockAccounts[0].user;
+}
+
 function handleMockRequest(method: string, path: string, params: Record<string, unknown>, body: any) {
   if (method === 'get' && path === '/meta/current-period') {
     return {
@@ -84,46 +98,86 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'post' && path === '/auth/register') {
+    const email = String(body.email || '').trim().toLowerCase();
+
+    if (hasMockAccount(email) || mockUsers.some((item) => item.email.toLowerCase() === email)) {
+      throw new MockApiError(40900, '该邮箱已注册');
+    }
+
     const user: User = {
       id: nextId(mockUsers),
-      username: body.username,
-      email: body.email,
+      username: String(body.username || '').trim(),
+      email,
       role: 'FRESHMAN',
       status: 'ACTIVE',
       emailVerified: true,
       groups: []
     };
     mockUsers.push(user);
+    registerMockAccount(user, String(body.password || ''));
     return user;
   }
 
-  if (method === 'post' && (path === '/auth/forgot-password' || path === '/auth/reset-password')) {
+  if (method === 'post' && path === '/auth/forgot-password') {
+    return null;
+  }
+
+  if (method === 'post' && path === '/auth/reset-password') {
+    const email = String(body.email || '').trim().toLowerCase();
+
+    if (!hasMockAccount(email) && !mockUsers.some((item) => item.email.toLowerCase() === email)) {
+      throw new MockApiError(40400, '账号不存在');
+    }
+
+    updateMockPassword(email, String(body.newPassword || ''));
     return null;
   }
 
   if (method === 'post' && path === '/auth/change-password') {
+    const user = loadMockUser();
+
+    if (!user) {
+      throw new MockApiError(40100, '未登录或登录过期');
+    }
+
+    if (!verifyMockPassword(user.email, String(body.oldPassword || ''))) {
+      throw new MockApiError(40000, '旧密码不正确');
+    }
+
+    updateMockPassword(user.email, String(body.newPassword || ''));
     clearMockUser();
     return null;
   }
 
   if (method === 'get' && path === '/profile') {
     const user = loadMockUser() || mockAccounts[0].user;
+    const applications = getCurrentUserApplications();
     return {
       user,
-      applicationCount: mockApplications.length,
+      applicationCount: applications.length,
       groupCount: user.groups?.length || 0,
       groups: user.groups || []
     };
   }
 
   if (method === 'get' && path === '/applications') {
-    return mockApplications;
+    return filterApplications(getCurrentUserApplications(), params);
+  }
+
+  if (method === 'get' && path === '/applications/page') {
+    return pageOf(
+      filterApplications(getCurrentUserApplications(), params),
+      numberParam(params.page, 1),
+      numberParam(params.size, 10)
+    );
   }
 
   if (method === 'post' && path === '/applications') {
+    const user = loadMockUser() || mockAccounts[0].user;
     const application: Application = {
       ...body,
       id: nextId(mockApplications),
+      userId: user.id,
       status: 'SUBMITTED',
       statusRemark: null,
       groupId: null,
@@ -136,7 +190,7 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
 
   const applicationId = matchId(path, /^\/applications\/(\d+)$/);
   if (applicationId) {
-    const application = findById(mockApplications, applicationId, '报名申请不存在');
+    const application = findCurrentUserApplication(applicationId);
     if (method === 'get') return application;
     if (method === 'put') {
       Object.assign(application, body, { updatedAt: now() });
@@ -150,17 +204,18 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/applications/summary') {
+    const applications = getCurrentUserApplications();
     return {
-      applicationCount: mockApplications.length,
-      submittedCount: mockApplications.filter((item) => item.status === 'SUBMITTED').length,
-      groupedCount: mockApplications.filter((item) => item.status === 'GROUPED').length,
-      groupIds: mockApplications.filter((item) => item.groupId).map((item) => item.groupId)
+      applicationCount: applications.length,
+      submittedCount: applications.filter((item) => item.status === 'SUBMITTED').length,
+      groupedCount: applications.filter((item) => item.status === 'GROUPED').length,
+      groupIds: applications.flatMap((item) => (item.groupId ? [item.groupId] : []))
     };
   }
 
   if (method === 'get' && path === '/announcements') {
     return pageOf(
-      filterByScope(mockAnnouncements, String(params.scope || '')),
+      filterAnnouncements(mockAnnouncements, params),
       numberParam(params.page, 1),
       numberParam(params.size, 10)
     );
@@ -192,14 +247,7 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/materials') {
-    let list = mockMaterials;
-    if (params.directionLevel1Id) {
-      list = list.filter((item) => item.directionLevel1Id === Number(params.directionLevel1Id));
-    }
-    if (params.directionLevel2Id) {
-      list = list.filter((item) => item.directionLevel2Id === Number(params.directionLevel2Id));
-    }
-    return pageOf(list, numberParam(params.page, 1), numberParam(params.size, 10));
+    return pageOf(filterMaterials(mockMaterials, params), numberParam(params.page, 1), numberParam(params.size, 10));
   }
 
   const materialId = matchId(path, /^\/materials\/(\d+)$/) || matchId(path, /^\/admin\/materials\/(\d+)$/);
@@ -238,7 +286,7 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/tasks') {
-    return pageOf(filterByScope(mockTasks, String(params.scope || '')), numberParam(params.page, 1), numberParam(params.size, 10));
+    return pageOf(filterTasks(mockTasks, params), numberParam(params.page, 1), numberParam(params.size, 10));
   }
 
   const taskId = matchId(path, /^\/tasks\/(\d+)$/);
@@ -268,24 +316,30 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
 
   const submitTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions$/);
   if (method === 'post' && submitTaskId) {
+    const user = getCurrentMockUser();
+    const task = findById(mockTasks, submitTaskId, '任务不存在');
     mockSubmissions.forEach((item) => {
-      if (item.taskId === submitTaskId) item.isLatest = false;
+      if (item.taskId === submitTaskId && (!item.userId || item.userId === user.id)) item.isLatest = false;
     });
     const submission = {
       ...body,
       id: nextId(mockSubmissions),
       taskId: submitTaskId,
-      submitVersion: mockSubmissions.filter((item) => item.taskId === submitTaskId).length + 1,
+      userId: user.id,
+      submitVersion: mockSubmissions.filter((item) => item.taskId === submitTaskId && (!item.userId || item.userId === user.id)).length + 1,
       isLatest: true,
       submittedAt: now()
     };
     mockSubmissions.push(submission);
+    task.submissionStatus = 'SUBMITTED';
+    task.reviewStatus = 'SUBMITTED';
     return submission;
   }
 
   const mySubmissionTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions\/me$/);
   if (method === 'get' && mySubmissionTaskId) {
-    return mockSubmissions.filter((item) => item.taskId === mySubmissionTaskId);
+    const user = getCurrentMockUser();
+    return mockSubmissions.filter((item) => item.taskId === mySubmissionTaskId && (!item.userId || item.userId === user.id));
   }
 
   const groupSubmissionTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions\/group$/);
@@ -307,8 +361,17 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     return null;
   }
 
-  if (method === 'get' && path === '/submissions/mine') {
+  if (method === 'get' && (path === '/submissions/mine' || path === '/scores/me')) {
     return mockScores;
+  }
+
+  if (method === 'get' && path === '/groups/me') {
+    const groupIds = new Set((getCurrentMockUser().groups || []).map((item) => item.id));
+    return mockGroups.filter((item) => groupIds.has(item.id));
+  }
+
+  if (method === 'get' && path === '/groups') {
+    return pageOf(filterVisibleGroups(mockGroups, params), numberParam(params.page, 1), numberParam(params.size, 10));
   }
 
   const groupId = matchId(path, /^\/groups\/(\d+)$/);
@@ -508,6 +571,22 @@ function findById<T extends { id: number }>(list: T[], id: number, message: stri
   return item;
 }
 
+function getCurrentUserApplications() {
+  const user = loadMockUser() || mockAccounts[0].user;
+  return mockApplications.filter((application) => !application.userId || application.userId === user.id);
+}
+
+function findCurrentUserApplication(id: number) {
+  const application = findById(mockApplications, id, '报名申请不存在');
+  const user = loadMockUser() || mockAccounts[0].user;
+
+  if (application.userId && application.userId !== user.id) {
+    throw new MockApiError(40300, '无权访问该报名申请');
+  }
+
+  return application;
+}
+
 function removeById<T extends { id: number }>(list: T[], id: number) {
   const index = list.findIndex((entry) => entry.id === id);
   if (index >= 0) list.splice(index, 1);
@@ -528,8 +607,125 @@ function findDirection(id: number) {
   return direction;
 }
 
+function filterApplications(list: Application[], params: Record<string, unknown>) {
+  let result = [...list];
+
+  if (params.status) {
+    result = result.filter((item) => item.status === params.status);
+  }
+  if (params.groupId) {
+    result = result.filter((item) => item.groupId === Number(params.groupId));
+  }
+
+  const keyword = stringParam(params.keyword);
+  if (keyword) {
+    result = result.filter((item) =>
+      [item.realName, item.phone, item.college, item.major, item.className, item.introduction]
+        .filter(Boolean)
+        .some((value) => String(value).includes(keyword))
+    );
+  }
+
+  return result;
+}
+
+function filterAnnouncements(list: Announcement[], params: Record<string, unknown>) {
+  let result = filterByScope(list, stringParam(params.scope));
+
+  if (params.groupId) {
+    result = result.filter((item) => item.groupId === Number(params.groupId));
+  }
+
+  const keyword = stringParam(params.keyword);
+  if (keyword) {
+    result = result.filter((item) => [item.title, item.content].filter(Boolean).some((value) => String(value).includes(keyword)));
+  }
+
+  return result;
+}
+
+function filterMaterials(list: Material[], params: Record<string, unknown>) {
+  let result = [...list];
+
+  if (params.directionLevel1Id) {
+    result = result.filter((item) => item.directionLevel1Id === Number(params.directionLevel1Id));
+  }
+  if (params.directionLevel2Id) {
+    result = result.filter((item) => item.directionLevel2Id === Number(params.directionLevel2Id));
+  }
+
+  const hasAttachment = booleanParam(params.hasAttachment);
+  if (hasAttachment !== undefined) {
+    result = result.filter((item) => Boolean(item.attachmentUrl) === hasAttachment);
+  }
+
+  const keyword = stringParam(params.keyword);
+  if (keyword) {
+    result = result.filter((item) =>
+      [item.title, item.summary, item.content].filter(Boolean).some((value) => String(value).includes(keyword))
+    );
+  }
+
+  return result;
+}
+
+function filterTasks(list: Task[], params: Record<string, unknown>) {
+  let result = filterByScope(list, stringParam(params.scope));
+
+  if (params.groupId) {
+    result = result.filter((item) => item.groupId === Number(params.groupId));
+  }
+  if (params.submissionStatus) {
+    result = result.filter((item) => item.submissionStatus === params.submissionStatus);
+  }
+
+  const keyword = stringParam(params.keyword);
+  if (keyword) {
+    result = result.filter((item) => [item.title, item.content].filter(Boolean).some((value) => String(value).includes(keyword)));
+  }
+
+  return result;
+}
+
+function filterVisibleGroups(list: Group[], params: Record<string, unknown>) {
+  const user = getCurrentMockUser();
+  const groupIds = new Set((user.groups || []).map((item) => item.id));
+  let result = user.role === 'ADMIN' ? [...list] : list.filter((item) => groupIds.has(item.id));
+
+  if (params.directionLevel1Id) {
+    result = result.filter((item) => item.directionLevel1Id === Number(params.directionLevel1Id));
+  }
+  if (params.directionLevel2Id) {
+    result = result.filter((item) => item.directionLevel2Id === Number(params.directionLevel2Id));
+  }
+  if (params.grade) {
+    result = result.filter((item) => item.grade === params.grade);
+  }
+  if (params.admissionYear) {
+    result = result.filter((item) => item.admissionYear === Number(params.admissionYear));
+  }
+
+  const keyword = stringParam(params.keyword);
+  if (keyword) {
+    result = result.filter((item) => item.name.includes(keyword));
+  }
+
+  return result;
+}
+
 function filterByScope<T extends { scope: string }>(list: T[], scope: string) {
   return scope ? list.filter((item) => item.scope === scope) : list;
+}
+
+function stringParam(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function booleanParam(value: unknown) {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
 }
 
 function now() {

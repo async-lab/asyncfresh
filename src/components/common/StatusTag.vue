@@ -7,10 +7,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import type { ApplicationStatus, SubmissionStatus } from '@/types/api';
 import { applicationStatusLabels, submissionStatusLabels } from '@/utils/labels';
 
+type StatusValue = ApplicationStatus | SubmissionStatus;
+
 const props = defineProps<{
-  value?: string;
+  value?: StatusValue;
   label?: string;
 }>();
 

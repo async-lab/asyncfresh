@@ -86,6 +86,7 @@ export const mockUsers: User[] = [
 export const mockApplications: Application[] = [
   {
     id: 100,
+    userId: 1,
     realName: '张三',
     phone: '13800000000',
     college: '计算机学院',
@@ -104,6 +105,7 @@ export const mockApplications: Application[] = [
   },
   {
     id: 101,
+    userId: 1,
     realName: '张三',
     phone: '13800000000',
     college: '计算机学院',
@@ -122,6 +124,7 @@ export const mockApplications: Application[] = [
   },
   {
     id: 102,
+    userId: 4,
     realName: '李四',
     phone: '13900000000',
     college: '信息学院',
@@ -280,6 +283,7 @@ export const mockSubmissions: TaskSubmission[] = [
   {
     id: 501,
     taskId: 1,
+    userId: 1,
     submitVersion: 1,
     isLatest: false,
     submittedAt: '2026-06-26T12:00:00+08:00',
@@ -289,6 +293,7 @@ export const mockSubmissions: TaskSubmission[] = [
   {
     id: 502,
     taskId: 1,
+    userId: 1,
     submitVersion: 2,
     isLatest: true,
     submittedAt: '2026-06-27T10:30:00+08:00',

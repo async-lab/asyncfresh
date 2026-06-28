@@ -18,7 +18,8 @@
     </el-form>
 
     <div class="links">
-      <router-link to="/register">注册账号</router-link>
+      <router-link v-if="!isAdminLogin" to="/register">注册账号</router-link>
+      <router-link v-else to="/login">普通登录</router-link>
       <router-link to="/forgot-password">找回密码</router-link>
     </div>
 
@@ -28,6 +29,7 @@
         v-for="account in mockAccounts"
         :key="account.email"
         size="small"
+        :disabled="authStore.loading"
         @click="loginWithMock(account)"
       >
         {{ account.label }}
@@ -38,12 +40,12 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
-import { computed, reactive } from 'vue';
+import { computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import PageHeader from '@/components/common/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
-import type { Role } from '@/types/api';
+import { getHomePathByRole, resolvePostLoginPath } from '@/utils/authRouting';
 import { isValidEmail, normalizeEmail } from '@/utils/authValidation';
 import { mockAccounts, type MockAccount } from '@/utils/mockAuth';
 
@@ -55,38 +57,16 @@ const showDemoAccounts = enableMockAuth || import.meta.env.VITE_USE_MOCK_API ===
 
 const isAdminLogin = computed(() => route.name === 'admin-login');
 const form = reactive({
-  email: '',
+  email: typeof route.query.email === 'string' ? route.query.email : '',
   password: '',
   rememberMe: false
 });
 
-function getHomePathByRole(role: Role) {
-  if (role === 'ADMIN') {
-    return '/admin';
+onMounted(() => {
+  if (authStore.user) {
+    void router.replace(getHomePathByRole(authStore.user.role));
   }
-
-  if (role === 'LEADER') {
-    return '/leader/announcements';
-  }
-
-  return '/app';
-}
-
-function resolvePostLoginPath(role: Role, redirect?: string): string {
-  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
-    return getHomePathByRole(role);
-  }
-
-  if (role === 'ADMIN') {
-    return redirect.startsWith('/admin') ? redirect : '/admin';
-  }
-
-  if (role === 'LEADER') {
-    return redirect.startsWith('/leader') ? redirect : '/leader/announcements';
-  }
-
-  return redirect.startsWith('/app') ? redirect : '/app';
-}
+});
 
 async function handleSubmit() {
   if (!isValidEmail(form.email)) {
