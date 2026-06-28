@@ -1,8 +1,25 @@
 import { deleteData, getData, postData, putData } from './http';
-import type { Application, ApplicationForm, ApplicationSummary } from '@/types/api';
+import type {
+  Application,
+  ApplicationForm,
+  ApplicationStatus,
+  ApplicationSummary,
+  PageQuery,
+  PageResult
+} from '@/types/api';
+
+export interface ApplicationQuery extends PageQuery {
+  status?: ApplicationStatus;
+  groupId?: number;
+  keyword?: string;
+}
 
 export function getApplications() {
   return getData<Application[]>('/applications');
+}
+
+export function getApplicationPage(params?: ApplicationQuery) {
+  return getData<PageResult<Application>>('/applications/page', params);
 }
 
 export function getApplication(id: number | string) {

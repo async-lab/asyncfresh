@@ -1,5 +1,12 @@
 import { deleteData, getData, postData, putData } from './http';
-import type { Material, PageResult } from '@/types/api';
+import type { Material, PageQuery, PageResult } from '@/types/api';
+
+export interface MaterialQuery extends PageQuery {
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  keyword?: string;
+  hasAttachment?: boolean;
+}
 
 export interface MaterialPayload {
   title: string;
@@ -10,12 +17,7 @@ export interface MaterialPayload {
   directionLevel2Id?: number | null;
 }
 
-export function getMaterials(params?: {
-  directionLevel1Id?: number;
-  directionLevel2Id?: number;
-  page?: number;
-  size?: number;
-}) {
+export function getMaterials(params?: MaterialQuery) {
   return getData<PageResult<Material>>('/materials', params);
 }
 

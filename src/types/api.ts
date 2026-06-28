@@ -14,6 +14,11 @@ export interface PageResult<T> {
   totalPages: number;
 }
 
+export interface PageQuery {
+  page?: number;
+  size?: number;
+}
+
 export type Role = 'FRESHMAN' | 'LEADER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'DISABLED';
 export type PeriodType = 'REGISTRATION' | 'SELECTION' | 'INTERVIEW' | 'FINISHED';
@@ -55,6 +60,7 @@ export interface Direction {
 
 export interface Application {
   id: number;
+  userId?: number;
   realName: string;
   phone: string;
   college: string;
@@ -130,6 +136,7 @@ export interface Task {
 export interface TaskSubmission {
   id: number;
   taskId: number;
+  userId?: number;
   submitVersion: number;
   isLatest: boolean;
   submittedAt: string;

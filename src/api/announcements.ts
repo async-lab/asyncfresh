@@ -1,5 +1,11 @@
 import { deleteData, getData, postData, putData } from './http';
-import type { Announcement, PageResult, Scope } from '@/types/api';
+import type { Announcement, PageQuery, PageResult, Scope } from '@/types/api';
+
+export interface AnnouncementQuery extends PageQuery {
+  scope?: Scope;
+  groupId?: number;
+  keyword?: string;
+}
 
 export interface AnnouncementPayload {
   title: string;
@@ -8,7 +14,7 @@ export interface AnnouncementPayload {
   groupId?: number | null;
 }
 
-export function getAnnouncements(params?: { scope?: Scope; page?: number; size?: number }) {
+export function getAnnouncements(params?: AnnouncementQuery) {
   return getData<PageResult<Announcement>>('/announcements', params);
 }
 

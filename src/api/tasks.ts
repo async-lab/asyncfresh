@@ -1,5 +1,12 @@
 import { deleteData, getData, postData, putData } from './http';
-import type { PageResult, Scope, Task, TaskScore, TaskSubmission } from '@/types/api';
+import type { PageQuery, PageResult, Scope, SubmissionStatus, Task, TaskScore, TaskSubmission } from '@/types/api';
+
+export interface TaskQuery extends PageQuery {
+  scope?: Scope;
+  groupId?: number;
+  keyword?: string;
+  submissionStatus?: SubmissionStatus;
+}
 
 export interface TaskPayload {
   title: string;
@@ -31,7 +38,7 @@ export interface GroupSubmissionSummary {
   score?: number | null;
 }
 
-export function getTasks(params?: { scope?: Scope; page?: number; size?: number }) {
+export function getTasks(params?: TaskQuery) {
   return getData<PageResult<Task>>('/tasks', params);
 }
 
@@ -71,6 +78,10 @@ export function reviewSubmission(id: number | string, payload: ReviewPayload) {
   return postData<null, ReviewPayload>(`/submissions/${id}/review`, payload);
 }
 
-export function getMyScores() {
+export function getMyTaskScores() {
   return getData<TaskScore[]>('/submissions/mine');
+}
+
+export function getMyScores() {
+  return getMyTaskScores();
 }
