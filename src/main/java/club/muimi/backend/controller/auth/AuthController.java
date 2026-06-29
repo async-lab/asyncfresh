@@ -31,8 +31,11 @@ public class AuthController {
     }
 
     @PostMapping("/send-email-code")
-    public ApiResponse<Void> sendEmailCode(@Valid @RequestBody SendEmailCodeRequest request) {
-        authService.sendEmailCode(request);
+    public ApiResponse<Void> sendEmailCode(
+            @Valid @RequestBody SendEmailCodeRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        authService.sendEmailCode(request, httpServletRequest);
         return ApiResponse.success(null, "验证码已发送");
     }
 
@@ -64,8 +67,11 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.forgotPassword(request);
+    public ApiResponse<Void> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request,
+            HttpServletRequest httpServletRequest
+    ) {
+        authService.forgotPassword(request, httpServletRequest);
         return ApiResponse.success(null, "找回密码验证码已发送");
     }
 

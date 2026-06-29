@@ -50,6 +50,20 @@ public class RedisAuthCacheService implements AuthCacheService {
     }
 
     @Override
+    public long incrementEmailSendIpCount(String clientIp, Duration ttl) {
+        Long value = redisTemplate.opsForValue().increment(emailSendIpKey(clientIp));
+        redisTemplate.expire(emailSendIpKey(clientIp), ttl);
+        return value == null ? 0L : value;
+    }
+
+    @Override
+    public long incrementEmailSendGlobalCount(Duration ttl) {
+        Long value = redisTemplate.opsForValue().increment(emailSendGlobalKey());
+        redisTemplate.expire(emailSendGlobalKey(), ttl);
+        return value == null ? 0L : value;
+    }
+
+    @Override
     public long incrementEmailCodeVerifyFailCount(EmailCodeScene scene, String email, Duration ttl) {
         Long value = redisTemplate.opsForValue().increment(emailCodeVerifyFailKey(scene, email));
         redisTemplate.expire(emailCodeVerifyFailKey(scene, email), ttl);
@@ -118,6 +132,14 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     private String emailCooldownKey(EmailCodeScene scene, String email) {
         return "auth:email-send-cooldown:" + scene.name() + ":" + email;
+    }
+
+    private String emailSendIpKey(String clientIp) {
+        return "auth:email-send:ip:" + clientIp;
+    }
+
+    private String emailSendGlobalKey() {
+        return "auth:email-send:global";
     }
 
     private String emailCodeVerifyFailKey(EmailCodeScene scene, String email) {

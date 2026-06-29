@@ -1,5 +1,7 @@
 package club.muimi.backend.service.group;
 
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.Grade;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
@@ -16,6 +18,10 @@ import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.UserRepository;
+import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.group.GroupDetailVo;
 import club.muimi.backend.vo.group.ManageableGroupVo;
 import org.springframework.stereotype.Service;
@@ -24,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +44,8 @@ public class GroupAdminService {
     private final GroupMemberRepository groupMemberRepository;
     private final DirectionRepository directionRepository;
     private final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
     private final Clock appClock;
 
     public GroupAdminService(
@@ -44,12 +53,16 @@ public class GroupAdminService {
             GroupMemberRepository groupMemberRepository,
             DirectionRepository directionRepository,
             UserRepository userRepository,
+            CurrentUserService currentUserService,
+            AuditLogService auditLogService,
             Clock appClock
     ) {
         this.recruitmentGroupRepository = recruitmentGroupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.directionRepository = directionRepository;
         this.userRepository = userRepository;
+        this.currentUserService = currentUserService;
+        this.auditLogService = auditLogService;
         this.appClock = appClock;
     }
 
@@ -67,6 +80,7 @@ public class GroupAdminService {
 
     @Transactional
     public GroupDetailVo createGroup(GroupUpsertRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         DirectionSelection directionSelection = validateDirectionSelection(
                 request.directionLevel1Id(),
                 request.directionLevel2Id()
@@ -84,11 +98,13 @@ public class GroupAdminService {
                 .leaderUserId(null)
                 .build();
         RecruitmentGroup saved = recruitmentGroupRepository.save(group);
+        recordGroupAudit("CREATE_GROUP", "创建分组", currentUser, saved, null);
         return buildGroupDetailVo(saved);
     }
 
     @Transactional
     public GroupDetailVo updateGroup(Long groupId, GroupUpsertRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentGroup group = getGroupOrThrow(groupId);
         DirectionSelection directionSelection = validateDirectionSelection(
                 request.directionLevel1Id(),
@@ -113,20 +129,24 @@ public class GroupAdminService {
         group.setMaxSize(request.maxSize());
 
         RecruitmentGroup saved = recruitmentGroupRepository.save(group);
+        recordGroupAudit("UPDATE_GROUP", "更新分组", currentUser, saved, null);
         return buildGroupDetailVo(saved);
     }
 
     @Transactional
     public void deleteGroup(Long groupId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentGroup group = getGroupOrThrow(groupId);
         if (groupMemberRepository.countByGroupId(groupId) > 0) {
             throw new ConflictException("分组内仍有成员，暂不允许删除");
         }
         recruitmentGroupRepository.delete(group);
+        recordGroupAudit("DELETE_GROUP", "删除分组", currentUser, group, null);
     }
 
     @Transactional
     public GroupDetailVo assignLeader(Long groupId, AssignGroupLeaderRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentGroup group = getGroupOrThrow(groupId);
         User leader = userRepository.findById(request.leaderUserId())
                 .orElseThrow(() -> new NotFoundException("负责人用户不存在"));
@@ -138,14 +158,18 @@ public class GroupAdminService {
         }
         group.setLeaderUserId(leader.getId());
         RecruitmentGroup saved = recruitmentGroupRepository.save(group);
+        recordGroupAudit("ASSIGN_GROUP_LEADER", "指派分组负责人", currentUser, saved, leader.getId());
         return buildGroupDetailVo(saved);
     }
 
     @Transactional
     public GroupDetailVo removeLeader(Long groupId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentGroup group = getGroupOrThrow(groupId);
+        Long previousLeaderUserId = group.getLeaderUserId();
         group.setLeaderUserId(null);
         RecruitmentGroup saved = recruitmentGroupRepository.save(group);
+        recordGroupAudit("REMOVE_GROUP_LEADER", "移除分组负责人", currentUser, saved, previousLeaderUserId);
         return buildGroupDetailVo(saved);
     }
 
@@ -263,6 +287,32 @@ public class GroupAdminService {
 
     private OffsetDateTime toOffsetDateTime(java.time.LocalDateTime value) {
         return value.atZone(appClock.getZone()).toOffsetDateTime();
+    }
+
+    private void recordGroupAudit(
+            String action,
+            String summary,
+            LoginUser actor,
+            RecruitmentGroup group,
+            Long leaderUserId
+    ) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("groupName", group.getName());
+        detail.put("directionLevel1Id", group.getDirectionLevel1Id());
+        detail.put("directionLevel2Id", group.getDirectionLevel2Id());
+        detail.put("grade", group.getGrade());
+        detail.put("admissionYear", group.getAdmissionYear());
+        detail.put("maxSize", group.getMaxSize());
+        detail.put("leaderUserId", leaderUserId == null ? group.getLeaderUserId() : leaderUserId);
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.GROUP,
+                        action,
+                        AuditSeverity.IMPORTANT,
+                        summary
+                ).actor(actor)
+                .target("GROUP", group.getId())
+                .detail(detail)
+                .build());
     }
 
     private record DirectionSelection(Direction level1, Direction level2) {

@@ -6,6 +6,9 @@ import club.muimi.backend.entity.RecruitmentPeriod;
 import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.exception.PeriodNotAllowedException;
 import club.muimi.backend.repository.RecruitmentPeriodRepository;
+import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.user.CurrentUserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +33,10 @@ class PeriodServiceTest {
 
     @Mock
     private RecruitmentPeriodRepository recruitmentPeriodRepository;
+    @Mock
+    private CurrentUserService currentUserService;
+    @Mock
+    private AuditLogService auditLogService;
 
     @Test
     void getCurrentPeriodShouldReturnSelectionWhenSelectionIsOpen() {
@@ -43,7 +50,7 @@ class PeriodServiceTest {
                 .enabled(true)
                 .build()));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         assertThat(periodService.getCurrentPeriod()).isEqualTo(PeriodType.SELECTION);
     }
@@ -59,7 +66,7 @@ class PeriodServiceTest {
                 .enabled(true)
                 .build()));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         assertThatThrownBy(periodService::ensureSelectionOpenForGrouping)
                 .isInstanceOf(PeriodNotAllowedException.class)
@@ -85,7 +92,7 @@ class PeriodServiceTest {
                 .enabled(true)
                 .build()));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         assertThat(periodService.getCurrentPeriod()).isEqualTo(PeriodType.NOT_OPEN);
     }
@@ -122,7 +129,7 @@ class PeriodServiceTest {
                         .build()
         ));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         assertThat(periodService.getCurrentPeriod()).isEqualTo(PeriodType.NOT_OPEN);
     }
@@ -146,7 +153,7 @@ class PeriodServiceTest {
                 .enabled(true)
                 .build()));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         assertThat(periodService.getCurrentPeriod()).isEqualTo(PeriodType.FINISHED);
     }
@@ -171,7 +178,7 @@ class PeriodServiceTest {
                         .build()
         ));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
 
         var result = periodService.listPeriods();
 
@@ -184,7 +191,8 @@ class PeriodServiceTest {
         Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
         when(recruitmentPeriodRepository.findAll()).thenReturn(List.of());
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
+        when(currentUserService.requireCurrentUser()).thenReturn(buildAdminLoginUser());
 
         assertThatThrownBy(() -> periodService.savePeriods(List.of(
                 new PeriodConfigRequest(
@@ -214,7 +222,8 @@ class PeriodServiceTest {
                 .enabled(true)
                 .build()));
 
-        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, clock);
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
+        when(currentUserService.requireCurrentUser()).thenReturn(buildAdminLoginUser());
 
         assertThatThrownBy(() -> periodService.updatePeriod(1L, new PeriodConfigRequest(
                 PeriodType.SELECTION,
@@ -223,5 +232,18 @@ class PeriodServiceTest {
                 true
         ))).isInstanceOf(ConflictException.class)
                 .hasMessage("不允许修改时期类型");
+    }
+
+    private LoginUser buildAdminLoginUser() {
+        return new LoginUser(
+                1L,
+                "admin",
+                "admin@example.com",
+                "hashed",
+                club.muimi.backend.common.enums.Role.ADMIN,
+                club.muimi.backend.common.enums.UserStatus.ACTIVE,
+                0L,
+                "jti-admin"
+        );
     }
 }

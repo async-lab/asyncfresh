@@ -6,6 +6,9 @@ import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.repository.ApplicationRepository;
 import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
+import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.user.CurrentUserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -29,6 +32,10 @@ class DirectionServiceTest {
 
     @Mock
     private RecruitmentGroupRepository recruitmentGroupRepository;
+    @Mock
+    private CurrentUserService currentUserService;
+    @Mock
+    private AuditLogService auditLogService;
 
     @Test
     void listPublicTreeShouldOnlyReturnEnabledTreeNodes() {
@@ -61,7 +68,9 @@ class DirectionServiceTest {
         DirectionService service = new DirectionService(
                 directionRepository,
                 applicationRepository,
-                recruitmentGroupRepository
+                recruitmentGroupRepository,
+                currentUserService,
+                auditLogService
         );
 
         var result = service.listPublicTree(true);
@@ -87,8 +96,11 @@ class DirectionServiceTest {
         DirectionService service = new DirectionService(
                 directionRepository,
                 applicationRepository,
-                recruitmentGroupRepository
+                recruitmentGroupRepository,
+                currentUserService,
+                auditLogService
         );
+        when(currentUserService.requireCurrentUser()).thenReturn(new LoginUser(1L, "admin", "admin@example.com", "hashed", club.muimi.backend.common.enums.Role.ADMIN, club.muimi.backend.common.enums.UserStatus.ACTIVE, 0L, "jti"));
 
         assertThatThrownBy(() -> service.createDirection(new DirectionUpsertRequest(2L, "Spring", 1, true)))
                 .isInstanceOf(ConflictException.class)
@@ -112,8 +124,11 @@ class DirectionServiceTest {
         DirectionService service = new DirectionService(
                 directionRepository,
                 applicationRepository,
-                recruitmentGroupRepository
+                recruitmentGroupRepository,
+                currentUserService,
+                auditLogService
         );
+        when(currentUserService.requireCurrentUser()).thenReturn(new LoginUser(1L, "admin", "admin@example.com", "hashed", club.muimi.backend.common.enums.Role.ADMIN, club.muimi.backend.common.enums.UserStatus.ACTIVE, 0L, "jti"));
 
         assertThatThrownBy(() -> service.updateDirection(2L, new DirectionUpsertRequest(null, "Java", 1, true)))
                 .isInstanceOf(ConflictException.class)

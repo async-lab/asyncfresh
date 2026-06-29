@@ -1,6 +1,8 @@
 package club.muimi.backend.service.auth;
 
 import club.muimi.backend.common.enums.EmailCodeScene;
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.UserStatus;
 import club.muimi.backend.config.AuthProperties;
 import club.muimi.backend.dto.auth.ChangePasswordRequest;
@@ -25,6 +27,8 @@ import club.muimi.backend.security.auth.LoginUser;
 import club.muimi.backend.security.cookie.AuthCookieService;
 import club.muimi.backend.security.jwt.JwtClaims;
 import club.muimi.backend.security.jwt.JwtTokenService;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.period.PeriodService;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.support.mail.MailService;
@@ -43,8 +47,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -64,6 +70,7 @@ public class AuthService {
     private final AuthCookieService authCookieService;
     private final AuthProperties authProperties;
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
     private final List<IpAddressMatcher> trustedProxyMatchers;
 
     public AuthService(
@@ -77,7 +84,8 @@ public class AuthService {
             JwtTokenService jwtTokenService,
             AuthCookieService authCookieService,
             AuthProperties authProperties,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            AuditLogService auditLogService
     ) {
         this.userRepository = userRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -90,6 +98,7 @@ public class AuthService {
         this.authCookieService = authCookieService;
         this.authProperties = authProperties;
         this.currentUserService = currentUserService;
+        this.auditLogService = auditLogService;
         this.trustedProxyMatchers = authProperties.getLogin().getTrustedProxies().stream()
                 .filter(proxy -> proxy != null && !proxy.isBlank())
                 .map(String::trim)
@@ -99,11 +108,19 @@ public class AuthService {
 
     @Transactional
     public void sendEmailCode(SendEmailCodeRequest request) {
+        sendEmailCode(request, null);
+    }
+
+    @Transactional
+    public void sendEmailCode(SendEmailCodeRequest request, HttpServletRequest httpServletRequest) {
+        String clientIp = resolveClientIp(httpServletRequest);
+        enforceEmailSendRateLimit(clientIp);
+
         boolean shouldSendMail = true;
         if (request.scene() == EmailCodeScene.REGISTER) {
             periodService.ensureRegistrationOpen();
             if (userRepository.existsByEmail(request.email())) {
-                throw new ConflictException("该邮箱已被注册");
+                shouldSendMail = false;
             }
         } else {
             shouldSendMail = userRepository.existsByEmail(request.email());
@@ -144,6 +161,18 @@ public class AuthService {
                 .build();
         saveUserForRegistration(user);
         authCacheService.deleteEmailCode(EmailCodeScene.REGISTER, request.email());
+        recordAuthAudit(
+                "REGISTER",
+                AuditSeverity.IMPORTANT,
+                "用户注册",
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                user.getId(),
+                true,
+                Map.of("email", user.getEmail()),
+                false
+        );
         return new RegisterResultVo(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 
@@ -153,24 +182,37 @@ public class AuthService {
             HttpServletRequest httpServletRequest,
             HttpServletResponse response
     ) {
-        String loginThrottleKey = buildLoginThrottleKey(request.email(), resolveClientIp(httpServletRequest));
+        String clientIp = resolveClientIp(httpServletRequest);
+        String loginThrottleKey = buildLoginThrottleKey(request.email(), clientIp);
         if (authCacheService.isLoginLocked(loginThrottleKey)) {
+            recordAuthAudit(
+                    "LOGIN_BLOCKED",
+                    AuditSeverity.MAJOR,
+                    "登录因限流被拦截",
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    buildLoginAuditDetail(request.email(), clientIp, "LOGIN_LOCKED"),
+                    true
+            );
             throw new TooManyRequestsException("登录失败次数过多，请稍后再试");
         }
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> {
-                    recordLoginFailure(loginThrottleKey);
+                    handleLoginFailure(loginThrottleKey, request.email(), clientIp, null, "USER_NOT_FOUND");
                     return new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
                 });
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            recordLoginFailure(loginThrottleKey);
+            handleLoginFailure(loginThrottleKey, request.email(), clientIp, user, "PASSWORD_MISMATCH");
             throw new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
         }
 
         if (user.getStatus() != UserStatus.ACTIVE) {
-            recordLoginFailure(loginThrottleKey);
+            handleLoginFailure(loginThrottleKey, request.email(), clientIp, user, "USER_DISABLED");
             throw new UnauthorizedException(GENERIC_LOGIN_FAILED_MESSAGE);
         }
 
@@ -181,6 +223,18 @@ public class AuthService {
         String token = jwtTokenService.generateToken(user, request.rememberMeOrDefault());
         authCookieService.writeLoginCookie(response, token, request.rememberMeOrDefault());
         authCookieService.writeCsrfCookie(response, token);
+        recordAuthAudit(
+                "LOGIN_SUCCESS",
+                AuditSeverity.IMPORTANT,
+                "用户登录成功",
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                user.getId(),
+                true,
+                buildLoginAuditDetail(user.getEmail(), clientIp, "SUCCESS"),
+                false
+        );
         return new LoginResultVo(
                 user.getId(),
                 user.getUsername(),
@@ -192,10 +246,25 @@ public class AuthService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
+        LoginUser currentUser = currentUserService.getCurrentUser().orElse(null);
         authCookieService.resolveToken(request)
                 .map(jwtTokenService::parse)
                 .ifPresent(this::blacklistTokenIfNecessary);
         authCookieService.clearLoginCookie(response);
+        if (currentUser != null) {
+            recordAuthAudit(
+                    "LOGOUT",
+                    AuditSeverity.NORMAL,
+                    "用户退出登录",
+                    currentUser.getUserId(),
+                    currentUser.getDisplayUsername(),
+                    currentUser.getRole(),
+                    currentUser.getUserId(),
+                    true,
+                    Map.of("email", currentUser.getEmail()),
+                    false
+            );
+        }
     }
 
     @Transactional(readOnly = true)
@@ -212,11 +281,10 @@ public class AuthService {
                 .stream()
                 .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
                 .toList();
-        Long leaderGroupId = recruitmentGroupRepository.findAllByLeaderUserId(loginUser.getUserId())
+        List<GroupSimpleVo> leaderGroups = recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(loginUser.getUserId())
                 .stream()
-                .map(RecruitmentGroup::getId)
-                .min(Long::compareTo)
-                .orElse(null);
+                .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
+                .toList();
         return new CurrentUserVo(
                 loginUser.getUserId(),
                 loginUser.getDisplayUsername(),
@@ -224,14 +292,19 @@ public class AuthService {
                 loginUser.getRole(),
                 loginUser.getStatus(),
                 Boolean.TRUE.equals(user.getEmailVerified()),
-                leaderGroupId,
+                leaderGroups,
                 groups
         );
     }
 
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        sendEmailCode(new SendEmailCodeRequest(request.email(), EmailCodeScene.RESET_PASSWORD));
+        forgotPassword(request, null);
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request, HttpServletRequest httpServletRequest) {
+        sendEmailCode(new SendEmailCodeRequest(request.email(), EmailCodeScene.RESET_PASSWORD), httpServletRequest);
     }
 
     @Transactional
@@ -246,6 +319,18 @@ public class AuthService {
         user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
         authCacheService.deleteEmailCode(EmailCodeScene.RESET_PASSWORD, request.email());
+        recordAuthAudit(
+                "RESET_PASSWORD",
+                AuditSeverity.IMPORTANT,
+                "重置密码",
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                user.getId(),
+                true,
+                Map.of("email", user.getEmail()),
+                false
+        );
     }
 
     @Transactional
@@ -273,6 +358,18 @@ public class AuthService {
                 .map(jwtTokenService::parse)
                 .ifPresent(this::blacklistTokenIfNecessary);
         authCookieService.clearLoginCookie(httpServletResponse);
+        recordAuthAudit(
+                "CHANGE_PASSWORD",
+                AuditSeverity.IMPORTANT,
+                "修改密码",
+                loginUser.getUserId(),
+                loginUser.getDisplayUsername(),
+                loginUser.getRole(),
+                user.getId(),
+                true,
+                Map.of("email", user.getEmail()),
+                false
+        );
     }
 
     private void validateEmailCode(EmailCodeScene scene, String email, String code) {
@@ -330,11 +427,26 @@ public class AuthService {
         }
     }
 
-    private void recordLoginFailure(String loginThrottleKey) {
+    private long recordLoginFailure(String loginThrottleKey) {
         Duration ttl = Duration.ofSeconds(authProperties.getLogin().getFailLockSeconds());
         long failCount = authCacheService.incrementLoginFailCount(loginThrottleKey, ttl);
         if (failCount >= authProperties.getLogin().getMaxFailCount()) {
             authCacheService.lockLogin(loginThrottleKey, ttl);
+        }
+        return failCount;
+    }
+
+    private void enforceEmailSendRateLimit(String clientIp) {
+        Duration ipWindow = Duration.ofSeconds(authProperties.getEmailCode().getIpSendWindowSeconds());
+        long ipCount = authCacheService.incrementEmailSendIpCount(clientIp, ipWindow);
+        if (ipCount > authProperties.getEmailCode().getMaxIpSendCount()) {
+            throw new TooManyRequestsException("验证码发送过于频繁，请稍后再试");
+        }
+
+        Duration globalWindow = Duration.ofSeconds(authProperties.getEmailCode().getGlobalSendWindowSeconds());
+        long globalCount = authCacheService.incrementEmailSendGlobalCount(globalWindow);
+        if (globalCount > authProperties.getEmailCode().getMaxGlobalSendCount()) {
+            throw new TooManyRequestsException("验证码发送服务繁忙，请稍后再试");
         }
     }
 
@@ -374,6 +486,9 @@ public class AuthService {
     }
 
     private String resolveClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return "unknown";
+        }
         String remoteAddr = normalizeIpLiteral(request.getRemoteAddr()).orElse("unknown");
         if (!authProperties.getLogin().isTrustForwardHeaders() || !isTrustedProxy(remoteAddr)) {
             return remoteAddr;
@@ -441,5 +556,80 @@ public class AuthService {
     private String generateVerificationCode() {
         int value = ThreadLocalRandom.current().nextInt(100000, 1_000_000);
         return String.valueOf(value);
+    }
+
+    private void handleLoginFailure(
+            String loginThrottleKey,
+            String email,
+            String clientIp,
+            User user,
+            String reason
+    ) {
+        long failCount = recordLoginFailure(loginThrottleKey);
+        Map<String, Object> detail = buildLoginAuditDetail(email, clientIp, reason);
+        detail.put("failCount", failCount);
+        recordAuthAudit(
+                "LOGIN_FAILED",
+                failCount >= authProperties.getLogin().getMaxFailCount() ? AuditSeverity.MAJOR : AuditSeverity.IMPORTANT,
+                "用户登录失败",
+                user == null ? null : user.getId(),
+                user == null ? null : user.getUsername(),
+                user == null ? null : user.getRole(),
+                user == null ? null : user.getId(),
+                false,
+                detail,
+                true
+        );
+        if (failCount >= authProperties.getLogin().getMaxFailCount()) {
+            recordAuthAudit(
+                    "LOGIN_LOCKED",
+                    AuditSeverity.MAJOR,
+                    "用户登录达到锁定阈值",
+                    user == null ? null : user.getId(),
+                    user == null ? null : user.getUsername(),
+                    user == null ? null : user.getRole(),
+                    user == null ? null : user.getId(),
+                    false,
+                    detail,
+                    true
+            );
+        }
+    }
+
+    private Map<String, Object> buildLoginAuditDetail(String email, String clientIp, String result) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("email", email);
+        detail.put("clientIp", clientIp);
+        detail.put("result", result);
+        return detail;
+    }
+
+    private void recordAuthAudit(
+            String action,
+            AuditSeverity severity,
+            String summary,
+            Long actorUserId,
+            String actorUsername,
+            club.muimi.backend.common.enums.Role actorRole,
+            Long targetUserId,
+            boolean success,
+            Map<String, Object> detail,
+            boolean requiresNewTransaction
+    ) {
+        AuditLogCommand command = AuditLogCommand.builder(
+                        AuditModule.AUTH,
+                        action,
+                        severity,
+                        summary
+                ).actor(actorUserId, actorUsername, actorRole)
+                .target("USER", targetUserId)
+                .success(success)
+                .detail(detail)
+                .build();
+        if (requiresNewTransaction) {
+            auditLogService.recordInNewTransaction(command);
+            return;
+        }
+        auditLogService.record(command);
     }
 }

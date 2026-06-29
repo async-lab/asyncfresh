@@ -1,6 +1,9 @@
 package club.muimi.backend.service.group;
 
 import club.muimi.backend.common.enums.ApplicationStatus;
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
+import club.muimi.backend.common.enums.NotificationType;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.entity.Application;
 import club.muimi.backend.entity.Direction;
@@ -16,6 +19,10 @@ import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.UserRepository;
 import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.notification.NotificationCommand;
+import club.muimi.backend.service.notification.NotificationService;
 import club.muimi.backend.service.period.PeriodService;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.group.GroupDetailVo;
@@ -43,6 +50,8 @@ public class GroupManagementService {
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
     private final PeriodService periodService;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
     private final Clock appClock;
 
     public GroupManagementService(
@@ -53,6 +62,8 @@ public class GroupManagementService {
             UserRepository userRepository,
             CurrentUserService currentUserService,
             PeriodService periodService,
+            NotificationService notificationService,
+            AuditLogService auditLogService,
             Clock appClock
     ) {
         this.recruitmentGroupRepository = recruitmentGroupRepository;
@@ -62,6 +73,8 @@ public class GroupManagementService {
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
         this.periodService = periodService;
+        this.notificationService = notificationService;
+        this.auditLogService = auditLogService;
         this.appClock = appClock;
     }
 
@@ -117,6 +130,30 @@ public class GroupManagementService {
         } catch (DataIntegrityViolationException exception) {
             throw new ConflictException("该报名申请已被其他操作分组，请刷新后重试");
         }
+        notificationService.createOrRefresh(new NotificationCommand(
+                application.getUserId(),
+                currentUser.getUserId(),
+                NotificationType.APPLICATION_GROUPED,
+                "报名申请已完成分组",
+                "你的报名申请已被分配到分组：" + group.getName(),
+                "application.grouped:" + application.getId() + ":" + group.getId(),
+                "APPLICATION",
+                application.getId()
+        ));
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("groupId", group.getId());
+        detail.put("groupName", group.getName());
+        detail.put("userId", application.getUserId());
+        detail.put("applicationId", application.getId());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.GROUP,
+                        "ASSIGN_APPLICATION_TO_GROUP",
+                        AuditSeverity.IMPORTANT,
+                        "分配报名申请到分组"
+                ).actor(currentUser)
+                .target("GROUP", group.getId())
+                .detail(detail)
+                .build());
     }
 
     @Transactional(readOnly = true)

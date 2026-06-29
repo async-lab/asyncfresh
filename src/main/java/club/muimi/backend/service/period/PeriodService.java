@@ -1,5 +1,7 @@
 package club.muimi.backend.service.period;
 
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.PeriodType;
 import club.muimi.backend.dto.admin.PeriodConfigRequest;
 import club.muimi.backend.entity.RecruitmentPeriod;
@@ -7,6 +9,10 @@ import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.exception.NotFoundException;
 import club.muimi.backend.exception.PeriodNotAllowedException;
 import club.muimi.backend.repository.RecruitmentPeriodRepository;
+import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.admin.AdminPeriodVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,10 +40,19 @@ public class PeriodService {
     }
 
     private final RecruitmentPeriodRepository recruitmentPeriodRepository;
+    private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
     private final Clock appClock;
 
-    public PeriodService(RecruitmentPeriodRepository recruitmentPeriodRepository, Clock appClock) {
+    public PeriodService(
+            RecruitmentPeriodRepository recruitmentPeriodRepository,
+            CurrentUserService currentUserService,
+            AuditLogService auditLogService,
+            Clock appClock
+    ) {
         this.recruitmentPeriodRepository = recruitmentPeriodRepository;
+        this.currentUserService = currentUserService;
+        this.auditLogService = auditLogService;
         this.appClock = appClock;
     }
 
@@ -50,6 +66,7 @@ public class PeriodService {
 
     @Transactional
     public List<AdminPeriodVo> savePeriods(List<PeriodConfigRequest> requests) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         validatePeriodTypesUnique(requests);
         Map<PeriodType, RecruitmentPeriod> periodMap = recruitmentPeriodRepository.findAll().stream()
                 .collect(java.util.stream.Collectors.toMap(RecruitmentPeriod::getPeriodType, period -> period));
@@ -65,6 +82,7 @@ public class PeriodService {
 
         validatePeriods(periodMap.values().stream().toList());
         recruitmentPeriodRepository.saveAll(periodMap.values());
+        recordPeriodBatchAudit(currentUser, requests);
         return periodMap.values().stream()
                 .sorted(periodComparator())
                 .map(this::toAdminPeriodVo)
@@ -73,6 +91,7 @@ public class PeriodService {
 
     @Transactional
     public AdminPeriodVo updatePeriod(Long periodId, PeriodConfigRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         validatePeriodTypeEditable(request.periodType());
         RecruitmentPeriod period = recruitmentPeriodRepository.findById(periodId)
                 .orElseThrow(() -> new NotFoundException("时期配置不存在"));
@@ -86,6 +105,7 @@ public class PeriodService {
                 .toList();
         validatePeriods(mergedPeriods);
         RecruitmentPeriod saved = recruitmentPeriodRepository.save(period);
+        recordPeriodAudit("UPDATE_PERIOD", "更新时期配置", currentUser, saved);
         return toAdminPeriodVo(saved);
     }
 
@@ -143,6 +163,12 @@ public class PeriodService {
     public void ensureSelectionOpenForTaskSubmit() {
         if (!isSelectionOpen()) {
             throw new PeriodNotAllowedException("当前不是选拔期，暂不允许提交任务");
+        }
+    }
+
+    public void ensureSelectionOpenForTaskManage() {
+        if (!isSelectionOpen()) {
+            throw new PeriodNotAllowedException("当前不是选拔期，暂不允许任务管理");
         }
     }
 
@@ -213,5 +239,37 @@ public class PeriodService {
 
     private LocalDateTime now() {
         return LocalDateTime.now(appClock);
+    }
+
+    private void recordPeriodBatchAudit(LoginUser actor, List<PeriodConfigRequest> requests) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("periodTypes", requests.stream().map(PeriodConfigRequest::periodType).toList());
+        detail.put("enabledTypes", requests.stream().filter(PeriodConfigRequest::enabled).map(PeriodConfigRequest::periodType).toList());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.CONFIG,
+                        "SAVE_PERIODS",
+                        AuditSeverity.IMPORTANT,
+                        "批量保存时期配置"
+                ).actor(actor)
+                .target("PERIOD_CONFIG", null)
+                .detail(detail)
+                .build());
+    }
+
+    private void recordPeriodAudit(String action, String summary, LoginUser actor, RecruitmentPeriod period) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("periodType", period.getPeriodType());
+        detail.put("startTime", period.getStartTime());
+        detail.put("endTime", period.getEndTime());
+        detail.put("enabled", period.getEnabled());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.CONFIG,
+                        action,
+                        AuditSeverity.IMPORTANT,
+                        summary
+                ).actor(actor)
+                .target("PERIOD", period.getId())
+                .detail(detail)
+                .build());
     }
 }

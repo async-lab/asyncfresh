@@ -14,7 +14,7 @@ public record AdminUserDetailVo(
         Role role,
         UserStatus status,
         boolean emailVerified,
-        Long leaderGroupId,
+        List<GroupSimpleVo> leaderGroups,
         long applicationCount,
         long groupCount,
         LocalDateTime lastLoginAt,

@@ -1,5 +1,7 @@
 package club.muimi.backend.service.admin;
 
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.api.PageResult;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
@@ -15,6 +17,8 @@ import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.UserRepository;
 import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.admin.AdminUserDetailVo;
 import club.muimi.backend.vo.admin.AdminUserSummaryVo;
@@ -27,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,19 +45,22 @@ public class AdminUserService {
     private final GroupMemberRepository groupMemberRepository;
     private final RecruitmentGroupRepository recruitmentGroupRepository;
     private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     public AdminUserService(
             UserRepository userRepository,
             ApplicationRepository applicationRepository,
             GroupMemberRepository groupMemberRepository,
             RecruitmentGroupRepository recruitmentGroupRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            AuditLogService auditLogService
     ) {
         this.userRepository = userRepository;
         this.applicationRepository = applicationRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.recruitmentGroupRepository = recruitmentGroupRepository;
         this.currentUserService = currentUserService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -70,15 +78,11 @@ public class AdminUserService {
 
         Map<Long, Long> applicationCountMap = buildApplicationCountMap(userIds);
         Map<Long, Long> groupCountMap = buildGroupCountMap(userIds);
-        Map<Long, Long> leaderGroupMap = userIds.isEmpty()
+        Map<Long, Long> leaderGroupCountMap = userIds.isEmpty()
                 ? Collections.emptyMap()
                 : recruitmentGroupRepository.findAllByLeaderUserIdIn(userIds)
                 .stream()
-                .collect(Collectors.toMap(
-                        RecruitmentGroup::getLeaderUserId,
-                        RecruitmentGroup::getId,
-                        Math::min
-                ));
+                .collect(Collectors.groupingBy(RecruitmentGroup::getLeaderUserId, Collectors.counting()));
 
         Page<AdminUserSummaryVo> mappedPage = result.map(user -> new AdminUserSummaryVo(
                 user.getId(),
@@ -87,7 +91,7 @@ public class AdminUserService {
                 user.getRole(),
                 user.getStatus(),
                 Boolean.TRUE.equals(user.getEmailVerified()),
-                leaderGroupMap.get(user.getId()),
+                leaderGroupCountMap.getOrDefault(user.getId(), 0L),
                 applicationCountMap.getOrDefault(user.getId(), 0L),
                 groupCountMap.getOrDefault(user.getId(), 0L),
                 user.getLastLoginAt(),
@@ -110,8 +114,22 @@ public class AdminUserService {
         }
 
         User user = getUserOrThrow(userId);
+        UserStatus previousStatus = user.getStatus();
         user.setStatus(request.status());
         userRepository.save(user);
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("previousStatus", previousStatus);
+        detail.put("currentStatus", request.status());
+        detail.put("targetRole", user.getRole());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.AUTH,
+                        "UPDATE_USER_STATUS",
+                        request.status() == UserStatus.DISABLED ? AuditSeverity.MAJOR : AuditSeverity.IMPORTANT,
+                        "更新用户状态"
+                ).actor(currentUser)
+                .target("USER", userId)
+                .detail(detail)
+                .build());
         return toDetailVo(user);
     }
 
@@ -126,11 +144,10 @@ public class AdminUserService {
                 .stream()
                 .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
                 .toList();
-        Long leaderGroupId = recruitmentGroupRepository.findAllByLeaderUserId(user.getId())
+        List<GroupSimpleVo> leaderGroups = recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
-                .map(RecruitmentGroup::getId)
-                .min(Long::compareTo)
-                .orElse(null);
+                .map(group -> new GroupSimpleVo(group.getId(), group.getName()))
+                .toList();
 
         return new AdminUserDetailVo(
                 user.getId(),
@@ -139,7 +156,7 @@ public class AdminUserService {
                 user.getRole(),
                 user.getStatus(),
                 Boolean.TRUE.equals(user.getEmailVerified()),
-                leaderGroupId,
+                leaderGroups,
                 applicationRepository.countByUserId(user.getId()),
                 groupMembers.size(),
                 user.getLastLoginAt(),

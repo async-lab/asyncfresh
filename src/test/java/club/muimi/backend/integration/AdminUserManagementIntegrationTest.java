@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -228,13 +229,17 @@ class AdminUserManagementIntegrationTest {
                         .cookie(authCookies.authCookie(), authCookies.csrfCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.list[0].id").value(leader.getId()))
-                .andExpect(jsonPath("$.data.list[0].leaderGroupId").value(Math.min(firstGroup.getId(), secondGroup.getId())));
+                .andExpect(jsonPath("$.data.list[0].leaderGroupCount").value(2));
 
         mockMvc.perform(get("/api/v1/admin/users/{userId}", leader.getId())
                         .cookie(authCookies.authCookie(), authCookies.csrfCookie()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(leader.getId()))
-                .andExpect(jsonPath("$.data.leaderGroupId").value(Math.min(firstGroup.getId(), secondGroup.getId())));
+                .andExpect(jsonPath("$.data.leaderGroups.length()").value(2))
+                .andExpect(jsonPath("$.data.leaderGroups[*].id").value(containsInAnyOrder(
+                        firstGroup.getId().intValue(),
+                        secondGroup.getId().intValue()
+                )));
     }
 
     private AuthCookies loginAs(String email, String password) throws IOException {

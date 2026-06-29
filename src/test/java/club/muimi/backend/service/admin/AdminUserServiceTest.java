@@ -11,6 +11,7 @@ import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.UserRepository;
 import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.user.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,8 @@ class AdminUserServiceTest {
     private RecruitmentGroupRepository recruitmentGroupRepository;
     @Mock
     private CurrentUserService currentUserService;
+    @Mock
+    private AuditLogService auditLogService;
 
     private AdminUserService adminUserService;
 
@@ -50,7 +53,8 @@ class AdminUserServiceTest {
                 applicationRepository,
                 groupMemberRepository,
                 recruitmentGroupRepository,
-                currentUserService
+                currentUserService,
+                auditLogService
         );
     }
 
@@ -87,7 +91,7 @@ class AdminUserServiceTest {
         var result = adminUserService.listUsers(1, 10, null, null, null);
 
         assertThat(result.list()).hasSize(1);
-        assertThat(result.list().getFirst().leaderGroupId()).isEqualTo(10L);
+        assertThat(result.list().getFirst().leaderGroupCount()).isEqualTo(2L);
     }
 
     @Test
@@ -103,7 +107,7 @@ class AdminUserServiceTest {
                 .build();
         when(userRepository.findById(2L)).thenReturn(Optional.of(leader));
         when(groupMemberRepository.findAllByUserId(2L)).thenReturn(List.of());
-        when(recruitmentGroupRepository.findAllByLeaderUserId(2L)).thenReturn(List.of(
+        when(recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(
                 RecruitmentGroup.builder().id(20L).leaderUserId(2L).name("g2").directionLevel1Id(1L).directionLevel2Id(2L).grade(club.muimi.backend.common.enums.Grade.YEAR_1).admissionYear(2026).maxSize(10).build(),
                 RecruitmentGroup.builder().id(10L).leaderUserId(2L).name("g1").directionLevel1Id(1L).directionLevel2Id(2L).grade(club.muimi.backend.common.enums.Grade.YEAR_1).admissionYear(2026).maxSize(10).build()
         ));
@@ -111,6 +115,8 @@ class AdminUserServiceTest {
 
         var result = adminUserService.getUserDetail(2L);
 
-        assertThat(result.leaderGroupId()).isEqualTo(10L);
+        assertThat(result.leaderGroups())
+                .extracting(club.muimi.backend.vo.auth.GroupSimpleVo::id)
+                .containsExactly(20L, 10L);
     }
 }

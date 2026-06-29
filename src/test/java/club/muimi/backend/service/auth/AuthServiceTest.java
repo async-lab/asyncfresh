@@ -22,6 +22,7 @@ import club.muimi.backend.security.auth.LoginUser;
 import club.muimi.backend.security.cookie.AuthCookieService;
 import club.muimi.backend.security.jwt.JwtClaims;
 import club.muimi.backend.security.jwt.JwtTokenService;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.period.PeriodService;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.support.mail.MailService;
@@ -78,6 +79,8 @@ class AuthServiceTest {
     private AuthCookieService authCookieService;
     @Mock
     private CurrentUserService currentUserService;
+    @Mock
+    private AuditLogService auditLogService;
 
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private AuthProperties authProperties;
@@ -90,6 +93,10 @@ class AuthServiceTest {
         authProperties.getEmailCode().setSendCooldownSeconds(60);
         authProperties.getEmailCode().setMaxVerifyFailCount(5);
         authProperties.getEmailCode().setVerifyLockSeconds(300);
+        authProperties.getEmailCode().setIpSendWindowSeconds(3600);
+        authProperties.getEmailCode().setMaxIpSendCount(30);
+        authProperties.getEmailCode().setGlobalSendWindowSeconds(60);
+        authProperties.getEmailCode().setMaxGlobalSendCount(300);
         authProperties.getLogin().setMaxFailCount(5);
         authProperties.getLogin().setFailLockSeconds(900);
         rebuildAuthService();
@@ -107,7 +114,8 @@ class AuthServiceTest {
                 jwtTokenService,
                 authCookieService,
                 authProperties,
-                currentUserService
+                currentUserService,
+                auditLogService
         );
     }
 
@@ -381,6 +389,49 @@ class AuthServiceTest {
     }
 
     @Test
+    void sendEmailCodeShouldNotLeakWhetherRegisterAccountExists() {
+        SendEmailCodeRequest request = new SendEmailCodeRequest("exists@example.com", EmailCodeScene.REGISTER);
+        doNothing().when(periodService).ensureRegistrationOpen();
+        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(authCacheService.hasEmailCooldown(request.scene(), request.email())).thenReturn(false);
+
+        authService.sendEmailCode(request);
+
+        verify(authCacheService).markEmailCooldown(request.scene(), request.email(), Duration.ofSeconds(60));
+        verify(mailService, never()).sendVerificationCode(anyString(), anyString(), any());
+    }
+
+    @Test
+    void sendEmailCodeShouldRejectWhenIpRateLimitExceeded() {
+        SendEmailCodeRequest request = new SendEmailCodeRequest("user@example.com", EmailCodeScene.REGISTER);
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+        when(authCacheService.incrementEmailSendIpCount(eq("203.0.113.10"), any())).thenReturn(31L);
+
+        assertThatThrownBy(() -> authService.sendEmailCode(request, httpRequest))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage("验证码发送过于频繁，请稍后再试");
+
+        verify(authCacheService, never()).incrementEmailSendGlobalCount(any());
+        verify(mailService, never()).sendVerificationCode(anyString(), anyString(), any());
+    }
+
+    @Test
+    void sendEmailCodeShouldRejectWhenGlobalRateLimitExceeded() {
+        SendEmailCodeRequest request = new SendEmailCodeRequest("user@example.com", EmailCodeScene.REGISTER);
+        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+        httpRequest.setRemoteAddr("203.0.113.10");
+        when(authCacheService.incrementEmailSendIpCount(eq("203.0.113.10"), any())).thenReturn(1L);
+        when(authCacheService.incrementEmailSendGlobalCount(any())).thenReturn(301L);
+
+        assertThatThrownBy(() -> authService.sendEmailCode(request, httpRequest))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage("验证码发送服务繁忙，请稍后再试");
+
+        verify(mailService, never()).sendVerificationCode(anyString(), anyString(), any());
+    }
+
+    @Test
     void sendEmailCodeShouldRollbackCacheWhenMailSendFails() {
         SendEmailCodeRequest request = new SendEmailCodeRequest("exists@example.com", EmailCodeScene.RESET_PASSWORD);
         when(userRepository.existsByEmail(request.email())).thenReturn(true);
@@ -478,11 +529,12 @@ class AuthServiceTest {
         when(currentUserService.requireCurrentUser()).thenReturn(loginUser);
         when(userRepository.findById(99L)).thenReturn(Optional.of(admin));
         when(groupMemberRepository.findAllByUserId(99L)).thenReturn(List.of());
-        when(recruitmentGroupRepository.findAllByLeaderUserId(99L)).thenReturn(List.of());
+        when(recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(99L)).thenReturn(List.of());
 
         CurrentUserVo result = authService.getCurrentUser();
 
         assertThat(result.role()).isEqualTo(Role.ADMIN);
         assertThat(result.groups()).isEmpty();
+        assertThat(result.leaderGroups()).isEmpty();
     }
 }

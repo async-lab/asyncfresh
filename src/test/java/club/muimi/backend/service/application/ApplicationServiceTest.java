@@ -16,6 +16,7 @@ import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.period.PeriodService;
 import club.muimi.backend.service.user.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,8 @@ class ApplicationServiceTest {
     private CurrentUserService currentUserService;
     @Mock
     private PeriodService periodService;
+    @Mock
+    private AuditLogService auditLogService;
 
     private RecruitmentApplicationProperties recruitmentApplicationProperties;
     private ApplicationService applicationService;
@@ -74,6 +77,7 @@ class ApplicationServiceTest {
                 currentUserService,
                 periodService,
                 recruitmentApplicationProperties,
+                auditLogService,
                 clock
         );
     }

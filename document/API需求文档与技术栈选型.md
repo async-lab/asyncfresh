@@ -398,7 +398,9 @@
     "role": "LEADER",
     "status": "ACTIVE",
     "emailVerified": true,
-    "leaderGroupId": 10,
+    "leaderGroups": [
+      { "id": 10, "name": "示例分组" }
+    ],
     "groups": [
       {
         "id": 10,

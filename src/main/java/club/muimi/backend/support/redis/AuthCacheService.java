@@ -19,6 +19,10 @@ public interface AuthCacheService {
 
     void clearEmailCooldown(EmailCodeScene scene, String email);
 
+    long incrementEmailSendIpCount(String clientIp, Duration ttl);
+
+    long incrementEmailSendGlobalCount(Duration ttl);
+
     long incrementEmailCodeVerifyFailCount(EmailCodeScene scene, String email, Duration ttl);
 
     void clearEmailCodeVerifyFailCount(EmailCodeScene scene, String email);

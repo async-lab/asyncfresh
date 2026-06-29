@@ -18,6 +18,8 @@ import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
 import club.muimi.backend.service.period.PeriodService;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.application.ApplicationDetailVo;
@@ -43,6 +45,7 @@ public class ApplicationService {
     private final CurrentUserService currentUserService;
     private final PeriodService periodService;
     private final RecruitmentApplicationProperties recruitmentApplicationProperties;
+    private final AuditLogService auditLogService;
     private final Clock appClock;
 
     public ApplicationService(
@@ -53,6 +56,7 @@ public class ApplicationService {
             CurrentUserService currentUserService,
             PeriodService periodService,
             RecruitmentApplicationProperties recruitmentApplicationProperties,
+            AuditLogService auditLogService,
             Clock appClock
     ) {
         this.applicationRepository = applicationRepository;
@@ -62,6 +66,7 @@ public class ApplicationService {
         this.currentUserService = currentUserService;
         this.periodService = periodService;
         this.recruitmentApplicationProperties = recruitmentApplicationProperties;
+        this.auditLogService = auditLogService;
         this.appClock = appClock;
     }
 
@@ -138,6 +143,7 @@ public class ApplicationService {
                 .build();
 
         Application saved = saveApplicationHandlingDuplicate(application);
+        recordApplicationAudit("CREATE_APPLICATION", "提交报名申请", currentUser, saved, directionSelection);
         return buildDetailVos(List.of(saved)).getFirst();
     }
 
@@ -171,6 +177,7 @@ public class ApplicationService {
         application.setIntroduction(normalizeNullableText(request.introduction()));
 
         Application saved = saveApplicationHandlingDuplicate(application);
+        recordApplicationAudit("UPDATE_APPLICATION", "修改报名申请", currentUser, saved, directionSelection);
         return buildDetailVos(List.of(saved)).getFirst();
     }
 
@@ -184,6 +191,7 @@ public class ApplicationService {
         ensureApplicationEditable(application, "撤回");
         application.setStatus(ApplicationStatus.WITHDRAWN);
         applicationRepository.save(application);
+        recordApplicationAudit("WITHDRAW_APPLICATION", "撤回报名申请", currentUser, application, null);
     }
 
     private Application getOwnedApplicationOrThrow(Long applicationId, Long userId) {
@@ -334,6 +342,35 @@ public class ApplicationService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void recordApplicationAudit(
+            String action,
+            String summary,
+            LoginUser actor,
+            Application application,
+            DirectionSelection directionSelection
+    ) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("userId", application.getUserId());
+        detail.put("status", application.getStatus());
+        detail.put("grade", application.getGrade());
+        detail.put("admissionYear", application.getAdmissionYear());
+        detail.put("directionLevel1Id", application.getDirectionLevel1Id());
+        detail.put("directionLevel2Id", application.getDirectionLevel2Id());
+        if (directionSelection != null) {
+            detail.put("directionLevel1Name", directionSelection.level1().getName());
+            detail.put("directionLevel2Name", directionSelection.level2().getName());
+        }
+        auditLogService.record(AuditLogCommand.builder(
+                        club.muimi.backend.common.enums.AuditModule.APPLICATION,
+                        action,
+                        club.muimi.backend.common.enums.AuditSeverity.IMPORTANT,
+                        summary
+                ).actor(actor)
+                .target("APPLICATION", application.getId())
+                .detail(detail)
+                .build());
     }
 
     private record DirectionSelection(Direction level1, Direction level2) {

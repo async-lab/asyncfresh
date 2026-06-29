@@ -25,6 +25,10 @@ public class AuthProperties {
         private long sendCooldownSeconds = 60;
         private int maxVerifyFailCount = 5;
         private long verifyLockSeconds = 300;
+        private long ipSendWindowSeconds = 3600;
+        private int maxIpSendCount = 30;
+        private long globalSendWindowSeconds = 60;
+        private int maxGlobalSendCount = 300;
 
     }
 
@@ -51,6 +55,12 @@ public class AuthProperties {
         }
         if (emailCode.getMaxVerifyFailCount() <= 0 || emailCode.getVerifyLockSeconds() <= 0) {
             throw new IllegalStateException("邮箱验证码错误次数上限和锁定时长必须为正数");
+        }
+        if (emailCode.getIpSendWindowSeconds() <= 0 || emailCode.getMaxIpSendCount() <= 0) {
+            throw new IllegalStateException("邮箱验证码 IP 限流窗口和次数上限必须为正数");
+        }
+        if (emailCode.getGlobalSendWindowSeconds() <= 0 || emailCode.getMaxGlobalSendCount() <= 0) {
+            throw new IllegalStateException("邮箱验证码全局限流窗口和次数上限必须为正数");
         }
         if (login.getMaxFailCount() <= 0 || login.getFailLockSeconds() <= 0) {
             throw new IllegalStateException("登录失败次数上限和锁定时长必须为正数");

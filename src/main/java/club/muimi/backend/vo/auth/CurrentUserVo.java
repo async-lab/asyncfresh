@@ -12,7 +12,7 @@ public record CurrentUserVo(
         Role role,
         UserStatus status,
         boolean emailVerified,
-        Long leaderGroupId,
+        List<GroupSimpleVo> leaderGroups,
         List<GroupSimpleVo> groups
 ) {
 }

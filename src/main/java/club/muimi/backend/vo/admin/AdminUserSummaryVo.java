@@ -12,7 +12,7 @@ public record AdminUserSummaryVo(
         Role role,
         UserStatus status,
         boolean emailVerified,
-        Long leaderGroupId,
+        long leaderGroupCount,
         long applicationCount,
         long groupCount,
         LocalDateTime lastLoginAt,

@@ -1,5 +1,7 @@
 package club.muimi.backend.service.direction;
 
+import club.muimi.backend.common.enums.AuditModule;
+import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.dto.admin.DirectionUpsertRequest;
 import club.muimi.backend.entity.Direction;
 import club.muimi.backend.exception.ConflictException;
@@ -7,6 +9,10 @@ import club.muimi.backend.exception.NotFoundException;
 import club.muimi.backend.repository.ApplicationRepository;
 import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
+import club.muimi.backend.security.auth.LoginUser;
+import club.muimi.backend.service.audit.AuditLogCommand;
+import club.muimi.backend.service.audit.AuditLogService;
+import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.admin.AdminDirectionTreeVo;
 import club.muimi.backend.vo.direction.DirectionTreeVo;
 import org.springframework.stereotype.Service;
@@ -23,15 +29,21 @@ public class DirectionService {
     private final DirectionRepository directionRepository;
     private final ApplicationRepository applicationRepository;
     private final RecruitmentGroupRepository recruitmentGroupRepository;
+    private final CurrentUserService currentUserService;
+    private final AuditLogService auditLogService;
 
     public DirectionService(
             DirectionRepository directionRepository,
             ApplicationRepository applicationRepository,
-            RecruitmentGroupRepository recruitmentGroupRepository
+            RecruitmentGroupRepository recruitmentGroupRepository,
+            CurrentUserService currentUserService,
+            AuditLogService auditLogService
     ) {
         this.directionRepository = directionRepository;
         this.applicationRepository = applicationRepository;
         this.recruitmentGroupRepository = recruitmentGroupRepository;
+        this.currentUserService = currentUserService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -49,22 +61,27 @@ public class DirectionService {
 
     @Transactional
     public AdminDirectionTreeVo createDirection(DirectionUpsertRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         Direction direction = Direction.builder().build();
         applyDirectionChange(direction, request, null);
         Direction saved = directionRepository.save(direction);
+        recordDirectionAudit("CREATE_DIRECTION", "创建方向", currentUser, saved);
         return getAdminDirectionTree(saved.getId());
     }
 
     @Transactional
     public AdminDirectionTreeVo updateDirection(Long directionId, DirectionUpsertRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         Direction direction = getDirectionOrThrow(directionId);
         applyDirectionChange(direction, request, directionId);
         directionRepository.save(direction);
+        recordDirectionAudit("UPDATE_DIRECTION", "更新方向", currentUser, direction);
         return getAdminDirectionTree(directionId);
     }
 
     @Transactional
     public void deleteDirection(Long directionId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         Direction direction = getDirectionOrThrow(directionId);
         if (direction.getLevel() == LEVEL_ROOT && directionRepository.existsByParentId(directionId)) {
             throw new ConflictException("该一级方向下仍存在二级方向，暂不允许删除");
@@ -82,6 +99,7 @@ public class DirectionService {
             throw new ConflictException("该方向已被分组使用，暂不允许删除");
         }
         directionRepository.delete(direction);
+        recordDirectionAudit("DELETE_DIRECTION", "删除方向", currentUser, direction);
     }
 
     private void applyDirectionChange(Direction direction, DirectionUpsertRequest request, Long currentDirectionId) {
@@ -217,5 +235,23 @@ public class DirectionService {
             }
         }
         return result;
+    }
+
+    private void recordDirectionAudit(String action, String summary, LoginUser actor, Direction direction) {
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("parentId", direction.getParentId());
+        detail.put("name", direction.getName());
+        detail.put("level", direction.getLevel());
+        detail.put("sortOrder", direction.getSortOrder());
+        detail.put("enabled", direction.getEnabled());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.CONFIG,
+                        action,
+                        AuditSeverity.IMPORTANT,
+                        summary
+                ).actor(actor)
+                .target("DIRECTION", direction.getId())
+                .detail(detail)
+                .build());
     }
 }
