@@ -2,10 +2,13 @@ package club.muimi.backend.service.admin;
 
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.UpdateUserRoleRequest;
 import club.muimi.backend.dto.admin.UpdateUserStatusRequest;
 import club.muimi.backend.entity.RecruitmentGroup;
 import club.muimi.backend.entity.User;
+import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.exception.ForbiddenException;
+import club.muimi.backend.exception.ValidationException;
 import club.muimi.backend.repository.ApplicationRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
@@ -66,6 +69,118 @@ class AdminUserServiceTest {
         assertThatThrownBy(() -> adminUserService.updateUserStatus(1L, new UpdateUserStatusRequest(UserStatus.DISABLED)))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("管理员不能修改自己的状态");
+    }
+
+    @Test
+    void updateUserRoleShouldPromoteFreshmanToLeaderAndInvalidateOldTokens() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        User freshman = User.builder()
+                .id(2L)
+                .username("freshman")
+                .email("freshman@example.com")
+                .passwordHash("hashed")
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(freshman));
+        when(groupMemberRepository.findAllByUserId(2L)).thenReturn(List.of());
+        when(recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+        when(applicationRepository.countByUserId(2L)).thenReturn(0L);
+
+        var result = adminUserService.updateUserRole(2L, new UpdateUserRoleRequest(Role.LEADER));
+
+        assertThat(result.role()).isEqualTo(Role.LEADER);
+        assertThat(freshman.getRole()).isEqualTo(Role.LEADER);
+        assertThat(freshman.getTokenVersion()).isEqualTo(4L);
+    }
+
+    @Test
+    void updateUserRoleShouldRejectLeaderDemotionWhenUserStillOwnsGroup() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        User leader = User.builder()
+                .id(2L)
+                .username("leader")
+                .email("leader@example.com")
+                .passwordHash("hashed")
+                .role(Role.LEADER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(leader));
+        when(recruitmentGroupRepository.findAllByLeaderUserId(2L)).thenReturn(List.of(
+                RecruitmentGroup.builder().id(10L).leaderUserId(2L).name("g1").directionLevel1Id(1L).directionLevel2Id(2L).grade(club.muimi.backend.common.enums.Grade.YEAR_1).admissionYear(2026).maxSize(10).build()
+        ));
+
+        assertThatThrownBy(() -> adminUserService.updateUserRole(2L, new UpdateUserRoleRequest(Role.FRESHMAN)))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("该负责人仍绑定负责的分组，不能降级为新生");
+        assertThat(leader.getRole()).isEqualTo(Role.LEADER);
+        assertThat(leader.getTokenVersion()).isEqualTo(3L);
+    }
+
+    @Test
+    void updateUserRoleShouldRejectAdminRoleRequest() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+
+        assertThatThrownBy(() -> adminUserService.updateUserRole(2L, new UpdateUserRoleRequest(Role.ADMIN)))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("用户角色只能在 FRESHMAN 与 LEADER 之间调整");
+    }
+
+    @Test
+    void updateUserRoleShouldRejectChangingAdminAccount() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        User targetAdmin = User.builder()
+                .id(2L)
+                .username("admin2")
+                .email("admin2@example.com")
+                .passwordHash("hashed")
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(targetAdmin));
+
+        assertThatThrownBy(() -> adminUserService.updateUserRole(2L, new UpdateUserRoleRequest(Role.LEADER)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("管理员账号角色不允许通过该接口修改");
+        assertThat(targetAdmin.getRole()).isEqualTo(Role.ADMIN);
+        assertThat(targetAdmin.getTokenVersion()).isEqualTo(3L);
+    }
+
+    @Test
+    void updateUserRoleShouldDemoteLeaderWithoutOwnedGroup() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        User leader = User.builder()
+                .id(2L)
+                .username("leader")
+                .email("leader@example.com")
+                .passwordHash("hashed")
+                .role(Role.LEADER)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(leader));
+        when(recruitmentGroupRepository.findAllByLeaderUserId(2L)).thenReturn(List.of());
+        when(groupMemberRepository.findAllByUserId(2L)).thenReturn(List.of());
+        when(recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+        when(applicationRepository.countByUserId(2L)).thenReturn(0L);
+
+        var result = adminUserService.updateUserRole(2L, new UpdateUserRoleRequest(Role.FRESHMAN));
+
+        assertThat(result.role()).isEqualTo(Role.FRESHMAN);
+        assertThat(leader.getRole()).isEqualTo(Role.FRESHMAN);
+        assertThat(leader.getTokenVersion()).isEqualTo(4L);
     }
 
     @Test

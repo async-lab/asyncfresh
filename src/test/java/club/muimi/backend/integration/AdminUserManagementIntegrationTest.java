@@ -145,6 +145,24 @@ class AdminUserManagementIntegrationTest {
                 .andExpect(jsonPath("$.data.email").value(userEmail))
                 .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
 
+        Long originalTokenVersion = userRepository.findById(targetUser.getId()).orElseThrow().getTokenVersion();
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", targetUser.getId())
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "role": "LEADER"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("LEADER"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
+
+        User promotedUser = userRepository.findById(targetUser.getId()).orElseThrow();
+        assertThat(promotedUser.getRole()).isEqualTo(Role.LEADER);
+        assertThat(promotedUser.getTokenVersion()).isEqualTo(originalTokenVersion + 1);
+
         mockMvc.perform(patch("/api/v1/admin/users/{userId}/status", targetUser.getId())
                         .cookie(authCookies.authCookie(), authCookies.csrfCookie())
                         .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
@@ -240,6 +258,18 @@ class AdminUserManagementIntegrationTest {
                         firstGroup.getId().intValue(),
                         secondGroup.getId().intValue()
                 )));
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/role", leader.getId())
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "role": "FRESHMAN"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("该负责人仍绑定负责的分组，不能降级为新生"));
     }
 
     private AuthCookies loginAs(String email, String password) throws IOException {

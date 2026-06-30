@@ -4,6 +4,7 @@ import club.muimi.backend.common.api.ApiResponse;
 import club.muimi.backend.common.api.PageResult;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.UpdateUserRoleRequest;
 import club.muimi.backend.dto.admin.UpdateUserStatusRequest;
 import club.muimi.backend.service.admin.AdminUserService;
 import club.muimi.backend.vo.admin.AdminUserDetailVo;
@@ -60,5 +61,13 @@ public class AdminUserController {
             @Valid @RequestBody UpdateUserStatusRequest request
     ) {
         return ApiResponse.success(adminUserService.updateUserStatus(userId, request), "用户状态更新成功");
+    }
+
+    @PatchMapping("/{userId}/role")
+    public ApiResponse<AdminUserDetailVo> updateUserRole(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserRoleRequest request
+    ) {
+        return ApiResponse.success(adminUserService.updateUserRole(userId, request), "用户角色更新成功");
     }
 }

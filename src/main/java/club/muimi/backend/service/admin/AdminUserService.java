@@ -5,13 +5,16 @@ import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.api.PageResult;
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.UpdateUserRoleRequest;
 import club.muimi.backend.dto.admin.UpdateUserStatusRequest;
 import club.muimi.backend.entity.Application;
 import club.muimi.backend.entity.GroupMember;
 import club.muimi.backend.entity.RecruitmentGroup;
 import club.muimi.backend.entity.User;
+import club.muimi.backend.exception.ConflictException;
 import club.muimi.backend.exception.ForbiddenException;
 import club.muimi.backend.exception.NotFoundException;
+import club.muimi.backend.exception.ValidationException;
 import club.muimi.backend.repository.ApplicationRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
@@ -133,6 +136,47 @@ public class AdminUserService {
         return toDetailVo(user);
     }
 
+    @Transactional
+    public AdminUserDetailVo updateUserRole(Long userId, UpdateUserRoleRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
+        if (currentUser.getUserId().equals(userId)) {
+            throw new ForbiddenException("管理员不能修改自己的角色");
+        }
+        validateManagedRole(request.role());
+
+        User user = getUserOrThrow(userId);
+        if (user.getRole() == Role.ADMIN) {
+            throw new ForbiddenException("管理员账号角色不允许通过该接口修改");
+        }
+        Role previousRole = user.getRole();
+        if (previousRole == request.role()) {
+            return toDetailVo(user);
+        }
+        if (previousRole == Role.LEADER && request.role() == Role.FRESHMAN
+                && recruitmentGroupRepository.findAllByLeaderUserId(userId).stream().findAny().isPresent()) {
+            throw new ConflictException("该负责人仍绑定负责的分组，不能降级为新生");
+        }
+
+        user.setRole(request.role());
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("previousRole", previousRole);
+        detail.put("currentRole", request.role());
+        detail.put("tokenVersion", user.getTokenVersion());
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.AUTH,
+                        "UPDATE_USER_ROLE",
+                        AuditSeverity.IMPORTANT,
+                        "更新用户角色"
+                ).actor(currentUser)
+                .target("USER", userId)
+                .detail(detail)
+                .build());
+        return toDetailVo(user);
+    }
+
     private AdminUserDetailVo toDetailVo(User user) {
         List<GroupMember> groupMembers = groupMemberRepository.findAllByUserId(user.getId());
         Set<Long> groupIds = groupMembers.stream()
@@ -169,6 +213,12 @@ public class AdminUserService {
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("用户不存在"));
+    }
+
+    private void validateManagedRole(Role role) {
+        if (role != Role.FRESHMAN && role != Role.LEADER) {
+            throw new ValidationException("用户角色只能在 FRESHMAN 与 LEADER 之间调整");
+        }
     }
 
     private String normalizeKeyword(String keyword) {
