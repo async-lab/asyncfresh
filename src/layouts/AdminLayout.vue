@@ -17,7 +17,11 @@
         </el-menu-item>
         <el-menu-item index="/admin/users">
           <el-icon><UserFilled /></el-icon>
-          <span>用户与报名</span>
+          <span>用户管理</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/applications">
+          <el-icon><DocumentChecked /></el-icon>
+          <span>报名管理</span>
         </el-menu-item>
         <el-menu-item index="/admin/groups">
           <el-icon><Grid /></el-icon>
@@ -64,6 +68,7 @@
 import {
   Calendar,
   DataAnalysis,
+  DocumentChecked,
   Download,
   Files,
   Grid,

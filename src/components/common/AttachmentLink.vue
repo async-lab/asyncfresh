@@ -1,5 +1,5 @@
 <template>
-  <el-link v-if="url" type="primary" :href="url" target="_blank" :icon="Download">
+  <el-link v-if="href || url" type="primary" :href="href || url || undefined" target="_blank" :icon="Download">
     {{ label }}
   </el-link>
   <span v-else class="muted">无附件</span>
@@ -11,6 +11,7 @@ import { Download } from '@element-plus/icons-vue';
 withDefaults(
   defineProps<{
     url?: string | null;
+    href?: string | null;
     label?: string;
   }>(),
   {

@@ -12,7 +12,7 @@
         <el-button :icon="Refresh" :loading="loading" @click="loadMaterials">刷新</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="pageData.list" empty-text="暂无资料">
+      <el-table v-loading="loading" :data="pagedMaterials" empty-text="暂无资料">
         <el-table-column prop="title" label="标题" min-width="220" />
         <el-table-column prop="summary" label="摘要" min-width="220">
           <template #default="{ row }">
@@ -24,7 +24,7 @@
         </el-table-column>
         <el-table-column label="附件" width="110">
           <template #default="{ row }">
-            <AttachmentLink :url="row.attachmentUrl" label="下载" />
+            <AttachmentLink :href="getAttachmentHref(row)" label="下载" />
           </template>
         </el-table-column>
         <el-table-column label="发布时间" min-width="170">
@@ -45,7 +45,7 @@
         class="pager"
         layout="total, sizes, prev, pager, next"
         :page-sizes="[5, 10, 20]"
-        :total="pageData.total"
+        :total="filteredMaterials.length"
         @current-change="loadMaterials"
         @size-change="handleSizeChange"
       />
@@ -62,10 +62,11 @@ import AttachmentLink from '@/components/common/AttachmentLink.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
 import { useMetaStore } from '@/stores/meta';
-import type { Material, PageResult } from '@/types/api';
+import type { Material } from '@/types/api';
 
 const metaStore = useMetaStore();
 const loading = ref(false);
+const materials = ref<Material[]>([]);
 const directionPath = ref<number[]>([]);
 const query = reactive({
   page: 1,
@@ -75,13 +76,6 @@ const query = reactive({
   keyword: '',
   hasAttachment: false
 });
-const pageData = reactive<PageResult<Material>>({
-  list: [],
-  page: 1,
-  size: 10,
-  total: 0,
-  totalPages: 1
-});
 const directionNameMap = computed(() => {
   const map = new Map<number, string>();
   metaStore.directions.forEach((level1) => {
@@ -90,21 +84,29 @@ const directionNameMap = computed(() => {
   });
   return map;
 });
+const filteredMaterials = computed(() => {
+  const keyword = query.keyword.trim();
+  return materials.value.filter((item) => {
+    const level1Matched = !query.directionLevel1Id || item.directionLevel1Id === query.directionLevel1Id;
+    const level2Matched = !query.directionLevel2Id || item.directionLevel2Id === query.directionLevel2Id;
+    const attachmentMatched = !query.hasAttachment || hasAttachment(item);
+    const keywordMatched =
+      !keyword ||
+      [item.title, item.summary, item.contentMarkdown, item.content].filter(Boolean).some((value) => String(value).includes(keyword));
+    return level1Matched && level2Matched && attachmentMatched && keywordMatched;
+  });
+});
+const pagedMaterials = computed(() => {
+  const start = (query.page - 1) * query.size;
+  return filteredMaterials.value.slice(start, start + query.size);
+});
 
 onMounted(loadMaterials);
 
 async function loadMaterials() {
   loading.value = true;
   try {
-    const data = await getMaterials({
-      page: query.page,
-      size: query.size,
-      directionLevel1Id: query.directionLevel1Id,
-      directionLevel2Id: query.directionLevel2Id,
-      keyword: query.keyword.trim() || undefined,
-      hasAttachment: query.hasAttachment || undefined
-    });
-    Object.assign(pageData, data);
+    materials.value = await getMaterials();
   } finally {
     loading.value = false;
   }
@@ -131,6 +133,15 @@ function getDirectionLabel(material: Material) {
   const level1 = material.directionLevel1Id ? directionNameMap.value.get(material.directionLevel1Id) : undefined;
   const level2 = material.directionLevel2Id ? directionNameMap.value.get(material.directionLevel2Id) : undefined;
   return [level1, level2].filter(Boolean).join(' / ') || '全部方向';
+}
+
+function hasAttachment(material: Material) {
+  return Boolean(material.hasAttachment || material.attachmentFileId || material.attachmentUrl);
+}
+
+function getAttachmentHref(material: Material) {
+  if (!hasAttachment(material)) return null;
+  return material.attachmentUrl || `/api/v1/materials/${material.id}/attachment`;
 }
 
 function formatDateTime(value?: string) {

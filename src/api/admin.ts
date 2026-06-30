@@ -1,6 +1,7 @@
-import { deleteData, getData, postData, putData } from './http';
+import { deleteData, getData, patchData, postData, putData } from './http';
 import type {
   AdminDashboardSummary,
+  Application,
   Direction,
   Grade,
   Group,
@@ -35,7 +36,7 @@ export interface GroupPayload {
 }
 
 export function getDashboardSummary() {
-  return getData<AdminDashboardSummary>('/admin/dashboard/summary');
+  return getData<AdminDashboardSummary>('/admin/dashboard/overview');
 }
 
 export function getAdminPeriods() {
@@ -68,8 +69,7 @@ export function deleteDirection(id: number | string) {
 
 export function getAdminUsers(params?: {
   role?: Role;
-  applicationStatus?: string;
-  groupId?: number;
+  status?: string;
   keyword?: string;
   page?: number;
   size?: number;
@@ -81,15 +81,31 @@ export function getAdminUser(id: number | string) {
   return getData<User>(`/admin/users/${id}`);
 }
 
+export function updateUserStatus(id: number | string, status: 'ACTIVE' | 'DISABLED') {
+  return patchData<User, { status: 'ACTIVE' | 'DISABLED' }>(`/admin/users/${id}/status`, { status });
+}
+
+export function updateUserRole(id: number | string, role: Exclude<Role, 'ADMIN'>) {
+  return patchData<User, { role: Exclude<Role, 'ADMIN'> }>(`/admin/users/${id}/role`, { role });
+}
+
 export function getAdminGroups(params?: {
   directionLevel1Id?: number;
   directionLevel2Id?: number;
   grade?: Grade;
   admissionYear?: number;
-  page?: number;
-  size?: number;
 }) {
-  return getData<PageResult<Group>>('/admin/groups', params);
+  return getData<Group[]>('/admin/groups', params);
+}
+
+export function getAdminUngroupedApplications(params?: {
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+  keyword?: string;
+}) {
+  return getData<Application[]>('/admin/groups/ungrouped-applications', params);
 }
 
 export function createGroup(payload: GroupPayload) {
@@ -104,29 +120,36 @@ export function deleteGroup(id: number | string) {
   return deleteData<null>(`/admin/groups/${id}`);
 }
 
-export function autoAssignGroups(dryRun: boolean) {
-  return postData<
-    { assignedCount: number; unassignedCount: number; unassignedApplicationIds: number[] },
-    { dryRun: boolean }
-  >('/admin/groups/auto-assign', { dryRun });
-}
-
 export function addApplicationToGroup(groupId: number | string, applicationId: number | string) {
   return postData<null>(`/admin/groups/${groupId}/applications/${applicationId}`);
 }
 
-export function removeApplicationFromGroup(groupId: number | string, applicationId: number | string) {
-  return deleteData<null>(`/admin/groups/${groupId}/applications/${applicationId}`);
+export function unassignApplicationFromGroup(groupId: number | string, applicationId: number | string, remark?: string) {
+  return postData<null, { remark?: string }>(`/admin/groups/${groupId}/applications/${applicationId}/unassign`, {
+    remark
+  });
+}
+
+export function rejectAdminApplication(applicationId: number | string, reason?: string) {
+  return postData<null, { reason?: string }>(`/admin/applications/${applicationId}/reject`, { reason });
 }
 
 export function assignLeader(groupId: number | string, userId: number) {
-  return postData<null, { userId: number }>(`/admin/groups/${groupId}/leader`, { userId });
+  return putData<null, { leaderUserId: number }>(`/admin/groups/${groupId}/leader`, { leaderUserId: userId });
 }
 
 export function removeLeader(groupId: number | string) {
   return deleteData<null>(`/admin/groups/${groupId}/leader`);
 }
 
-export function getExportUrl(type: 'APPLICATION' | 'GROUP_RESULT' | 'TASK_SCORE') {
-  return `/api/v1/admin/dashboard/export?type=${type}`;
+export function getApplicationsExportUrl() {
+  return '/api/v1/admin/exports/applications';
+}
+
+export function getGroupsExportUrl() {
+  return '/api/v1/admin/exports/groups';
+}
+
+export function getGroupTasksExportUrl(groupId: number | string) {
+  return `/api/v1/admin/exports/groups/${groupId}/tasks`;
 }

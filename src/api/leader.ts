@@ -1,6 +1,13 @@
 export {
   createLeaderAnnouncement,
-  deleteAnnouncement,
-  updateAnnouncement
+  deleteLeaderAnnouncement,
+  updateLeaderAnnouncement
 } from './announcements';
-export { createLeaderTask, deleteTask, getGroupTaskSubmissions, reviewSubmission, updateTask } from './tasks';
+export {
+  createLeaderTask,
+  deleteLeaderTask,
+  getLeaderTaskSubmissions,
+  returnLeaderSubmission,
+  reviewLeaderSubmission,
+  updateLeaderTask
+} from './tasks';

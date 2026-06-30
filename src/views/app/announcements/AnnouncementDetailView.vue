@@ -13,7 +13,7 @@
           <span>发布者：{{ announcement.publisherName }}</span>
           <span>发布时间：{{ formatDateTime(announcement.createdAt) }}</span>
         </div>
-        <MarkdownViewer :content="announcement.content || '暂无公告内容。'" />
+        <MarkdownViewer :content="announcement.contentMarkdown || announcement.content || '暂无公告内容。'" />
       </template>
       <el-empty v-else-if="!loading" description="公告不存在或已不可访问" />
     </section>

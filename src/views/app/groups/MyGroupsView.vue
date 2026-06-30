@@ -34,12 +34,14 @@
 import { View } from '@element-plus/icons-vue';
 import { computed, onMounted, ref } from 'vue';
 
-import { getMyGroups } from '@/api/groups';
+import { getGroup } from '@/api/groups';
 import PageHeader from '@/components/common/PageHeader.vue';
+import { useAuthStore } from '@/stores/auth';
 import { useMetaStore } from '@/stores/meta';
-import type { Grade, Group } from '@/types/api';
+import type { Grade, Group, SimpleGroup } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 
+const authStore = useAuthStore();
 const metaStore = useMetaStore();
 const loading = ref(false);
 const groups = ref<Group[]>([]);
@@ -57,13 +59,33 @@ onMounted(loadGroups);
 async function loadGroups() {
   loading.value = true;
   try {
-    groups.value = await getMyGroups();
+    const simpleGroups = authStore.user?.groups || [];
+    const groupDetails = await Promise.all(simpleGroups.map((group) => loadGroupDetail(group)));
+    groups.value = groupDetails;
   } finally {
     loading.value = false;
   }
 }
 
+async function loadGroupDetail(group: SimpleGroup): Promise<Group> {
+  try {
+    return await getGroup(group.id);
+  } catch {
+    return {
+      id: group.id,
+      name: group.name,
+      directionLevel1Id: 0,
+      directionLevel2Id: 0,
+      grade: 'YEAR_1',
+      admissionYear: 0,
+      maxSize: 0,
+      leaderUserId: null
+    };
+  }
+}
+
 function getDirectionLabel(group: Group) {
+  if (!group.directionLevel1Id || !group.directionLevel2Id) return '待同步';
   const level1 = directionNameMap.value.get(group.directionLevel1Id);
   const level2 = directionNameMap.value.get(group.directionLevel2Id);
   return [level1, level2].filter(Boolean).join(' / ') || '未知方向';

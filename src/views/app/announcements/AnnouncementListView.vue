@@ -9,7 +9,7 @@
         <el-button :icon="Refresh" :loading="loading" @click="loadAnnouncements">刷新</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="pageData.list" empty-text="暂无公告">
+      <el-table v-loading="loading" :data="pagedAnnouncements" empty-text="暂无公告">
         <el-table-column prop="title" label="标题" min-width="240" />
         <el-table-column label="范围" width="100">
           <template #default="{ row }">
@@ -35,7 +35,7 @@
         class="pager"
         layout="total, sizes, prev, pager, next"
         :page-sizes="[5, 10, 20]"
-        :total="pageData.total"
+        :total="filteredAnnouncements.length"
         @current-change="loadAnnouncements"
         @size-change="handleSizeChange"
       />
@@ -45,47 +45,48 @@
 
 <script setup lang="ts">
 import { Refresh, View } from '@element-plus/icons-vue';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { getAnnouncements } from '@/api/announcements';
 import PageHeader from '@/components/common/PageHeader.vue';
-import type { Announcement, PageResult, Scope } from '@/types/api';
+import type { Announcement, Scope } from '@/types/api';
 import { scopeLabels } from '@/utils/labels';
 
 type ScopeFilter = 'ALL' | Scope;
 
 const loading = ref(false);
+const announcements = ref<Announcement[]>([]);
 const query = reactive({
   page: 1,
   size: 10,
   scope: 'ALL' as ScopeFilter,
   keyword: ''
 });
-const pageData = reactive<PageResult<Announcement>>({
-  list: [],
-  page: 1,
-  size: 10,
-  total: 0,
-  totalPages: 1
-});
 const scopeOptions = [
   { label: '全部', value: 'ALL' },
   { label: scopeLabels.GLOBAL, value: 'GLOBAL' },
   { label: scopeLabels.GROUP, value: 'GROUP' }
 ];
+const filteredAnnouncements = computed(() => {
+  const keyword = query.keyword.trim();
+  return announcements.value.filter((item) => {
+    const scopeMatched = query.scope === 'ALL' || item.scope === query.scope;
+    const keywordMatched =
+      !keyword || [item.title, item.contentMarkdown, item.content].filter(Boolean).some((value) => String(value).includes(keyword));
+    return scopeMatched && keywordMatched;
+  });
+});
+const pagedAnnouncements = computed(() => {
+  const start = (query.page - 1) * query.size;
+  return filteredAnnouncements.value.slice(start, start + query.size);
+});
 
 onMounted(loadAnnouncements);
 
 async function loadAnnouncements() {
   loading.value = true;
   try {
-    const data = await getAnnouncements({
-      page: query.page,
-      size: query.size,
-      scope: query.scope === 'ALL' ? undefined : query.scope,
-      keyword: query.keyword.trim() || undefined
-    });
-    Object.assign(pageData, data);
+    announcements.value = await getAnnouncements();
   } finally {
     loading.value = false;
   }
