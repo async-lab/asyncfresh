@@ -34,11 +34,11 @@ public class TaskSubmission {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     @Builder.Default
     private TaskSubmissionStatus status = TaskSubmissionStatus.PENDING;
 
-    @Column(name = "content_markdown")
+    @Column(name = "content_markdown", columnDefinition = "TEXT")
     private String contentMarkdown;
 
     @Column(name = "attachment_file_id")
@@ -53,7 +53,7 @@ public class TaskSubmission {
     @Column
     private Integer score;
 
-    @Column(name = "review_comment")
+    @Column(name = "review_comment", columnDefinition = "TEXT")
     private String reviewComment;
 
     @Column(name = "reviewed_at")

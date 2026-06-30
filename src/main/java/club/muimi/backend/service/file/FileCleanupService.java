@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,15 +67,23 @@ public class FileCleanupService {
             return;
         }
         Path root = Path.of(fileStorageProperties.getRootPath()).toAbsolutePath().normalize();
+        List<FileUploadSession> cleanupSucceededSessions = new ArrayList<>();
         for (FileUploadSession session : sessions) {
             try {
-                Files.deleteIfExists(root.resolve(session.getTempStoragePath()).normalize());
+                Path tempPath = root.resolve(session.getTempStoragePath()).normalize();
+                if (!tempPath.startsWith(root)) {
+                    throw new IllegalStateException("上传临时文件路径超出存储根目录");
+                }
+                Files.deleteIfExists(tempPath);
+                cleanupSucceededSessions.add(session);
             } catch (Exception exception) {
                 log.warn("删除过期上传分片失败，sessionId={}", session.getId(), exception);
                 recordCleanupFailure("DELETE_EXPIRED_UPLOAD_SESSION_FAILED", "UPLOAD_SESSION", session.getId(), exception);
             }
         }
-        fileUploadSessionRepository.deleteAll(sessions);
+        if (!cleanupSucceededSessions.isEmpty()) {
+            fileUploadSessionRepository.deleteAll(cleanupSucceededSessions);
+        }
     }
 
     private void cleanupOrphanStoredFiles() {

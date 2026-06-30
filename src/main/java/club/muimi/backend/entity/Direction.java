@@ -22,7 +22,7 @@ public class Direction {
     @Column(name = "parent_id")
     private Long parentId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 64)
     private String name;
 
     @Column(nullable = false)

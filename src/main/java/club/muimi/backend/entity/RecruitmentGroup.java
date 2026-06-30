@@ -24,7 +24,7 @@ public class RecruitmentGroup {
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, length = 128)
     private String name;
 
     @Column(name = "direction_level1_id", nullable = false)
@@ -33,7 +33,7 @@ public class RecruitmentGroup {
     @Column(name = "direction_level2_id", nullable = false)
     private Long directionLevel2Id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     @Enumerated(EnumType.STRING)
     private Grade grade;
 

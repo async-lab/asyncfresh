@@ -74,21 +74,27 @@ public class ExportService {
             throw new ForbiddenException("只有管理员可以导出报名信息");
         }
         List<Application> applications = applicationRepository.findAll();
-        List<GroupMember> groupMembers = groupMemberRepository.findAllByApplicationIdIn(applications.stream().map(Application::getId).toList());
+        List<Long> applicationIds = applications.stream().map(Application::getId).toList();
+        List<GroupMember> groupMembers = applicationIds.isEmpty()
+                ? List.of()
+                : groupMemberRepository.findAllByApplicationIdIn(applicationIds);
         Map<Long, GroupMember> groupMemberMap = groupMembers.stream().collect(Collectors.toMap(GroupMember::getApplicationId, Function.identity()));
-        Map<Long, RecruitmentGroup> groupMap = recruitmentGroupRepository.findAllByIdIn(
-                        groupMembers.stream().map(GroupMember::getGroupId).collect(Collectors.toCollection(LinkedHashSet::new))
-                ).stream()
+        Set<Long> groupIds = groupMembers.stream().map(GroupMember::getGroupId).collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, RecruitmentGroup> groupMap = groupIds.isEmpty()
+                ? Map.of()
+                : recruitmentGroupRepository.findAllByIdIn(groupIds).stream()
                 .collect(Collectors.toMap(RecruitmentGroup::getId, Function.identity()));
-        Map<Long, User> userMap = userRepository.findAllById(
-                        applications.stream().map(Application::getUserId).collect(Collectors.toCollection(LinkedHashSet::new))
-                ).stream()
+        Set<Long> userIds = applications.stream().map(Application::getUserId).collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-        Map<Long, Direction> directionMap = directionRepository.findAllById(
-                        applications.stream()
-                                .flatMap(application -> java.util.stream.Stream.of(application.getDirectionLevel1Id(), application.getDirectionLevel2Id()))
-                                .collect(Collectors.toCollection(LinkedHashSet::new))
-                ).stream()
+        Set<Long> directionIds = applications.stream()
+                .flatMap(application -> java.util.stream.Stream.of(application.getDirectionLevel1Id(), application.getDirectionLevel2Id()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, Direction> directionMap = directionIds.isEmpty()
+                ? Map.of()
+                : directionRepository.findAllById(directionIds).stream()
                 .collect(Collectors.toMap(Direction::getId, Function.identity()));
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
@@ -167,9 +173,16 @@ public class ExportService {
             throw new ForbiddenException("当前用户无权导出该分组任务结果");
         }
         List<RecruitmentTask> tasks = recruitmentTaskRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId);
-        List<TaskSubmission> submissions = taskSubmissionRepository.findAllByTaskIdIn(tasks.stream().map(RecruitmentTask::getId).toList());
-        Map<Long, TaskSubmission> submissionMap = submissions.stream()
-                .collect(Collectors.toMap(submission -> submission.getTaskId() * 1000000000L + submission.getUserId(), Function.identity(), (left, right) -> left));
+        List<Long> taskIds = tasks.stream().map(RecruitmentTask::getId).toList();
+        List<TaskSubmission> submissions = taskIds.isEmpty()
+                ? List.of()
+                : taskSubmissionRepository.findAllByTaskIdIn(taskIds);
+        Map<TaskSubmissionKey, TaskSubmission> submissionMap = submissions.stream()
+                .collect(Collectors.toMap(
+                        submission -> new TaskSubmissionKey(submission.getTaskId(), submission.getUserId()),
+                        Function.identity(),
+                        (left, right) -> left
+                ));
         List<GroupMember> members = groupMemberRepository.findAllByGroupId(groupId);
         Map<Long, User> userMap = userRepository.findAllById(
                         members.stream().map(GroupMember::getUserId).collect(Collectors.toCollection(LinkedHashSet::new))
@@ -191,7 +204,7 @@ public class ExportService {
             int rowIndex = 1;
             for (RecruitmentTask task : tasks) {
                 for (GroupMember member : members) {
-                    TaskSubmission submission = submissionMap.get(task.getId() * 1000000000L + member.getUserId());
+                    TaskSubmission submission = submissionMap.get(new TaskSubmissionKey(task.getId(), member.getUserId()));
                     User user = userMap.get(member.getUserId());
                     Application application = applicationMap.get(member.getApplicationId());
                     User reviewer = submission == null || submission.getReviewerUserId() == null ? null : reviewerMap.get(submission.getReviewerUserId());
@@ -204,7 +217,7 @@ public class ExportService {
                             user == null ? null : user.getUsername(),
                             application == null ? null : application.getRealName(),
                             submission == null ? TaskSubmissionStatus.PENDING : submission.getStatus(),
-                            submission == null ? null : submission.getSubmittedAt().atZone(appClock.getZone()).toOffsetDateTime(),
+                            submission == null || submission.getSubmittedAt() == null ? null : submission.getSubmittedAt().atZone(appClock.getZone()).toOffsetDateTime(),
                             submission == null || submission.getReviewedAt() == null ? null : submission.getReviewedAt().atZone(appClock.getZone()).toOffsetDateTime(),
                             reviewer == null ? null : reviewer.getUsername(),
                             submission == null ? null : submission.getScore(),
@@ -227,16 +240,18 @@ public class ExportService {
             List<Long> groupIds,
             Long groupId
     ) {
-        List<RecruitmentGroup> groups = recruitmentGroupRepository.findAllByIdIn(groupIds);
+        List<RecruitmentGroup> groups = groupIds.isEmpty() ? List.of() : recruitmentGroupRepository.findAllByIdIn(groupIds);
         Map<Long, RecruitmentGroup> groupMap = groups.stream().collect(Collectors.toMap(RecruitmentGroup::getId, Function.identity()));
-        List<GroupMember> members = groupMemberRepository.findAllByGroupIdIn(groupIds);
-        Map<Long, User> userMap = userRepository.findAllById(
-                        members.stream().map(GroupMember::getUserId).collect(Collectors.toCollection(LinkedHashSet::new))
-                ).stream()
+        List<GroupMember> members = groupIds.isEmpty() ? List.of() : groupMemberRepository.findAllByGroupIdIn(groupIds);
+        Set<Long> userIds = members.stream().map(GroupMember::getUserId).collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Map.of()
+                : userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-        Map<Long, Application> applicationMap = applicationRepository.findAllById(
-                        members.stream().map(GroupMember::getApplicationId).toList()
-                ).stream()
+        List<Long> applicationIds = members.stream().map(GroupMember::getApplicationId).toList();
+        Map<Long, Application> applicationMap = applicationIds.isEmpty()
+                ? Map.of()
+                : applicationRepository.findAllById(applicationIds).stream()
                 .collect(Collectors.toMap(Application::getId, Function.identity()));
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("group-members");
@@ -293,7 +308,7 @@ public class ExportService {
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("groupId", groupId);
         detail.put("fileSizeBytes", fileSizeBytes);
-        auditLogService.record(AuditLogCommand.builder(
+        auditLogService.recordInNewTransaction(AuditLogCommand.builder(
                         AuditModule.EXPORT,
                         action,
                         AuditSeverity.IMPORTANT,
@@ -302,5 +317,8 @@ public class ExportService {
                 .target("EXPORT", groupId)
                 .detail(detail)
                 .build());
+    }
+
+    private record TaskSubmissionKey(Long taskId, Long userId) {
     }
 }

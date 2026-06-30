@@ -93,6 +93,21 @@ class LocalFileStorageServiceTest {
     }
 
     @Test
+    void uploadDirectShouldRejectTaskAttachmentFromFreshman() {
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "task.txt",
+                "text/plain",
+                "hello".getBytes()
+        );
+
+        assertThatThrownBy(() -> localFileStorageService.uploadDirect(StoredFilePurpose.TASK_ATTACHMENT, file))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("当前角色无权上传该类型附件");
+    }
+
+    @Test
     void uploadDirectShouldRejectDisallowedContentType() {
         when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
         MockMultipartFile file = new MockMultipartFile(
@@ -105,6 +120,70 @@ class LocalFileStorageServiceTest {
         assertThatThrownBy(() -> localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file))
                 .isInstanceOf(ValidationException.class)
                 .hasMessage("当前文件类型不受支持");
+    }
+
+    @Test
+    void uploadDirectShouldRejectUnsafeExtensionEvenWhenExtensionWhitelistIsEmpty() {
+        FileStorageProperties fileStorageProperties = new FileStorageProperties();
+        fileStorageProperties.setRootPath(tempDir.toString());
+        fileStorageProperties.setChunkSize(DataSize.ofBytes(0));
+        fileStorageProperties.setAllowedExtensions(java.util.List.of());
+        fileStorageProperties.setAllowedContentTypes(java.util.List.of());
+        fileStorageProperties.validate();
+
+        TaskModuleProperties taskModuleProperties = new TaskModuleProperties();
+        taskModuleProperties.setAttachmentMaxSize(DataSize.ofMegabytes(20));
+        taskModuleProperties.validate();
+
+        LocalFileStorageService permissiveStorageService = new LocalFileStorageService(
+                fileStorageProperties,
+                taskModuleProperties,
+                storedFileRepository,
+                fileUploadSessionRepository,
+                currentUserService
+        );
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "payload.txt/../../../outside",
+                "text/plain",
+                "hello".getBytes()
+        );
+
+        assertThatThrownBy(() -> permissiveStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("当前文件扩展名不受支持");
+    }
+
+    @Test
+    void uploadDirectShouldRejectBlankOriginalFileName() {
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "   ",
+                "text/plain",
+                "hello".getBytes()
+        );
+
+        assertThatThrownBy(() -> localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("文件名不能为空");
+    }
+
+    @Test
+    void uploadDirectShouldRejectTooLongOriginalFileNameBeforeWritingDatabaseRecord() {
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        String fileName = "a".repeat(252) + ".txt";
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                fileName,
+                "text/plain",
+                "hello".getBytes()
+        );
+
+        assertThatThrownBy(() -> localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("文件名长度不能超过 255 个字符");
     }
 
     private LoginUser buildLoginUser() {

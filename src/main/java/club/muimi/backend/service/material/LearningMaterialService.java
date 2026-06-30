@@ -3,6 +3,7 @@ package club.muimi.backend.service.material;
 import club.muimi.backend.common.enums.AuditModule;
 import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.NotificationType;
+import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.StoredFilePurpose;
 import club.muimi.backend.dto.material.UpsertLearningMaterialRequest;
 import club.muimi.backend.entity.*;
@@ -71,7 +72,7 @@ public class LearningMaterialService {
     @Transactional(readOnly = true)
     public List<LearningMaterialVo> listVisibleMaterials() {
         LoginUser currentUser = currentUserService.requireCurrentUser();
-        if (currentUser.getRole().name().equals("ADMIN")) {
+        if (currentUser.getRole() == Role.ADMIN) {
             return buildMaterialVos(learningMaterialRepository.findAll());
         }
         Set<Long> groupIds = new LinkedHashSet<>();
@@ -197,16 +198,16 @@ public class LearningMaterialService {
     private void ensureCanManageGroup(LoginUser currentUser, Long groupId) {
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("分组不存在"));
-        if (currentUser.getRole().name().equals("ADMIN")) {
+        if (currentUser.getRole() == Role.ADMIN) {
             return;
         }
-        if (!Objects.equals(group.getLeaderUserId(), currentUser.getUserId())) {
+        if (currentUser.getRole() != Role.LEADER || !Objects.equals(group.getLeaderUserId(), currentUser.getUserId())) {
             throw new ForbiddenException("当前用户无权管理该分组学习资料");
         }
     }
 
     private void ensureCanViewMaterial(LoginUser currentUser, LearningMaterial material) {
-        if (currentUser.getRole().name().equals("ADMIN")) {
+        if (currentUser.getRole() == Role.ADMIN) {
             return;
         }
         if (groupMemberRepository.existsByUserIdAndGroupId(currentUser.getUserId(), material.getGroupId())) {
@@ -240,9 +241,10 @@ public class LearningMaterialService {
                         materials.stream().map(LearningMaterial::getPublisherUserId).collect(Collectors.toCollection(LinkedHashSet::new))
                 ).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
-        Map<Long, StoredFile> fileMap = storedFileRepository.findAllByIdIn(
-                        materials.stream().map(LearningMaterial::getAttachmentFileId).filter(Objects::nonNull).toList()
-                ).stream()
+        List<Long> fileIds = materials.stream().map(LearningMaterial::getAttachmentFileId).filter(Objects::nonNull).toList();
+        Map<Long, StoredFile> fileMap = fileIds.isEmpty()
+                ? Map.of()
+                : storedFileRepository.findAllByIdIn(fileIds).stream()
                 .collect(Collectors.toMap(StoredFile::getId, Function.identity()));
         return materials.stream()
                 .map(material -> {

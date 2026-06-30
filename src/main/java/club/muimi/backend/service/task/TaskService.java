@@ -3,6 +3,7 @@ package club.muimi.backend.service.task;
 import club.muimi.backend.common.enums.AuditModule;
 import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.NotificationType;
+import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.TaskSubmissionStatus;
 import club.muimi.backend.common.enums.StoredFilePurpose;
 import club.muimi.backend.entity.*;
@@ -160,7 +161,9 @@ public class TaskService {
         recruitmentTaskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("任务不存在"));
         TaskSubmission submission = taskSubmissionRepository.findByTaskIdAndUserId(taskId, currentUser.getUserId()).orElse(null);
-        Map<Long, StoredFile> storedFileMap = submission == null ? Map.of() : loadStoredFiles(List.of(submission.getAttachmentFileId()));
+        Map<Long, StoredFile> storedFileMap = submission == null || submission.getAttachmentFileId() == null
+                ? Map.of()
+                : loadStoredFiles(List.of(submission.getAttachmentFileId()));
         Map<Long, User> reviewerMap = submission == null || submission.getReviewerUserId() == null
                 ? Map.of()
                 : userRepository.findAllById(List.of(submission.getReviewerUserId())).stream()
@@ -229,10 +232,13 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<ManageTaskVo> listManageableTasks(Long groupId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("分组不存在"));
+        ensureCanManageGroup(currentUser, group);
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupId(groupId);
         long memberCount = groupMembers.size();
+        Set<Long> memberUserIds = groupMembers.stream().map(GroupMember::getUserId).collect(Collectors.toCollection(LinkedHashSet::new));
         List<RecruitmentTask> tasks = recruitmentTaskRepository.findAllByGroupIdOrderByCreatedAtDesc(groupId);
         if (tasks.isEmpty()) {
             return List.of();
@@ -246,9 +252,11 @@ public class TaskService {
                 .map(task -> {
                     List<TaskSubmission> submissions = submissionMap.getOrDefault(task.getId(), List.of());
                     long submittedCount = submissions.stream()
+                            .filter(submission -> memberUserIds.contains(submission.getUserId()))
                             .filter(submission -> submission.getStatus() == TaskSubmissionStatus.SUBMITTED)
                             .count();
                     long reviewedCount = submissions.stream()
+                            .filter(submission -> memberUserIds.contains(submission.getUserId()))
                             .filter(submission -> submission.getStatus() == TaskSubmissionStatus.REVIEWED)
                             .count();
                     long pendingCount = Math.max(0, memberCount - submittedCount - reviewedCount);
@@ -278,6 +286,7 @@ public class TaskService {
         periodService.ensureSelectionOpenForTaskManage();
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("分组不存在"));
+        ensureCanManageGroup(currentUser, group);
         validateTaskPayload(request.contentMarkdown(), request.attachmentFileId());
         StoredFile attachment = null;
         if (request.attachmentFileId() != null) {
@@ -326,6 +335,7 @@ public class TaskService {
         }
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("分组不存在"));
+        ensureCanManageGroup(currentUser, group);
         StoredFile oldAttachment = task.getAttachmentFileId() == null ? null : storedFileRepository.findById(task.getAttachmentFileId()).orElse(null);
         StoredFile newAttachment = null;
         if (request.attachmentFileId() != null) {
@@ -384,6 +394,7 @@ public class TaskService {
         if (!task.getGroupId().equals(groupId)) {
             throw new ConflictException("任务不属于指定分组");
         }
+        ensureCanManageGroup(currentUser, groupId);
         List<TaskSubmission> submissions = taskSubmissionRepository.findAllByTaskId(taskId);
         for (TaskSubmission submission : submissions) {
             StoredFile attachment = submission.getAttachmentFileId() == null
@@ -422,8 +433,10 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<TaskMemberSubmissionVo> listTaskSubmissions(Long taskId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
         RecruitmentTask task = recruitmentTaskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("任务不存在"));
+        ensureCanManageGroup(currentUser, task.getGroupId());
         List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupId(task.getGroupId());
         if (groupMembers.isEmpty()) {
             return List.of();
@@ -483,6 +496,7 @@ public class TaskService {
         periodService.ensureSelectionOpenForTaskManage();
         RecruitmentTask task = recruitmentTaskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("任务不存在"));
+        ensureCanManageGroup(currentUser, task.getGroupId());
         if (!groupMemberRepository.existsByUserIdAndGroupId(userId, task.getGroupId())) {
             throw new NotFoundException("该用户不在当前任务分组内");
         }
@@ -540,6 +554,7 @@ public class TaskService {
         periodService.ensureSelectionOpenForTaskManage();
         RecruitmentTask task = recruitmentTaskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("任务不存在"));
+        ensureCanManageGroup(currentUser, task.getGroupId());
         if (!groupMemberRepository.existsByUserIdAndGroupId(userId, task.getGroupId())) {
             throw new NotFoundException("该用户不在当前任务分组内");
         }
@@ -612,6 +627,13 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public StoredFile getMemberSubmissionAttachmentFile(Long taskId, Long userId) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
+        RecruitmentTask task = recruitmentTaskRepository.findById(taskId)
+                .orElseThrow(() -> new NotFoundException("任务不存在"));
+        ensureCanManageGroup(currentUser, task.getGroupId());
+        if (!groupMemberRepository.existsByUserIdAndGroupId(userId, task.getGroupId())) {
+            throw new ForbiddenException("该用户当前不属于任务所在分组");
+        }
         TaskSubmission submission = taskSubmissionRepository.findByTaskIdAndUserId(taskId, userId)
                 .orElseThrow(() -> new NotFoundException("该成员任务提交不存在"));
         if (submission.getAttachmentFileId() == null) {
@@ -733,6 +755,21 @@ public class TaskService {
     private void ensureTaskDeadlineNotPassed(RecruitmentTask task) {
         if (LocalDateTime.now(appClock).isAfter(task.getDeadlineAt())) {
             throw new ConflictException("当前任务已截止，不能再提交");
+        }
+    }
+
+    private void ensureCanManageGroup(LoginUser currentUser, Long groupId) {
+        RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
+                .orElseThrow(() -> new NotFoundException("分组不存在"));
+        ensureCanManageGroup(currentUser, group);
+    }
+
+    private void ensureCanManageGroup(LoginUser currentUser, RecruitmentGroup group) {
+        if (currentUser.getRole() == Role.ADMIN) {
+            return;
+        }
+        if (currentUser.getRole() != Role.LEADER || !Objects.equals(group.getLeaderUserId(), currentUser.getUserId())) {
+            throw new ForbiddenException("无权操作该分组任务");
         }
     }
 

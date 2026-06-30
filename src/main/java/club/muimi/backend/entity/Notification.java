@@ -28,7 +28,7 @@ public class Notification {
     private Long recipientUserId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(64)")
     private NotificationType type;
 
     @Column(nullable = false, length = 120)

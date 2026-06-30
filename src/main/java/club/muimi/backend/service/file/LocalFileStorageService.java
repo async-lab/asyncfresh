@@ -1,6 +1,7 @@
 package club.muimi.backend.service.file;
 
 import club.muimi.backend.common.enums.StoredFilePurpose;
+import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.config.FileStorageProperties;
 import club.muimi.backend.config.TaskModuleProperties;
 import club.muimi.backend.dto.file.CreateUploadSessionRequest;
@@ -16,10 +17,13 @@ import club.muimi.backend.security.auth.LoginUser;
 import club.muimi.backend.service.user.CurrentUserService;
 import club.muimi.backend.vo.file.StoredFileVo;
 import club.muimi.backend.vo.file.UploadSessionVo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -33,12 +37,14 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class LocalFileStorageService implements FileStorageService {
 
     private static final String BINDING_TYPE_TASK = "TASK";
     private static final String BINDING_TYPE_TASK_SUBMISSION = "TASK_SUBMISSION";
     private static final String BINDING_TYPE_MATERIAL = "MATERIAL";
+    private static final int MAX_ORIGINAL_FILE_NAME_LENGTH = 255;
 
     private final FileStorageProperties fileStorageProperties;
     private final TaskModuleProperties taskModuleProperties;
@@ -67,9 +73,10 @@ public class LocalFileStorageService implements FileStorageService {
         LoginUser currentUser = currentUserService.requireCurrentUser();
         ensurePurposeAllowed(currentUser, purpose);
         validateMultipartFile(purpose, file);
+        String originalFileName = normalizeOriginalFileName(file.getOriginalFilename());
         StoredFile storedFile = persistNewFile(
                 purpose,
-                file.getOriginalFilename(),
+                originalFileName,
                 file.getContentType(),
                 file.getSize(),
                 currentUser.getUserId(),
@@ -88,11 +95,12 @@ public class LocalFileStorageService implements FileStorageService {
         LoginUser currentUser = currentUserService.requireCurrentUser();
         ensurePurposeAllowed(currentUser, request.purpose());
         validateDeclaredFile(request.purpose(), request.fileName(), request.contentType(), request.totalSize());
+        String originalFileName = normalizeOriginalFileName(request.fileName());
         String tempPath = "temp/" + UUID.randomUUID() + ".part";
         FileUploadSession session = FileUploadSession.builder()
                 .purpose(request.purpose())
-                .originalFileName(request.fileName())
-                .contentType(blankToNull(request.contentType()))
+                .originalFileName(originalFileName)
+                .contentType(normalizeContentType(request.contentType()))
                 .totalSize(request.totalSize())
                 .chunkSize(chunkSize)
                 .tempStoragePath(tempPath)
@@ -128,7 +136,7 @@ public class LocalFileStorageService implements FileStorageService {
             throw new ValidationException("分片大小超过当前允许范围");
         }
 
-        Path tempPath = resolveRootPath().resolve(session.getTempStoragePath()).normalize();
+        Path tempPath = resolveManagedPath(session.getTempStoragePath());
         ensureParentDirectory(tempPath);
         try (InputStream inputStream = chunkFile.getInputStream()) {
             Files.write(tempPath, inputStream.readAllBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -156,29 +164,35 @@ public class LocalFileStorageService implements FileStorageService {
             throw new ConflictException("上传尚未完成，不能结束会话");
         }
 
-        Path tempPath = resolveRootPath().resolve(session.getTempStoragePath()).normalize();
+        Path tempPath = resolveManagedPath(session.getTempStoragePath());
         if (!Files.exists(tempPath)) {
             throw new NotFoundException("上传临时文件不存在");
         }
         String finalRelativePath = buildFinalRelativePath(session.getOriginalFileName());
-        Path finalPath = resolveRootPath().resolve(finalRelativePath).normalize();
+        Path finalPath = resolveManagedPath(finalRelativePath);
         ensureParentDirectory(finalPath);
         try {
             Files.move(tempPath, finalPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
             throw new IllegalStateException("完成分片上传失败", exception);
         }
+        registerMoveRollback(finalPath, tempPath);
 
-        StoredFile storedFile = storedFileRepository.save(StoredFile.builder()
-                .purpose(session.getPurpose())
-                .originalFileName(session.getOriginalFileName())
-                .contentType(blankToNull(session.getContentType()))
-                .sizeBytes(session.getTotalSize())
-                .storagePath(finalRelativePath)
-                .uploaderUserId(session.getUploaderUserId())
-                .build());
-        fileUploadSessionRepository.delete(session);
-        return toStoredFileVo(storedFile);
+        try {
+            StoredFile storedFile = storedFileRepository.save(StoredFile.builder()
+                    .purpose(session.getPurpose())
+                    .originalFileName(session.getOriginalFileName())
+                    .contentType(normalizeContentType(session.getContentType()))
+                    .sizeBytes(session.getTotalSize())
+                    .storagePath(finalRelativePath)
+                    .uploaderUserId(session.getUploaderUserId())
+                    .build());
+            fileUploadSessionRepository.delete(session);
+            return toStoredFileVo(storedFile);
+        } catch (RuntimeException exception) {
+            restoreMovedFile(finalPath, tempPath);
+            throw exception;
+        }
     }
 
     @Override
@@ -206,19 +220,36 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     @Transactional
     public void deleteStoredFile(StoredFile storedFile) {
-        Path path = resolveRootPath().resolve(storedFile.getStoragePath()).normalize();
+        Path path = resolveManagedPath(storedFile.getStoragePath());
+        storedFileRepository.delete(storedFile);
+        schedulePhysicalDelete(path);
+    }
+
+    private void schedulePhysicalDelete(Path path) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            deletePhysicalFile(path);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deletePhysicalFile(path);
+            }
+        });
+    }
+
+    private void deletePhysicalFile(Path path) {
         try {
             Files.deleteIfExists(path);
         } catch (IOException exception) {
-            throw new IllegalStateException("删除本地附件失败", exception);
+            log.warn("删除本地附件失败：{}", path, exception);
         }
-        storedFileRepository.delete(storedFile);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Resource loadAsResource(StoredFile storedFile) {
-        Path path = resolveRootPath().resolve(storedFile.getStoragePath()).normalize();
+        Path path = resolveManagedPath(storedFile.getStoragePath());
         if (!Files.exists(path)) {
             throw new NotFoundException("附件文件不存在");
         }
@@ -247,18 +278,17 @@ public class LocalFileStorageService implements FileStorageService {
         if (file == null || file.isEmpty()) {
             throw new ValidationException("上传文件不能为空");
         }
+        String originalFileName = normalizeOriginalFileName(file.getOriginalFilename());
         validateDeclaredFile(
                 purpose,
-                file.getOriginalFilename() == null ? "unknown" : file.getOriginalFilename(),
+                originalFileName,
                 file.getContentType(),
                 file.getSize()
         );
     }
 
     private void validateDeclaredFile(StoredFilePurpose purpose, String fileName, String contentType, long totalSize) {
-        if (fileName == null || fileName.isBlank()) {
-            throw new ValidationException("文件名不能为空");
-        }
+        String normalizedFileName = normalizeOriginalFileName(fileName);
         if (totalSize <= 0) {
             throw new ValidationException("文件大小必须大于 0");
         }
@@ -266,7 +296,7 @@ public class LocalFileStorageService implements FileStorageService {
                 && totalSize > taskModuleProperties.getAttachmentMaxSize().toBytes()) {
             throw new ValidationException("任务附件大小超过系统限制");
         }
-        validateFileType(fileName, contentType);
+        validateFileType(normalizedFileName, contentType);
     }
 
     private StoredFile persistNewFile(
@@ -278,21 +308,27 @@ public class LocalFileStorageService implements FileStorageService {
             MultipartFile multipartFile
     ) {
         String relativePath = buildFinalRelativePath(originalFileName);
-        Path finalPath = resolveRootPath().resolve(relativePath).normalize();
+        Path finalPath = resolveManagedPath(relativePath);
         ensureParentDirectory(finalPath);
         try (InputStream inputStream = multipartFile.getInputStream()) {
             Files.copy(inputStream, finalPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
             throw new IllegalStateException("保存上传文件失败", exception);
         }
-        return storedFileRepository.save(StoredFile.builder()
-                .purpose(purpose)
-                .originalFileName(originalFileName)
-                .contentType(blankToNull(contentType))
-                .sizeBytes(sizeBytes)
-                .storagePath(relativePath)
-                .uploaderUserId(uploaderUserId)
-                .build());
+        registerCreatedFileRollback(finalPath);
+        try {
+            return storedFileRepository.save(StoredFile.builder()
+                    .purpose(purpose)
+                    .originalFileName(originalFileName)
+                    .contentType(normalizeContentType(contentType))
+                    .sizeBytes(sizeBytes)
+                    .storagePath(relativePath)
+                    .uploaderUserId(uploaderUserId)
+                    .build());
+        } catch (RuntimeException exception) {
+            deletePhysicalFile(finalPath);
+            throw exception;
+        }
     }
 
     private String normalizeBindingType(String bindingType) {
@@ -306,12 +342,61 @@ public class LocalFileStorageService implements FileStorageService {
     }
 
     private String buildFinalRelativePath(String originalFileName) {
-        String extension = "";
-        int index = originalFileName == null ? -1 : originalFileName.lastIndexOf('.');
-        if (index >= 0 && index < originalFileName.length() - 1) {
-            extension = originalFileName.substring(index);
+        String extension = extractExtension(originalFileName);
+        return "files/" + UUID.randomUUID() + (extension == null ? "" : "." + extension);
+    }
+
+    private String normalizeOriginalFileName(String originalFileName) {
+        if (originalFileName == null || originalFileName.isBlank()) {
+            throw new ValidationException("文件名不能为空");
         }
-        return "files/" + UUID.randomUUID() + extension;
+        String normalized = originalFileName.trim();
+        if (normalized.length() > MAX_ORIGINAL_FILE_NAME_LENGTH) {
+            throw new ValidationException("文件名长度不能超过 255 个字符");
+        }
+        return normalized;
+    }
+
+    private void registerMoveRollback(Path finalPath, Path tempPath) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED) {
+                    return;
+                }
+                restoreMovedFile(finalPath, tempPath);
+            }
+        });
+    }
+
+    private void registerCreatedFileRollback(Path path) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED) {
+                    return;
+                }
+                deletePhysicalFile(path);
+            }
+        });
+    }
+
+    private void restoreMovedFile(Path finalPath, Path tempPath) {
+        if (!Files.exists(finalPath)) {
+            return;
+        }
+        try {
+            ensureParentDirectory(tempPath);
+            Files.move(finalPath, tempPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            log.warn("回滚分片上传最终文件失败：finalPath={}, tempPath={}", finalPath, tempPath, exception);
+        }
     }
 
     private Path resolveRootPath() {
@@ -333,20 +418,31 @@ public class LocalFileStorageService implements FileStorageService {
         }
     }
 
-    private String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value;
+    private Path resolveManagedPath(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            throw new NotFoundException("附件文件不存在");
+        }
+        Path rootPath = resolveRootPath();
+        Path resolvedPath = rootPath.resolve(relativePath).normalize();
+        if (!resolvedPath.startsWith(rootPath)) {
+            throw new NotFoundException("附件文件不存在");
+        }
+        return resolvedPath;
     }
 
     private void ensurePurposeAllowed(LoginUser currentUser, StoredFilePurpose purpose) {
-        if (purpose == StoredFilePurpose.MATERIAL_ATTACHMENT
-                && currentUser.getRole() != club.muimi.backend.common.enums.Role.ADMIN
-                && currentUser.getRole() != club.muimi.backend.common.enums.Role.LEADER) {
+        if ((purpose == StoredFilePurpose.MATERIAL_ATTACHMENT || purpose == StoredFilePurpose.TASK_ATTACHMENT)
+                && currentUser.getRole() != Role.ADMIN
+                && currentUser.getRole() != Role.LEADER) {
             throw new ForbiddenException("当前角色无权上传该类型附件");
         }
     }
 
     private void validateFileType(String fileName, String contentType) {
         String extension = extractExtension(fileName);
+        if (extension != null && !extension.matches("[a-z0-9]{1,20}")) {
+            throw new ValidationException("当前文件扩展名不受支持");
+        }
         Set<String> allowedExtensions = normalizeConfiguredValues(fileStorageProperties.getAllowedExtensions());
         if (!allowedExtensions.isEmpty() && (extension == null || !allowedExtensions.contains(extension))) {
             throw new ValidationException("当前文件扩展名不受支持");

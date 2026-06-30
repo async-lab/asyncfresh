@@ -212,6 +212,31 @@ class PeriodServiceTest {
     }
 
     @Test
+    void savePeriodsShouldRejectOverlappingDisabledPeriods() {
+        Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
+        when(recruitmentPeriodRepository.findAll()).thenReturn(List.of());
+
+        PeriodService periodService = new PeriodService(recruitmentPeriodRepository, currentUserService, auditLogService, clock);
+        when(currentUserService.requireCurrentUser()).thenReturn(buildAdminLoginUser());
+
+        assertThatThrownBy(() -> periodService.savePeriods(List.of(
+                new PeriodConfigRequest(
+                        PeriodType.REGISTRATION,
+                        OffsetDateTime.parse("2026-06-20T00:00:00+08:00"),
+                        OffsetDateTime.parse("2026-06-30T00:00:00+08:00"),
+                        true
+                ),
+                new PeriodConfigRequest(
+                        PeriodType.SELECTION,
+                        OffsetDateTime.parse("2026-06-29T00:00:00+08:00"),
+                        OffsetDateTime.parse("2026-07-10T00:00:00+08:00"),
+                        false
+                )
+        ))).isInstanceOf(ConflictException.class)
+                .hasMessage("时期时间不能重叠");
+    }
+
+    @Test
     void updatePeriodShouldRejectChangingPeriodType() {
         Clock clock = Clock.fixed(Instant.parse("2026-06-27T02:00:00Z"), APP_ZONE);
         when(recruitmentPeriodRepository.findById(1L)).thenReturn(Optional.of(RecruitmentPeriod.builder()

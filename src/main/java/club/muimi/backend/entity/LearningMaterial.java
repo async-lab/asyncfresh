@@ -21,10 +21,10 @@ public class LearningMaterial {
     @Column(name = "group_id", nullable = false)
     private Long groupId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "content_markdown")
+    @Column(name = "content_markdown", columnDefinition = "TEXT")
     private String contentMarkdown;
 
     @Column(name = "attachment_file_id")

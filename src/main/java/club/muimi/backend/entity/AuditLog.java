@@ -21,14 +21,14 @@ public class AuditLog {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     private AuditModule module;
 
     @Column(nullable = false, length = 100)
     private String action;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     private AuditSeverity severity;
 
     @Column(name = "actor_user_id")
@@ -38,7 +38,7 @@ public class AuditLog {
     private String actorUsername;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "actor_role", length = 32)
+    @Column(name = "actor_role", columnDefinition = "VARCHAR(32)")
     private Role actorRole;
 
     @Column(name = "target_type", length = 100)

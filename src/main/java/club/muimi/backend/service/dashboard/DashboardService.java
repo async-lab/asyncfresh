@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -123,26 +122,36 @@ public class DashboardService {
             return List.of();
         }
         Set<Long> groupIds = groups.stream().map(RecruitmentGroup::getId).collect(Collectors.toCollection(LinkedHashSet::new));
-        Map<Long, Long> memberCountMap = groupMemberRepository.findAllByGroupIdIn(groupIds).stream()
+        List<GroupMember> groupMembers = groupMemberRepository.findAllByGroupIdIn(groupIds);
+        Map<Long, Long> memberCountMap = groupMembers.stream()
                 .collect(Collectors.groupingBy(GroupMember::getGroupId, Collectors.counting()));
+        Map<Long, Set<Long>> memberUserIdsByGroup = groupMembers.stream()
+                .collect(Collectors.groupingBy(
+                        GroupMember::getGroupId,
+                        Collectors.mapping(GroupMember::getUserId, Collectors.toSet())
+                ));
         List<RecruitmentTask> tasks = recruitmentTaskRepository.findAllByGroupIdInOrderByCreatedAtDesc(groupIds);
         Map<Long, List<RecruitmentTask>> taskMap = tasks.stream().collect(Collectors.groupingBy(RecruitmentTask::getGroupId));
-        Map<Long, List<TaskSubmission>> submissionMap = taskSubmissionRepository.findAllByTaskIdIn(
-                        tasks.stream().map(RecruitmentTask::getId).toList()
-                ).stream()
+        List<Long> taskIds = tasks.stream().map(RecruitmentTask::getId).toList();
+        Map<Long, List<TaskSubmission>> submissionMap = taskIds.isEmpty()
+                ? Map.of()
+                : taskSubmissionRepository.findAllByTaskIdIn(taskIds).stream()
                 .collect(Collectors.groupingBy(TaskSubmission::getTaskId));
 
         return groups.stream()
                 .map(group -> {
                     long memberCount = memberCountMap.getOrDefault(group.getId(), 0L);
+                    Set<Long> memberUserIds = memberUserIdsByGroup.getOrDefault(group.getId(), Set.of());
                     List<RecruitmentTask> groupTasks = taskMap.getOrDefault(group.getId(), List.of());
                     long taskCount = groupTasks.size();
                     long submittedCount = groupTasks.stream()
                             .flatMap(task -> submissionMap.getOrDefault(task.getId(), List.of()).stream())
+                            .filter(submission -> memberUserIds.contains(submission.getUserId()))
                             .filter(submission -> submission.getStatus() == TaskSubmissionStatus.SUBMITTED)
                             .count();
                     long reviewedCount = groupTasks.stream()
                             .flatMap(task -> submissionMap.getOrDefault(task.getId(), List.of()).stream())
+                            .filter(submission -> memberUserIds.contains(submission.getUserId()))
                             .filter(submission -> submission.getStatus() == TaskSubmissionStatus.REVIEWED)
                             .count();
                     long pendingCount = Math.max(0L, memberCount * taskCount - submittedCount - reviewedCount);

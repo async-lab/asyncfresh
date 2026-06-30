@@ -191,6 +191,8 @@ class AdminConfigIntegrationTest {
         OffsetDateTime registrationEnd = registrationStart.plusDays(2);
         OffsetDateTime selectionStart = registrationEnd.plusDays(1);
         OffsetDateTime selectionEnd = selectionStart.plusDays(2);
+        OffsetDateTime interviewStart = selectionEnd.plusDays(1);
+        OffsetDateTime interviewEnd = interviewStart.plusDays(2);
 
         mockMvc.perform(post("/api/v1/admin/periods")
                         .cookie(authCookies.authCookie(), authCookies.csrfCookie())
@@ -210,10 +212,16 @@ class AdminConfigIntegrationTest {
                                       "startTime": "%s",
                                       "endTime": "%s",
                                       "enabled": true
+                                    },
+                                    {
+                                      "periodType": "INTERVIEW",
+                                      "startTime": "%s",
+                                      "endTime": "%s",
+                                      "enabled": false
                                     }
                                   ]
                                 }
-                                """.formatted(registrationStart, registrationEnd, selectionStart, selectionEnd)))
+                                """.formatted(registrationStart, registrationEnd, selectionStart, selectionEnd, interviewStart, interviewEnd)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].periodType").value("REGISTRATION"));
 

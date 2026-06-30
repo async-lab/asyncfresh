@@ -31,22 +31,22 @@ public class Application {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 64)
     private String realName;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private String phoneNumber;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 128)
     private String college;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 128)
     private String major;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 128)
     private String className;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     @Enumerated(EnumType.STRING)
     private Grade grade;
 
@@ -59,15 +59,15 @@ public class Application {
     @Column(name = "direction_level2_id", nullable = false)
     private Long directionLevel2Id;
 
-    @Column
+    @Column(length = 1000)
     private String introduction;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(32)")
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
 
-    @Column(name = "status_remark")
+    @Column(name = "status_remark", length = 255)
     private String statusRemark;
 
     @Column(nullable = false)

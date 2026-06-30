@@ -1,10 +1,9 @@
 package club.muimi.backend.controller.admin;
 
 import club.muimi.backend.common.api.ApiResponse;
+import club.muimi.backend.controller.support.FileDownloadResponseBuilder;
 import club.muimi.backend.dto.task.ReviewTaskSubmissionRequest;
 import club.muimi.backend.dto.task.UpsertTaskRequest;
-import club.muimi.backend.entity.StoredFile;
-import club.muimi.backend.service.file.FileStorageService;
 import club.muimi.backend.service.task.TaskService;
 import club.muimi.backend.vo.task.ManageTaskVo;
 import club.muimi.backend.vo.task.TaskDetailVo;
@@ -12,25 +11,21 @@ import club.muimi.backend.vo.task.TaskMemberSubmissionVo;
 import club.muimi.backend.vo.task.TaskSubmissionVo;
 import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
 public class AdminTaskController {
 
     private final TaskService taskService;
-    private final FileStorageService fileStorageService;
+    private final FileDownloadResponseBuilder fileDownloadResponseBuilder;
 
-    public AdminTaskController(TaskService taskService, FileStorageService fileStorageService) {
+    public AdminTaskController(TaskService taskService, FileDownloadResponseBuilder fileDownloadResponseBuilder) {
         this.taskService = taskService;
-        this.fileStorageService = fileStorageService;
+        this.fileDownloadResponseBuilder = fileDownloadResponseBuilder;
     }
 
     @GetMapping("/api/v1/admin/groups/{groupId}/tasks")
@@ -94,24 +89,6 @@ public class AdminTaskController {
             @PathVariable Long taskId,
             @PathVariable Long userId
     ) {
-        return buildDownloadResponse(taskService.getMemberSubmissionAttachmentFile(taskId, userId));
-    }
-
-    private ResponseEntity<Resource> buildDownloadResponse(StoredFile storedFile) {
-        Resource resource = fileStorageService.loadAsResource(storedFile);
-        MediaType mediaType = storedFile.getContentType() == null
-                ? MediaType.APPLICATION_OCTET_STREAM
-                : MediaType.parseMediaType(storedFile.getContentType());
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .contentLength(storedFile.getSizeBytes())
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment()
-                                .filename(storedFile.getOriginalFileName(), StandardCharsets.UTF_8)
-                                .build()
-                                .toString()
-                )
-                .body(resource);
+        return fileDownloadResponseBuilder.build(taskService.getMemberSubmissionAttachmentFile(taskId, userId));
     }
 }

@@ -4,7 +4,9 @@ import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.StoredFilePurpose;
 import club.muimi.backend.common.enums.UserStatus;
 import club.muimi.backend.entity.LearningMaterial;
+import club.muimi.backend.entity.RecruitmentGroup;
 import club.muimi.backend.entity.StoredFile;
+import club.muimi.backend.entity.User;
 import club.muimi.backend.exception.ForbiddenException;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.LearningMaterialRepository;
@@ -24,10 +26,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -120,5 +126,41 @@ class LearningMaterialServiceTest {
         learningMaterialService.getMaterialAttachmentFile(3L);
 
         verify(storedFileRepository).findById(99L);
+    }
+
+    @Test
+    void listVisibleMaterialsShouldNotQueryFilesWhenMaterialsHaveNoAttachments() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        LocalDateTime now = LocalDateTime.parse("2026-06-29T08:00:00");
+        LearningMaterial material = LearningMaterial.builder()
+                .id(3L)
+                .groupId(12L)
+                .title("资料")
+                .contentMarkdown("内容")
+                .attachmentFileId(null)
+                .publisherUserId(2L)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        RecruitmentGroup group = RecruitmentGroup.builder()
+                .id(12L)
+                .name("后端组")
+                .build();
+        User publisher = User.builder()
+                .id(2L)
+                .username("leader")
+                .email("leader@example.com")
+                .passwordHash("hashed")
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(learningMaterialRepository.findAll()).thenReturn(List.of(material));
+        when(recruitmentGroupRepository.findAllByIdIn(any())).thenReturn(List.of(group));
+        when(userRepository.findAllById(any())).thenReturn(List.of(publisher));
+
+        var materials = learningMaterialService.listVisibleMaterials();
+
+        assertThat(materials).hasSize(1);
+        assertThat(materials.getFirst().attachment()).isNull();
+        verify(storedFileRepository, never()).findAllByIdIn(any());
     }
 }
