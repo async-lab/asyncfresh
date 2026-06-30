@@ -149,17 +149,6 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     return null;
   }
 
-  if (method === 'get' && path === '/profile') {
-    const user = loadMockUser() || mockAccounts[0].user;
-    const applications = getCurrentUserApplications();
-    return {
-      user,
-      applicationCount: applications.length,
-      groupCount: user.groups?.length || 0,
-      groups: user.groups || []
-    };
-  }
-
   if (method === 'get' && path === '/applications') {
     return filterApplications(getCurrentUserApplications(), params);
   }
@@ -214,14 +203,13 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/announcements') {
-    return pageOf(
-      filterAnnouncements(mockAnnouncements, params),
-      numberParam(params.page, 1),
-      numberParam(params.size, 10)
-    );
+    return filterAnnouncements(mockAnnouncements, params);
   }
 
-  const announcementId = matchId(path, /^\/announcements\/(\d+)$/);
+  const announcementId =
+    matchId(path, /^\/announcements\/(\d+)$/) ||
+    matchId(path, /^\/admin\/announcements\/(\d+)$/) ||
+    matchId(path, /^\/leader\/announcements\/(\d+)$/);
   if (announcementId) {
     const announcement = findById(mockAnnouncements, announcementId, '公告不存在');
     if (method === 'get') return announcement;
@@ -247,10 +235,12 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/materials') {
-    return pageOf(filterMaterials(mockMaterials, params), numberParam(params.page, 1), numberParam(params.size, 10));
+    return filterMaterials(mockMaterials, params);
   }
 
-  const materialId = matchId(path, /^\/materials\/(\d+)$/) || matchId(path, /^\/admin\/materials\/(\d+)$/);
+  const materialId =
+    matchId(path, /^\/materials\/(\d+)$/) ||
+    matchId(path, /^\/(?:admin|leader)\/groups\/\d+\/materials\/(\d+)$/);
   if (materialId) {
     const material = findById(mockMaterials, materialId, '资料不存在');
     if (method === 'get') return material;
@@ -264,21 +254,23 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     }
   }
 
-  if (method === 'post' && path === '/admin/materials') {
+  if (method === 'post' && /^\/(admin|leader)\/groups\/\d+\/materials$/.test(path)) {
     const material: Material = {
       ...body,
       id: nextId(mockMaterials),
-      hasAttachment: Boolean(body.attachmentUrl),
+      groupId: Number(path.match(/groups\/(\d+)/)?.[1] || 0),
+      hasAttachment: Boolean(body.attachmentFileId),
       createdAt: now()
     };
     mockMaterials.unshift(material);
     return material;
   }
 
-  if (method === 'post' && path === '/files/upload') {
+  if (method === 'post' && path === '/uploads') {
     const file = typeof FormData !== 'undefined' && body instanceof FormData ? (body.get('file') as File | null) : null;
     const fileName = file?.name || 'mock-file.pdf';
     return {
+      id: Date.now(),
       fileName,
       url: `/uploads/mock/${fileName}`,
       size: file?.size || 123456
@@ -286,10 +278,12 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/tasks') {
-    return pageOf(filterTasks(mockTasks, params), numberParam(params.page, 1), numberParam(params.size, 10));
+    return filterTasks(mockTasks, params);
   }
 
-  const taskId = matchId(path, /^\/tasks\/(\d+)$/);
+  const taskId =
+    matchId(path, /^\/tasks\/(\d+)$/) ||
+    matchId(path, /^\/(?:admin|leader)\/groups\/\d+\/tasks\/(\d+)$/);
   if (taskId) {
     const task = findById(mockTasks, taskId, '任务不存在');
     if (method === 'get') return task;
@@ -303,46 +297,53 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     }
   }
 
-  if (method === 'post' && (path === '/leader/tasks' || path === '/admin/tasks')) {
+  if (method === 'post' && /^\/(admin|leader)\/groups\/\d+\/tasks$/.test(path)) {
     const task: Task = {
       ...body,
       id: nextId(mockTasks),
-      submissionStatus: 'NOT_SUBMITTED',
-      reviewStatus: 'NOT_SUBMITTED'
+      groupId: Number(path.match(/groups\/(\d+)/)?.[1] || 0),
+      submissionStatus: 'PENDING',
+      reviewStatus: 'PENDING'
     };
     mockTasks.unshift(task);
     return task;
   }
 
-  const submitTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions$/);
+  const submitTaskId = matchId(path, /^\/tasks\/(\d+)\/submission$/);
   if (method === 'post' && submitTaskId) {
     const user = getCurrentMockUser();
     const task = findById(mockTasks, submitTaskId, '任务不存在');
-    mockSubmissions.forEach((item) => {
-      if (item.taskId === submitTaskId && (!item.userId || item.userId === user.id)) item.isLatest = false;
-    });
-    const submission = {
+    const existing = mockSubmissions.find((item) => item.taskId === submitTaskId && (!item.userId || item.userId === user.id));
+    const submission = Object.assign(existing || {}, {
       ...body,
-      id: nextId(mockSubmissions),
+      id: existing?.id || nextOptionalId(mockSubmissions),
       taskId: submitTaskId,
       userId: user.id,
-      submitVersion: mockSubmissions.filter((item) => item.taskId === submitTaskId && (!item.userId || item.userId === user.id)).length + 1,
+      status: 'SUBMITTED',
+      submitVersion: (existing?.submitVersion || 0) + 1,
       isLatest: true,
       submittedAt: now()
-    };
-    mockSubmissions.push(submission);
+    });
+    if (!existing) mockSubmissions.push(submission);
     task.submissionStatus = 'SUBMITTED';
     task.reviewStatus = 'SUBMITTED';
     return submission;
   }
 
-  const mySubmissionTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions\/me$/);
+  const mySubmissionTaskId = matchId(path, /^\/tasks\/(\d+)\/submission$/);
   if (method === 'get' && mySubmissionTaskId) {
     const user = getCurrentMockUser();
-    return mockSubmissions.filter((item) => item.taskId === mySubmissionTaskId && (!item.userId || item.userId === user.id));
+    return (
+      mockSubmissions.find((item) => item.taskId === mySubmissionTaskId && (!item.userId || item.userId === user.id)) || {
+        taskId: mySubmissionTaskId,
+        userId: user.id,
+        status: 'PENDING'
+      }
+    );
   }
 
-  const groupSubmissionTaskId = matchId(path, /^\/tasks\/(\d+)\/submissions\/group$/);
+  const groupSubmissionTaskId =
+    matchId(path, /^\/(?:leader|admin)\/tasks\/(\d+)\/submissions$/);
   if (method === 'get' && groupSubmissionTaskId) {
     return [
       {
@@ -357,17 +358,8 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     ];
   }
 
-  if (method === 'post' && matchId(path, /^\/submissions\/(\d+)\/review$/)) {
+  if (method === 'post' && /^\/(admin|leader)\/tasks\/\d+\/submissions\/\d+\/(review|return)$/.test(path)) {
     return null;
-  }
-
-  if (method === 'get' && (path === '/submissions/mine' || path === '/scores/me')) {
-    return mockScores;
-  }
-
-  if (method === 'get' && path === '/groups/me') {
-    const groupIds = new Set((getCurrentMockUser().groups || []).map((item) => item.id));
-    return mockGroups.filter((item) => groupIds.has(item.id));
   }
 
   if (method === 'get' && path === '/groups') {
@@ -384,7 +376,7 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     return mockGroupMembers[membersGroupId] || [];
   }
 
-  if (method === 'get' && path === '/admin/dashboard/summary') {
+  if (method === 'get' && path === '/admin/dashboard/overview') {
     return mockDashboardSummary;
   }
 
@@ -445,7 +437,7 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'get' && path === '/admin/groups') {
-    return pageOf(mockGroups, numberParam(params.page, 1), numberParam(params.size, 10));
+    return mockGroups;
   }
 
   if (method === 'post' && path === '/admin/groups') {
@@ -467,27 +459,19 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     }
   }
 
-  if (method === 'post' && path === '/admin/groups/auto-assign') {
-    return {
-      assignedCount: 50,
-      unassignedCount: 7,
-      unassignedApplicationIds: [101, 103, 104, 105, 106, 107, 108]
-    };
-  }
-
   if (method === 'post' && /^\/admin\/groups\/\d+\/applications\/\d+$/.test(path)) {
     return null;
   }
 
-  if (method === 'delete' && /^\/admin\/groups\/\d+\/applications\/\d+$/.test(path)) {
+  if (method === 'post' && /^\/admin\/groups\/\d+\/applications\/\d+\/unassign$/.test(path)) {
     return null;
   }
 
   const leaderGroupId = matchId(path, /^\/admin\/groups\/(\d+)\/leader$/);
   if (leaderGroupId) {
     const group = findById(mockGroups, leaderGroupId, '分组不存在');
-    if (method === 'post') {
-      group.leaderUserId = body.userId;
+    if (method === 'put') {
+      group.leaderUserId = body.leaderUserId;
       return null;
     }
     if (method === 'delete') {
@@ -596,6 +580,10 @@ function nextId(list: Array<{ id: number }>) {
   return Math.max(0, ...list.map((item) => item.id)) + 1;
 }
 
+function nextOptionalId(list: Array<{ id?: number }>) {
+  return Math.max(0, ...list.map((item) => item.id || 0)) + 1;
+}
+
 function nextDirectionId() {
   const all = mockDirections.flatMap((item) => [item, ...(item.children || [])]);
   return nextId(all);
@@ -638,7 +626,9 @@ function filterAnnouncements(list: Announcement[], params: Record<string, unknow
 
   const keyword = stringParam(params.keyword);
   if (keyword) {
-    result = result.filter((item) => [item.title, item.content].filter(Boolean).some((value) => String(value).includes(keyword)));
+    result = result.filter((item) =>
+      [item.title, item.contentMarkdown, item.content].filter(Boolean).some((value) => String(value).includes(keyword))
+    );
   }
 
   return result;
@@ -656,13 +646,13 @@ function filterMaterials(list: Material[], params: Record<string, unknown>) {
 
   const hasAttachment = booleanParam(params.hasAttachment);
   if (hasAttachment !== undefined) {
-    result = result.filter((item) => Boolean(item.attachmentUrl) === hasAttachment);
+    result = result.filter((item) => Boolean(item.hasAttachment || item.attachmentFileId || item.attachmentUrl) === hasAttachment);
   }
 
   const keyword = stringParam(params.keyword);
   if (keyword) {
     result = result.filter((item) =>
-      [item.title, item.summary, item.content].filter(Boolean).some((value) => String(value).includes(keyword))
+      [item.title, item.summary, item.contentMarkdown, item.content].filter(Boolean).some((value) => String(value).includes(keyword))
     );
   }
 
@@ -670,7 +660,11 @@ function filterMaterials(list: Material[], params: Record<string, unknown>) {
 }
 
 function filterTasks(list: Task[], params: Record<string, unknown>) {
-  let result = filterByScope(list, stringParam(params.scope));
+  let result = [...list];
+  const scope = stringParam(params.scope);
+  if (scope) {
+    result = result.filter((item) => item.scope === scope);
+  }
 
   if (params.groupId) {
     result = result.filter((item) => item.groupId === Number(params.groupId));
@@ -681,7 +675,9 @@ function filterTasks(list: Task[], params: Record<string, unknown>) {
 
   const keyword = stringParam(params.keyword);
   if (keyword) {
-    result = result.filter((item) => [item.title, item.content].filter(Boolean).some((value) => String(value).includes(keyword)));
+    result = result.filter((item) =>
+      [item.title, item.contentMarkdown, item.content].filter(Boolean).some((value) => String(value).includes(keyword))
+    );
   }
 
   return result;

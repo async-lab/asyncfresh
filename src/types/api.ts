@@ -21,11 +21,13 @@ export interface PageQuery {
 
 export type Role = 'FRESHMAN' | 'LEADER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'DISABLED';
-export type PeriodType = 'REGISTRATION' | 'SELECTION' | 'INTERVIEW' | 'FINISHED';
+export type PeriodType = 'REGISTRATION' | 'SELECTION' | 'INTERVIEW' | 'NOT_OPEN' | 'FINISHED';
 export type ApplicationStatus = 'SUBMITTED' | 'GROUPED' | 'REJECTED' | 'WITHDRAWN';
 export type Scope = 'GLOBAL' | 'GROUP';
 export type Grade = 'YEAR_1' | 'YEAR_2' | 'YEAR_3' | 'YEAR_4' | 'GRADUATED';
-export type SubmissionStatus = 'NOT_SUBMITTED' | 'SUBMITTED' | 'EXPIRED' | 'REVIEWED';
+export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
+export type DisplaySubmissionStatus = SubmissionStatus | 'EXPIRED';
+export type FilePurpose = 'TASK_ATTACHMENT' | 'TASK_SUBMISSION_ATTACHMENT' | 'MATERIAL_ATTACHMENT';
 
 export interface User {
   id: number;
@@ -35,6 +37,7 @@ export interface User {
   status?: UserStatus;
   emailVerified?: boolean;
   leaderGroupId?: number;
+  leaderGroups?: SimpleGroup[];
   groups?: SimpleGroup[];
 }
 
@@ -102,46 +105,69 @@ export interface Announcement {
   id: number;
   title: string;
   content?: string;
+  contentMarkdown?: string;
   scope: Scope;
   groupId?: number | null;
   publisherName: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Material {
   id: number;
+  groupId?: number;
   title: string;
   summary?: string;
   content?: string;
+  contentMarkdown?: string;
+  attachmentFileId?: number | null;
+  attachmentFileName?: string | null;
   attachmentUrl?: string | null;
   directionLevel1Id?: number | null;
   directionLevel2Id?: number | null;
   hasAttachment?: boolean;
+  publisherName?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Task {
   id: number;
+  groupId: number;
   title: string;
   content?: string;
-  scope: Scope;
-  groupId?: number | null;
+  contentMarkdown?: string;
+  scope?: Scope;
+  attachmentFileId?: number | null;
+  attachmentFileName?: string | null;
   attachmentUrl?: string | null;
   maxScore: number;
   deadlineAt: string;
+  publisherName?: string;
   submissionStatus?: SubmissionStatus;
   reviewStatus?: SubmissionStatus;
+  submission?: TaskSubmission;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TaskSubmission {
-  id: number;
+  id?: number;
   taskId: number;
   userId?: number;
-  submitVersion: number;
-  isLatest: boolean;
-  submittedAt: string;
+  status: SubmissionStatus;
+  submittedAt?: string | null;
   content?: string;
+  contentMarkdown?: string | null;
+  attachmentFileId?: number | null;
+  attachmentFileName?: string | null;
   attachmentUrl?: string | null;
+  reviewerUserId?: number | null;
+  score?: number | null;
+  reviewComment?: string | null;
+  reviewedAt?: string | null;
+  submitVersion?: number;
+  isLatest?: boolean;
 }
 
 export interface TaskScore {
@@ -177,8 +203,11 @@ export interface GroupMember {
 }
 
 export interface UploadedFile {
+  id: number;
   fileName: string;
-  url: string;
+  originalFileName?: string;
+  contentType?: string;
+  url?: string;
   size: number;
 }
 

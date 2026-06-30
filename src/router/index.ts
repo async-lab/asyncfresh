@@ -187,7 +187,7 @@ const routes: RouteRecordRaw[] = [
         component: TaskDetailView,
         meta: {
           title: '任务详情',
-          description: '查看任务说明、提交附件并浏览提交历史。',
+          description: '查看任务说明、当前提交状态和批阅结果。',
           requiresAuth: true,
           roles: ['FRESHMAN'],
           periodHint: ['SELECTION']
@@ -331,7 +331,7 @@ const routes: RouteRecordRaw[] = [
         component: PlaceholderView,
         meta: {
           title: '分组管理',
-          description: '创建分组、自动分组、手动调整和成员移出。',
+          description: '创建分组、逐条分配申请、取消分组和查看成员。',
           requiresAuth: true,
           roles: ['ADMIN'],
           periodHint: ['SELECTION']
@@ -388,7 +388,7 @@ const routes: RouteRecordRaw[] = [
         component: PlaceholderView,
         meta: {
           title: '任务管理',
-          description: '管理全局任务和组内任务。',
+          description: '按分组管理任务、提交、批阅和打回。',
           requiresAuth: true,
           roles: ['ADMIN'],
           periodHint: ['SELECTION']

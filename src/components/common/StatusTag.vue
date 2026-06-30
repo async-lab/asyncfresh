@@ -7,10 +7,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { ApplicationStatus, SubmissionStatus } from '@/types/api';
-import { applicationStatusLabels, submissionStatusLabels } from '@/utils/labels';
+import type { ApplicationStatus, DisplaySubmissionStatus } from '@/types/api';
+import { applicationStatusLabels, displaySubmissionStatusLabels } from '@/utils/labels';
 
-type StatusValue = ApplicationStatus | SubmissionStatus;
+type StatusValue = ApplicationStatus | DisplaySubmissionStatus;
 
 const props = defineProps<{
   value?: StatusValue;
@@ -22,7 +22,7 @@ const displayLabel = computed(() => {
   if (!props.value) return '未知';
   return (
     applicationStatusLabels[props.value as keyof typeof applicationStatusLabels] ||
-    submissionStatusLabels[props.value as keyof typeof submissionStatusLabels] ||
+    displaySubmissionStatusLabels[props.value as keyof typeof displaySubmissionStatusLabels] ||
     props.value
   );
 });

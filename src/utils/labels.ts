@@ -15,6 +15,7 @@ export const periodLabels: Record<PeriodType, string> = {
   REGISTRATION: '报名期',
   SELECTION: '选拔期',
   INTERVIEW: '面试期',
+  NOT_OPEN: '未开放',
   FINISHED: '已结束'
 };
 
@@ -26,11 +27,15 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
 };
 
 export const submissionStatusLabels: Record<SubmissionStatus, string> = {
-  NOT_SUBMITTED: '未提交',
+  PENDING: '待提交',
   SUBMITTED: '已提交',
-  EXPIRED: '已截止',
   REVIEWED: '已批阅'
 };
+
+export const displaySubmissionStatusLabels = {
+  ...submissionStatusLabels,
+  EXPIRED: '已截止'
+} as const;
 
 export const scopeLabels: Record<Scope, string> = {
   GLOBAL: '全局',
