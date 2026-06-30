@@ -1,6 +1,7 @@
 import { deleteData, getData, patchData, postData, putData } from './http';
 import type {
   AdminDashboardSummary,
+  Application,
   Direction,
   Grade,
   Group,
@@ -97,6 +98,16 @@ export function getAdminGroups(params?: {
   return getData<Group[]>('/admin/groups', params);
 }
 
+export function getAdminUngroupedApplications(params?: {
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+  keyword?: string;
+}) {
+  return getData<Application[]>('/admin/groups/ungrouped-applications', params);
+}
+
 export function createGroup(payload: GroupPayload) {
   return postData<Group, GroupPayload>('/admin/groups', payload);
 }
@@ -117,6 +128,10 @@ export function unassignApplicationFromGroup(groupId: number | string, applicati
   return postData<null, { remark?: string }>(`/admin/groups/${groupId}/applications/${applicationId}/unassign`, {
     remark
   });
+}
+
+export function rejectAdminApplication(applicationId: number | string, reason?: string) {
+  return postData<null, { reason?: string }>(`/admin/applications/${applicationId}/reject`, { reason });
 }
 
 export function assignLeader(groupId: number | string, userId: number) {

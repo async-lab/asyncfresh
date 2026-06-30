@@ -418,12 +418,16 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
       Object.assign(direction, body);
       return direction;
     }
-    if (method === 'delete') return null;
+    if (method === 'delete') {
+      removeDirection(adminDirectionId);
+      return null;
+    }
   }
 
   if (method === 'get' && path === '/admin/users') {
     let list = mockUsers;
     if (params.role) list = list.filter((item) => item.role === params.role);
+    if (params.status) list = list.filter((item) => item.status === params.status);
     if (params.keyword) {
       const keyword = String(params.keyword);
       list = list.filter((item) => item.username.includes(keyword) || item.email.includes(keyword));
@@ -436,8 +440,32 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     return findById(mockUsers, adminUserId, '用户不存在');
   }
 
+  const adminUserStatusId = matchId(path, /^\/admin\/users\/(\d+)\/status$/);
+  if (method === 'patch' && adminUserStatusId) {
+    const user = findById(mockUsers, adminUserStatusId, '用户不存在');
+    user.status = body.status;
+    return user;
+  }
+
+  const adminUserRoleId = matchId(path, /^\/admin\/users\/(\d+)\/role$/);
+  if (method === 'patch' && adminUserRoleId) {
+    const user = findById(mockUsers, adminUserRoleId, '用户不存在');
+    if (body.role === 'ADMIN') {
+      throw new MockApiError(40300, '不能通过该接口设置管理员角色');
+    }
+    user.role = body.role;
+    return user;
+  }
+
   if (method === 'get' && path === '/admin/groups') {
-    return mockGroups;
+    return filterVisibleGroups(mockGroups, params);
+  }
+
+  if (method === 'get' && path === '/admin/groups/ungrouped-applications') {
+    return filterApplications(
+      mockApplications.filter((item) => item.status === 'SUBMITTED' && !item.groupId),
+      params
+    );
   }
 
   if (method === 'post' && path === '/admin/groups') {
@@ -460,10 +488,56 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
   }
 
   if (method === 'post' && /^\/admin\/groups\/\d+\/applications\/\d+$/.test(path)) {
+    const [, groupIdText, applicationIdText] = path.match(/^\/admin\/groups\/(\d+)\/applications\/(\d+)$/) || [];
+    const groupIdValue = Number(groupIdText);
+    const applicationIdValue = Number(applicationIdText);
+    const group = findById(mockGroups, groupIdValue, '分组不存在');
+    const application = findById(mockApplications, applicationIdValue, '报名申请不存在');
+
+    application.groupId = group.id;
+    application.status = 'GROUPED';
+    application.updatedAt = now();
+    mockGroupMembers[group.id] = mockGroupMembers[group.id] || [];
+    if (!mockGroupMembers[group.id].some((item) => item.applicationId === application.id)) {
+      mockGroupMembers[group.id].push({
+        userId: application.userId || application.id,
+        username: mockUsers.find((item) => item.id === application.userId)?.username || application.realName,
+        realName: application.realName,
+        applicationId: application.id,
+        grade: application.grade,
+        admissionYear: application.admissionYear,
+        directionLevel1Name: getDirectionName(application.directionLevel1Id),
+        directionLevel2Name: getDirectionName(application.directionLevel2Id),
+        applicationStatus: 'GROUPED'
+      });
+    }
     return null;
   }
 
   if (method === 'post' && /^\/admin\/groups\/\d+\/applications\/\d+\/unassign$/.test(path)) {
+    const [, groupIdText, applicationIdText] =
+      path.match(/^\/admin\/groups\/(\d+)\/applications\/(\d+)\/unassign$/) || [];
+    const groupIdValue = Number(groupIdText);
+    const applicationIdValue = Number(applicationIdText);
+    const application = findById(mockApplications, applicationIdValue, '报名申请不存在');
+
+    application.groupId = null;
+    application.status = 'SUBMITTED';
+    application.statusRemark = body.remark || null;
+    application.updatedAt = now();
+    mockGroupMembers[groupIdValue] = (mockGroupMembers[groupIdValue] || []).filter(
+      (item) => item.applicationId !== applicationIdValue
+    );
+    return null;
+  }
+
+  const rejectApplicationId = matchId(path, /^\/admin\/applications\/(\d+)\/reject$/);
+  if (method === 'post' && rejectApplicationId) {
+    const application = findById(mockApplications, rejectApplicationId, '报名申请不存在');
+    application.groupId = null;
+    application.status = 'REJECTED';
+    application.statusRemark = body.reason || '不符合当前分组要求';
+    application.updatedAt = now();
     return null;
   }
 
@@ -595,6 +669,26 @@ function findDirection(id: number) {
   return direction;
 }
 
+function removeDirection(id: number) {
+  const rootIndex = mockDirections.findIndex((item) => item.id === id);
+  if (rootIndex >= 0) {
+    mockDirections.splice(rootIndex, 1);
+    return;
+  }
+
+  mockDirections.forEach((parent) => {
+    parent.children = (parent.children || []).filter((child) => child.id !== id);
+  });
+}
+
+function getDirectionName(id: number) {
+  try {
+    return findDirection(id).name;
+  } catch {
+    return `方向 #${id}`;
+  }
+}
+
 function filterApplications(list: Application[], params: Record<string, unknown>) {
   let result = [...list];
 
@@ -603,6 +697,18 @@ function filterApplications(list: Application[], params: Record<string, unknown>
   }
   if (params.groupId) {
     result = result.filter((item) => item.groupId === Number(params.groupId));
+  }
+  if (params.directionLevel1Id) {
+    result = result.filter((item) => item.directionLevel1Id === Number(params.directionLevel1Id));
+  }
+  if (params.directionLevel2Id) {
+    result = result.filter((item) => item.directionLevel2Id === Number(params.directionLevel2Id));
+  }
+  if (params.grade) {
+    result = result.filter((item) => item.grade === params.grade);
+  }
+  if (params.admissionYear) {
+    result = result.filter((item) => item.admissionYear === Number(params.admissionYear));
   }
 
   const keyword = stringParam(params.keyword);
