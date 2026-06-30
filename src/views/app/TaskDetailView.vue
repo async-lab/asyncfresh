@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <PageHeader :title="task?.title || '任务详情'" description="查看任务说明、提交附件并浏览提交历史。">
+    <PageHeader :title="task?.title || '任务详情'" description="查看任务说明、当前提交状态和批阅结果。">
       <template #actions>
         <el-button :icon="Back" @click="$router.push('/app/tasks')">返回任务</el-button>
         <el-button :icon="Medal" @click="$router.push('/app/scores')">我的成绩</el-button>
@@ -8,7 +8,7 @@
     </PageHeader>
 
     <el-alert v-if="!metaStore.isSelection" type="warning" :closable="false" show-icon>
-      当前不是选拔期，可以查看任务和提交历史，暂不能提交或重新提交。
+      当前不是选拔期，可以查看任务和当前提交状态，暂不能提交任务。
     </el-alert>
     <el-alert v-else-if="task && isExpired(task)" type="error" :closable="false" show-icon>
       该任务已截止，不能继续提交。
@@ -18,90 +18,58 @@
       <section class="page-section" v-loading="loading">
         <template v-if="task">
           <div class="task-meta">
-            <span>范围：{{ getScopeLabel(task.scope) }}</span>
             <span>满分：{{ task.maxScore }}</span>
             <span>截止：{{ formatDateTime(task.deadlineAt) }}</span>
+            <AttachmentLink :href="taskAttachmentHref" label="下载任务附件" />
           </div>
 
           <div class="status-row">
-            <div>
-              <span class="muted">提交状态</span>
-              <StatusTag :value="currentSubmissionStatus" />
-            </div>
-            <div>
-              <span class="muted">批阅状态</span>
-              <StatusTag :value="task.reviewStatus || 'NOT_SUBMITTED'" />
-            </div>
-            <el-link v-if="task.attachmentUrl" type="primary" :href="task.attachmentUrl" target="_blank" :icon="Download">
-              下载任务附件
-            </el-link>
+            <span class="muted">当前提交状态</span>
+            <StatusTag :value="currentSubmissionStatus" />
           </div>
 
           <h2>任务说明</h2>
-          <MarkdownViewer :content="task.content || '暂无任务说明。'" />
+          <MarkdownViewer :content="task.contentMarkdown || task.content || '暂无任务说明。'" />
         </template>
         <el-empty v-else-if="!loading" description="任务不存在或已不可访问" />
       </section>
 
       <aside class="page-section">
-        <h2>当前进度</h2>
+        <h2>当前提交</h2>
         <div class="progress-card">
-          <span class="muted">最新提交</span>
-          <strong>{{ latestSubmission ? `第 ${latestSubmission.submitVersion} 版` : '暂无提交' }}</strong>
-          <small>{{ latestSubmission ? formatDateTime(latestSubmission.submittedAt) : submitHint }}</small>
+          <span class="muted">状态</span>
+          <StatusTag :value="currentSubmissionStatus" />
+          <small>{{ currentSubmission?.submittedAt ? formatDateTime(currentSubmission.submittedAt) : submitHint }}</small>
         </div>
-        <div v-if="taskScore" class="score-card">
+
+        <div v-if="currentSubmission?.contentMarkdown || currentSubmission?.content" class="submission-card">
+          <span class="muted">提交说明</span>
+          <p>{{ currentSubmission.contentMarkdown || currentSubmission.content }}</p>
+        </div>
+
+        <div v-if="submissionAttachmentHref" class="submission-card">
+          <span class="muted">提交附件</span>
+          <AttachmentLink :href="submissionAttachmentHref" label="下载提交附件" />
+        </div>
+
+        <div v-if="currentSubmission?.status === 'REVIEWED'" class="score-card">
           <span class="muted">批阅结果</span>
-          <strong>{{ taskScore.score }} / {{ taskScore.maxScore }}</strong>
-          <p>{{ taskScore.comment || '暂无评语。' }}</p>
+          <strong>{{ currentSubmission.score ?? '-' }} / {{ task?.maxScore ?? '-' }}</strong>
+          <p>{{ currentSubmission.reviewComment || '暂无评语。' }}</p>
+          <small>{{ formatDateTime(currentSubmission.reviewedAt || undefined) }}</small>
         </div>
+
         <el-button type="primary" class="full" :disabled="!canSubmit" @click="openSubmitDialog">
-          {{ latestSubmission ? '重新提交' : '提交任务' }}
+          {{ submitButtonText }}
         </el-button>
       </aside>
     </div>
 
-    <section class="page-section">
-      <div class="page-toolbar">
-        <h2>提交记录</h2>
-        <el-button :icon="Refresh" :loading="loading" @click="loadDetail">刷新</el-button>
-      </div>
-      <el-table :data="submissions" empty-text="暂无提交记录">
-        <el-table-column prop="submitVersion" label="版本" width="90" />
-        <el-table-column label="提交时间" min-width="190">
-          <template #default="{ row }">{{ formatDateTime(row.submittedAt) }}</template>
-        </el-table-column>
-        <el-table-column label="提交说明" min-width="220">
-          <template #default="{ row }">
-            <span>{{ row.content || '未填写' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="附件" width="100">
-          <template #default="{ row }">
-            <el-link v-if="row.attachmentUrl" type="primary" :href="row.attachmentUrl" target="_blank">下载</el-link>
-            <span v-else class="muted">无</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="当前版本" width="120">
-          <template #default="{ row }">
-            <el-tag v-if="row.isLatest" type="success">是</el-tag>
-            <el-tag v-else type="info">否</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="批阅结果" width="130">
-          <template #default="{ row }">
-            <el-tag v-if="row.isLatest && taskScore" type="success">{{ taskScore.score }} 分</el-tag>
-            <span v-else class="muted">-</span>
-          </template>
-        </el-table-column>
-      </el-table>
-    </section>
-
     <el-dialog v-model="submitDialogVisible" title="提交任务" width="620px" :close-on-click-modal="false">
-      <el-form ref="submitFormRef" :model="submitForm" :rules="submitRules" label-position="top" :disabled="submitting">
-        <el-form-item label="提交说明" prop="content">
+      <el-form ref="submitFormRef" :model="submitForm" label-position="top" :disabled="submitting">
+        <el-form-item label="提交说明">
           <el-input
-            v-model="submitForm.content"
+            v-model="submitForm.contentMarkdown"
             type="textarea"
             :rows="5"
             maxlength="1000"
@@ -122,12 +90,11 @@
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或点击上传</div>
             <template #tip>
-              <div class="el-upload__tip">单个附件不超过 20MB，上传成功后会随提交一起保存。</div>
+              <div class="el-upload__tip">单个附件不超过 20MB，正文和附件至少填写一项。</div>
             </template>
           </el-upload>
           <div v-if="uploadedFile" class="uploaded-file">
-            <span>{{ uploadedFile.fileName }}</span>
-            <el-link type="primary" :href="uploadedFile.url" target="_blank">预览</el-link>
+            <span>{{ uploadedFile.fileName || uploadedFile.originalFileName }}</span>
           </div>
         </el-form-item>
       </el-form>
@@ -143,11 +110,10 @@
 </template>
 
 <script setup lang="ts">
-import { Back, Download, Medal, Refresh, UploadFilled } from '@element-plus/icons-vue';
+import { Back, Medal, UploadFilled } from '@element-plus/icons-vue';
 import {
   ElMessage,
   type FormInstance,
-  type FormRules,
   type UploadInstance,
   type UploadProps,
   type UploadRequestOptions,
@@ -157,20 +123,19 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { uploadFile } from '@/api/files';
-import { getMyTaskScores, getMyTaskSubmissions, getTask, submitTask } from '@/api/tasks';
+import { getMyTaskSubmission, getTask, submitTask } from '@/api/tasks';
 import type { SubmissionPayload } from '@/api/tasks';
+import AttachmentLink from '@/components/common/AttachmentLink.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import StatusTag from '@/components/common/StatusTag.vue';
 import MarkdownViewer from '@/components/markdown/MarkdownViewer.vue';
 import { useMetaStore } from '@/stores/meta';
-import type { Scope, SubmissionStatus, Task, TaskScore, TaskSubmission, UploadedFile } from '@/types/api';
-import { scopeLabels } from '@/utils/labels';
+import type { DisplaySubmissionStatus, Task, TaskSubmission, UploadedFile } from '@/types/api';
 
 const route = useRoute();
 const metaStore = useMetaStore();
 const task = ref<Task | null>(null);
-const submissions = ref<TaskSubmission[]>([]);
-const scores = ref<TaskScore[]>([]);
+const currentSubmission = ref<TaskSubmission | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
 const uploading = ref(false);
@@ -180,33 +145,43 @@ const uploadRef = ref<UploadInstance>();
 const fileList = ref<UploadUserFile[]>([]);
 const uploadedFile = ref<UploadedFile | null>(null);
 const submitForm = reactive<SubmissionPayload>({
-  content: '',
-  attachmentUrl: null
+  contentMarkdown: '',
+  attachmentFileId: null
 });
 
-const submitRules: FormRules<SubmissionPayload> = {
-  content: [{ required: true, message: '请输入提交说明', trigger: 'blur' }]
-};
-
-const latestSubmission = computed(() => submissions.value.find((item) => item.isLatest) || submissions.value[0] || null);
-const taskScore = computed(() => {
-  if (task.value?.reviewStatus !== 'REVIEWED') {
-    return null;
+const currentSubmissionStatus = computed<DisplaySubmissionStatus>(() => {
+  const status = currentSubmission.value?.status || task.value?.submission?.status || task.value?.submissionStatus || 'PENDING';
+  if (status === 'PENDING' && task.value && isExpired(task.value)) {
+    return 'EXPIRED';
   }
-
-  return scores.value.find((item) => String(item.taskId) === String(task.value?.id)) || null;
+  return status;
 });
-const currentSubmissionStatus = computed<SubmissionStatus>(() => {
-  if (!task.value) return 'NOT_SUBMITTED';
-  if (task.value.submissionStatus === 'NOT_SUBMITTED' && isExpired(task.value)) return 'EXPIRED';
-  return task.value.submissionStatus || 'NOT_SUBMITTED';
-});
-const canSubmit = computed(() => Boolean(task.value && metaStore.isSelection && !isExpired(task.value) && !submitting.value));
+const canSubmit = computed(() =>
+  Boolean(
+    task.value &&
+      metaStore.isSelection &&
+      !isExpired(task.value) &&
+      currentSubmissionStatus.value === 'PENDING' &&
+      !submitting.value
+  )
+);
 const submitHint = computed(() => {
   if (!task.value) return '等待任务加载';
   if (!metaStore.isSelection) return '选拔期开放提交';
   if (isExpired(task.value)) return '任务已截止';
+  if (currentSubmissionStatus.value === 'SUBMITTED') return '已提交，等待批阅或打回';
+  if (currentSubmissionStatus.value === 'REVIEWED') return '已批阅，打回后才可重新提交';
   return '可提交任务';
+});
+const submitButtonText = computed(() => (canSubmit.value ? '提交任务' : submitHint.value));
+const taskAttachmentHref = computed(() => {
+  if (!task.value || !(task.value.attachmentFileId || task.value.attachmentUrl)) return null;
+  return task.value.attachmentUrl || `/api/v1/tasks/${task.value.id}/attachment`;
+});
+const submissionAttachmentHref = computed(() => {
+  if (!task.value || !currentSubmission.value) return null;
+  if (!(currentSubmission.value.attachmentFileId || currentSubmission.value.attachmentUrl)) return null;
+  return currentSubmission.value.attachmentUrl || `/api/v1/tasks/${task.value.id}/submission/attachment`;
 });
 
 onMounted(loadDetail);
@@ -222,14 +197,12 @@ async function loadDetail() {
   loading.value = true;
   try {
     const id = String(route.params.id);
-    const [taskData, submissionData, scoreData] = await Promise.all([
+    const [taskData, submissionData] = await Promise.all([
       getTask(id),
-      getMyTaskSubmissions(id),
-      getMyTaskScores()
+      getMyTaskSubmission(id).catch(() => null)
     ]);
     task.value = taskData;
-    submissions.value = [...submissionData].sort((left, right) => right.submitVersion - left.submitVersion);
-    scores.value = scoreData;
+    currentSubmission.value = submissionData || taskData.submission || null;
   } finally {
     loading.value = false;
   }
@@ -241,8 +214,8 @@ function openSubmitDialog() {
     return;
   }
 
-  submitForm.content = latestSubmission.value?.content || '';
-  submitForm.attachmentUrl = null;
+  submitForm.contentMarkdown = currentSubmission.value?.contentMarkdown || currentSubmission.value?.content || '';
+  submitForm.attachmentFileId = null;
   uploadedFile.value = null;
   fileList.value = [];
   submitDialogVisible.value = true;
@@ -260,16 +233,17 @@ async function handleSubmit() {
     return;
   }
 
-  const valid = await submitFormRef.value?.validate().catch(() => false);
-  if (!valid) {
+  const contentMarkdown = submitForm.contentMarkdown?.trim() || '';
+  if (!contentMarkdown && !submitForm.attachmentFileId) {
+    ElMessage.warning('提交说明和附件至少填写一项');
     return;
   }
 
   submitting.value = true;
   try {
     await submitTask(task.value.id, {
-      content: submitForm.content.trim(),
-      attachmentUrl: submitForm.attachmentUrl || null
+      contentMarkdown: contentMarkdown || undefined,
+      attachmentFileId: submitForm.attachmentFileId || null
     });
     ElMessage.success('任务已提交');
     submitDialogVisible.value = false;
@@ -292,9 +266,9 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
 async function handleUploadRequest(options: UploadRequestOptions) {
   uploading.value = true;
   try {
-    const result = await uploadFile(options.file as File, 'SUBMISSION');
+    const result = await uploadFile(options.file as File, 'TASK_SUBMISSION_ATTACHMENT');
     uploadedFile.value = result;
-    submitForm.attachmentUrl = result.url;
+    submitForm.attachmentFileId = result.id;
     options.onSuccess?.(result);
     ElMessage.success('附件上传成功');
   } catch (error) {
@@ -306,11 +280,7 @@ async function handleUploadRequest(options: UploadRequestOptions) {
 
 function handleFileRemove() {
   uploadedFile.value = null;
-  submitForm.attachmentUrl = null;
-}
-
-function getScopeLabel(scope?: Scope) {
-  return scope ? scopeLabels[scope] : '未知';
+  submitForm.attachmentFileId = null;
 }
 
 function isExpired(item: Task) {
@@ -319,7 +289,7 @@ function isExpired(item: Task) {
   return Number.isFinite(deadline) && Number.isFinite(now) && deadline < now;
 }
 
-function formatDateTime(value?: string) {
+function formatDateTime(value?: string | null) {
   if (!value) return '-';
 
   const date = new Date(value);
@@ -352,18 +322,13 @@ function formatDateTime(value?: string) {
   color: var(--app-muted);
 }
 
-.status-row > div {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 h2 {
   margin: 0 0 12px;
   font-size: 18px;
 }
 
 .progress-card,
+.submission-card,
 .score-card {
   padding: 14px;
   border: 1px solid var(--app-border);
@@ -371,23 +336,25 @@ h2 {
   margin-bottom: 14px;
 }
 
-.progress-card strong,
-.score-card strong {
+.progress-card small,
+.score-card small {
   display: block;
   margin-top: 8px;
-  font-size: 22px;
-}
-
-.progress-card small {
-  display: block;
-  margin-top: 6px;
   color: var(--app-muted);
 }
 
+.submission-card p,
 .score-card p {
   margin: 8px 0 0;
   color: var(--app-muted);
   line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.score-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
 }
 
 .full {

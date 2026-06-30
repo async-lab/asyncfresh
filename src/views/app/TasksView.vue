@@ -7,7 +7,7 @@
     </PageHeader>
 
     <el-alert v-if="!metaStore.isSelection" type="warning" :closable="false" show-icon>
-      当前不是选拔期，可以查看任务与历史提交，暂不能提交新任务。
+      当前不是选拔期，可以查看任务与当前提交状态，暂不能提交新任务。
     </el-alert>
 
     <div class="metric-grid">
@@ -31,17 +31,12 @@
 
     <div class="page-section">
       <div class="page-toolbar task-toolbar">
-        <el-segmented v-model="scopeFilter" :options="scopeOptions" />
+        <span class="muted">任务均为本人所在分组发布的组级任务</span>
         <el-button :icon="Refresh" :loading="loading" @click="loadTasks">刷新</el-button>
       </div>
 
-      <el-table v-loading="loading" :data="filteredTasks" empty-text="暂无任务">
+      <el-table v-loading="loading" :data="tasks" empty-text="暂无任务">
         <el-table-column prop="title" label="任务标题" min-width="220" />
-        <el-table-column label="范围" width="100">
-          <template #default="{ row }">
-            <el-tag effect="plain">{{ getScopeLabel(row.scope) }}</el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="maxScore" label="满分" width="90" />
         <el-table-column label="截止时间" min-width="190">
           <template #default="{ row }">
@@ -56,15 +51,9 @@
             <StatusTag :value="getSubmissionStatus(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="批阅状态" width="120">
-          <template #default="{ row }">
-            <StatusTag :value="row.reviewStatus || 'NOT_SUBMITTED'" />
-          </template>
-        </el-table-column>
         <el-table-column label="附件" width="90">
           <template #default="{ row }">
-            <el-link v-if="row.attachmentUrl" type="primary" :href="row.attachmentUrl" target="_blank">下载</el-link>
-            <span v-else class="muted">无</span>
+            <AttachmentLink :href="getAttachmentHref(row)" label="下载" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -84,58 +73,41 @@ import { Medal, Refresh, View } from '@element-plus/icons-vue';
 import { computed, onMounted, ref } from 'vue';
 
 import { getTasks } from '@/api/tasks';
+import AttachmentLink from '@/components/common/AttachmentLink.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import StatusTag from '@/components/common/StatusTag.vue';
 import { useMetaStore } from '@/stores/meta';
-import type { Scope, SubmissionStatus, Task } from '@/types/api';
-import { scopeLabels } from '@/utils/labels';
-
-type ScopeFilter = 'ALL' | Scope;
+import type { DisplaySubmissionStatus, Task } from '@/types/api';
 
 const metaStore = useMetaStore();
 const tasks = ref<Task[]>([]);
 const loading = ref(false);
-const scopeFilter = ref<ScopeFilter>('ALL');
-
-const scopeOptions = [
-  { label: '全部', value: 'ALL' },
-  { label: scopeLabels.GLOBAL, value: 'GLOBAL' },
-  { label: scopeLabels.GROUP, value: 'GROUP' }
-];
-
-const filteredTasks = computed(() => {
-  if (scopeFilter.value === 'ALL') {
-    return tasks.value;
-  }
-
-  return tasks.value.filter((task) => task.scope === scopeFilter.value);
-});
-const pendingCount = computed(() => tasks.value.filter((task) => getSubmissionStatus(task) === 'NOT_SUBMITTED').length);
+const pendingCount = computed(() => tasks.value.filter((task) => getSubmissionStatus(task) === 'PENDING').length);
 const submittedCount = computed(() => tasks.value.filter((task) => getSubmissionStatus(task) === 'SUBMITTED').length);
-const reviewedCount = computed(() => tasks.value.filter((task) => task.reviewStatus === 'REVIEWED').length);
+const reviewedCount = computed(() => tasks.value.filter((task) => getSubmissionStatus(task) === 'REVIEWED').length);
 
 onMounted(loadTasks);
 
 async function loadTasks() {
   loading.value = true;
   try {
-    const page = await getTasks({ page: 1, size: 50 });
-    tasks.value = page.list;
+    tasks.value = await getTasks();
   } finally {
     loading.value = false;
   }
 }
 
-function getScopeLabel(scope?: Scope) {
-  return scope ? scopeLabels[scope] : '未知';
-}
-
-function getSubmissionStatus(task: Task): SubmissionStatus {
-  if (task.submissionStatus === 'NOT_SUBMITTED' && isExpired(task)) {
+function getSubmissionStatus(task: Task): DisplaySubmissionStatus {
+  if ((task.submissionStatus || task.submission?.status || 'PENDING') === 'PENDING' && isExpired(task)) {
     return 'EXPIRED';
   }
 
-  return task.submissionStatus || 'NOT_SUBMITTED';
+  return task.submissionStatus || task.submission?.status || 'PENDING';
+}
+
+function getAttachmentHref(task: Task) {
+  if (!(task.attachmentFileId || task.attachmentUrl)) return null;
+  return task.attachmentUrl || `/api/v1/tasks/${task.id}/attachment`;
 }
 
 function isExpired(task: Task) {

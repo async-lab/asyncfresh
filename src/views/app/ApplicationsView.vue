@@ -474,7 +474,8 @@ function canEdit(application?: Application | null) {
   return Boolean(
     application &&
       metaStore.isRegistration &&
-      (application.status === 'SUBMITTED' || application.status === 'REJECTED')
+      application.status === 'SUBMITTED' &&
+      !application.groupId
   );
 }
 
@@ -485,7 +486,9 @@ function canWithdraw(application?: Application | null) {
 function getEditDisabledReason(application: Application) {
   if (!metaStore.isRegistration) return '当前不是报名期，不能编辑报名申请';
   if (application.status === 'GROUPED') return '已分组申请不能编辑';
+  if (application.status === 'REJECTED') return '已驳回申请不能编辑';
   if (application.status === 'WITHDRAWN') return '已撤回申请只读展示';
+  if (application.groupId) return '已进入分组的申请不能编辑';
   return '当前状态不能编辑';
 }
 

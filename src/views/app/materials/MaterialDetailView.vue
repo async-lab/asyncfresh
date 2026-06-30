@@ -11,10 +11,10 @@
         <div class="detail-meta">
           <el-tag effect="plain">{{ directionLabel }}</el-tag>
           <span>发布时间：{{ formatDateTime(material.createdAt) }}</span>
-          <AttachmentLink :url="material.attachmentUrl" />
+          <AttachmentLink :href="attachmentHref" />
         </div>
         <p v-if="material.summary" class="summary">{{ material.summary }}</p>
-        <MarkdownViewer :content="material.content || '暂无资料正文。'" />
+        <MarkdownViewer :content="material.contentMarkdown || material.content || '暂无资料正文。'" />
       </template>
       <el-empty v-else-if="!loading" description="资料不存在或已不可访问" />
     </section>
@@ -50,6 +50,11 @@ const directionLabel = computed(() => {
   const level1 = material.value.directionLevel1Id ? directionNameMap.value.get(material.value.directionLevel1Id) : undefined;
   const level2 = material.value.directionLevel2Id ? directionNameMap.value.get(material.value.directionLevel2Id) : undefined;
   return [level1, level2].filter(Boolean).join(' / ') || '全部方向';
+});
+const attachmentHref = computed(() => {
+  if (!material.value) return null;
+  if (!(material.value.hasAttachment || material.value.attachmentFileId || material.value.attachmentUrl)) return null;
+  return material.value.attachmentUrl || `/api/v1/materials/${material.value.id}/attachment`;
 });
 
 onMounted(loadMaterial);

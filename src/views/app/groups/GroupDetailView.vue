@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <PageHeader :title="group?.name || '分组详情'" description="查看分组方向、容量、负责人和成员。">
+    <PageHeader :title="group?.name || '分组详情'" description="查看分组方向、容量和负责人。">
       <template #actions>
         <el-button :icon="Back" @click="$router.push('/app/groups')">返回分组</el-button>
       </template>
@@ -15,7 +15,7 @@
             <el-descriptions-item label="方向">{{ directionLabel }}</el-descriptions-item>
             <el-descriptions-item label="年级">{{ getGradeLabel(group.grade) }}</el-descriptions-item>
             <el-descriptions-item label="入学年份">{{ group.admissionYear }}</el-descriptions-item>
-            <el-descriptions-item label="容量">{{ members.length }} / {{ group.maxSize }}</el-descriptions-item>
+            <el-descriptions-item label="容量">{{ group.maxSize }}</el-descriptions-item>
             <el-descriptions-item label="负责人">{{ leaderName }}</el-descriptions-item>
           </el-descriptions>
         </template>
@@ -26,59 +26,35 @@
         <h2>成员概览</h2>
         <div class="metric-grid compact">
           <div class="metric-card">
-            <span class="muted">成员数</span>
-            <strong>{{ members.length }}</strong>
+            <span class="muted">当前账号</span>
+            <strong>已加入</strong>
           </div>
           <div class="metric-card">
             <span class="muted">容量</span>
             <strong>{{ group?.maxSize || 0 }}</strong>
           </div>
         </div>
+        <p class="muted note">组成员列表仅负责人和管理员可查看。</p>
       </section>
     </div>
-
-    <section class="page-section">
-      <div class="page-toolbar">
-        <h2>分组成员</h2>
-        <el-button :icon="Refresh" :loading="loading" @click="loadDetail">刷新</el-button>
-      </div>
-      <el-table :data="members" empty-text="暂无成员">
-        <el-table-column prop="realName" label="姓名" min-width="120" />
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column label="方向" min-width="160">
-          <template #default="{ row }">{{ row.directionLevel1Name }} / {{ row.directionLevel2Name }}</template>
-        </el-table-column>
-        <el-table-column label="年级" width="100">
-          <template #default="{ row }">{{ getGradeLabel(row.grade) }}</template>
-        </el-table-column>
-        <el-table-column prop="admissionYear" label="入学年份" width="110" />
-        <el-table-column label="报名状态" width="120">
-          <template #default="{ row }">
-            <StatusTag :value="row.applicationStatus" />
-          </template>
-        </el-table-column>
-      </el-table>
-    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Back, Refresh } from '@element-plus/icons-vue';
+import { Back } from '@element-plus/icons-vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { getGroup, getGroupMembers } from '@/api/groups';
+import { getGroup } from '@/api/groups';
 import PageHeader from '@/components/common/PageHeader.vue';
-import StatusTag from '@/components/common/StatusTag.vue';
 import { useMetaStore } from '@/stores/meta';
-import type { Grade, Group, GroupMember } from '@/types/api';
+import type { Grade, Group } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 
 const route = useRoute();
 const metaStore = useMetaStore();
 const loading = ref(false);
 const group = ref<Group | null>(null);
-const members = ref<GroupMember[]>([]);
 const directionNameMap = computed(() => {
   const map = new Map<number, string>();
   metaStore.directions.forEach((level1) => {
@@ -95,8 +71,7 @@ const directionLabel = computed(() => {
 });
 const leaderName = computed(() => {
   if (!group.value?.leaderUserId) return '暂未任命';
-  const leader = members.value.find((member) => member.userId === group.value?.leaderUserId);
-  return leader ? `${leader.realName}（${leader.username}）` : `#${group.value.leaderUserId}`;
+  return `#${group.value.leaderUserId}`;
 });
 
 onMounted(loadDetail);
@@ -112,12 +87,9 @@ async function loadDetail() {
   loading.value = true;
   try {
     const id = String(route.params.id);
-    const [groupData, memberData] = await Promise.all([getGroup(id), getGroupMembers(id)]);
-    group.value = groupData;
-    members.value = memberData;
+    group.value = await getGroup(id);
   } catch {
     group.value = null;
-    members.value = [];
   } finally {
     loading.value = false;
   }
@@ -142,6 +114,11 @@ h2 {
 
 .compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.note {
+  margin: 12px 0 0;
+  line-height: 1.6;
 }
 
 @media (max-width: 860px) {
