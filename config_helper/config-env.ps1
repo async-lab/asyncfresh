@@ -34,7 +34,9 @@ $Mode = "Temporary" # 可选：Temporary / Permanent
 - AUTH_TRUST_FORWARD_HEADERS / AUTH_TRUSTED_PROXIES：反向代理后部署才开启；只信任明确的代理 IP 或网段。
 - APPLICATION_ALLOWED_GRADES：允许报名年级，默认 YEAR_1,YEAR_2。
 - APP_STORAGE_*：本地文件存储目录、分片开关、清理策略和文件类型白名单；生产建议使用独立持久化目录。
-- MULTIPART_*：Servlet 层上传上限，应不小于业务附件上限和分片大小。
+- APP_STORAGE_CHUNK_SIZE：业务分片大小，也是上传模式开关；0B 表示只允许直传，设置为 5MB、8MB 等大于 0 的值表示启用分片上传并禁用直传。
+- 启用分片上传建议：APP_STORAGE_CHUNK_SIZE=5MB，MULTIPART_MAX_FILE_SIZE 不小于该分片大小，MULTIPART_MAX_REQUEST_SIZE 比分片大小略大以容纳 multipart 开销。
+- MULTIPART_*：Servlet 层单次 HTTP 请求上传上限，不是业务分片大小；应不小于业务附件上限或分片大小，具体取决于直传或分片模式。
 - TASK_ATTACHMENT_MAX_SIZE：任务附件和任务提交附件的业务上限。
 - APP_AUDIT_MAJOR_EVENT_LOG_FILE_PATH：重大事件审计日志文件路径，生产建议放在可持久化日志目录。
 - MAIL_SMTP_* / MAIL_ACCOUNT / MAIL_AUTH_CODE：SMTP 邮件服务配置；465 通常配 SSL=true、STARTTLS=false，587 通常配 SSL=false、STARTTLS=true。
