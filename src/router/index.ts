@@ -25,6 +25,12 @@ const MyGroupsView = () => import('@/views/app/groups/MyGroupsView.vue');
 const GroupDetailView = () => import('@/views/app/groups/GroupDetailView.vue');
 const ScoresView = () => import('@/views/app/scores/ScoresView.vue');
 const AdminDashboardView = () => import('@/views/admin/AdminDashboardView.vue');
+const AdminPeriodsView = () => import('@/views/admin/AdminPeriodsView.vue');
+const AdminDirectionsView = () => import('@/views/admin/AdminDirectionsView.vue');
+const AdminUsersView = () => import('@/views/admin/AdminUsersView.vue');
+const AdminApplicationsView = () => import('@/views/admin/AdminApplicationsView.vue');
+const AdminGroupsView = () => import('@/views/admin/AdminGroupsView.vue');
+const AdminLeadersView = () => import('@/views/admin/AdminLeadersView.vue');
 const PlaceholderView = () => import('@/views/PlaceholderView.vue');
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue');
 const NotFoundView = () => import('@/views/error/NotFoundView.vue');
@@ -284,7 +290,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'periods',
         name: 'admin-periods',
-        component: PlaceholderView,
+        component: AdminPeriodsView,
         meta: {
           title: '时期管理',
           description: '配置报名期、选拔期和面试期。',
@@ -295,7 +301,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'directions',
         name: 'admin-directions',
-        component: PlaceholderView,
+        component: AdminDirectionsView,
         meta: {
           title: '方向管理',
           description: '维护两级学习方向、启停和排序。',
@@ -306,9 +312,9 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'users',
         name: 'admin-users',
-        component: PlaceholderView,
+        component: AdminUsersView,
         meta: {
-          title: '用户与报名',
+          title: '用户管理',
           description: '按角色、申请状态、分组和关键词筛选用户。',
           requiresAuth: true,
           roles: ['ADMIN']
@@ -317,7 +323,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'users/:id',
         name: 'admin-user-detail',
-        component: PlaceholderView,
+        component: AdminUsersView,
         meta: {
           title: '用户详情',
           description: '查看用户全量信息和报名申请。',
@@ -326,9 +332,21 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'applications',
+        name: 'admin-applications',
+        component: AdminApplicationsView,
+        meta: {
+          title: '报名管理',
+          description: '处理未分组申请、加入分组和拒绝申请。',
+          requiresAuth: true,
+          roles: ['ADMIN'],
+          periodHint: ['SELECTION']
+        }
+      },
+      {
         path: 'groups',
         name: 'admin-groups',
-        component: PlaceholderView,
+        component: AdminGroupsView,
         meta: {
           title: '分组管理',
           description: '创建分组、逐条分配申请、取消分组和查看成员。',
@@ -340,7 +358,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'groups/:id',
         name: 'admin-group-detail',
-        component: PlaceholderView,
+        component: AdminGroupsView,
         meta: {
           title: '分组详情',
           description: '查看分组成员、容量和负责人。',
@@ -351,7 +369,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'leaders',
         name: 'admin-leaders',
-        component: PlaceholderView,
+        component: AdminLeadersView,
         meta: {
           title: '负责人任命',
           description: '在分组成员中任命或撤销负责人。',
