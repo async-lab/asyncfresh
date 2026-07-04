@@ -1,12 +1,17 @@
 <template>
   <div class="page">
-    <PageHeader title="组内公告管理" description="负责人发布、编辑和删除自己负责组的公告。" />
+    <PageHeader title="公告" description="查看全局公告和本人所在分组可见公告。" />
 
     <section class="page-section">
       <div class="page-toolbar list-toolbar">
-        <el-button type="primary" @click="handleCreate">新建公告</el-button>
         <el-segmented v-model="query.scope" :options="scopeOptions" />
-        <el-input v-model="query.keyword" class="keyword-input" clearable placeholder="搜索公告标题或内容" @keyup.enter="loadAnnouncements" />
+        <el-input
+          v-model="query.keyword"
+          class="keyword-input"
+          clearable
+          placeholder="搜索公告标题或内容"
+          @keyup.enter="loadAnnouncements"
+        />
         <el-button :icon="Refresh" :loading="loading" @click="loadAnnouncements">刷新</el-button>
       </div>
 
@@ -23,7 +28,7 @@
         </el-table-column>
         <el-table-column label="操作" width="110" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" @click="$router.push(`/leader/announcements/${row.id}`)">
+            <el-button text type="primary" :icon="View" @click="$router.push(`/app/announcements/${row.id}`)">
               详情
             </el-button>
           </template>
@@ -47,7 +52,6 @@
 <script setup lang="ts">
 import { Refresh, View } from '@element-plus/icons-vue';
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage } from 'element-plus';
 
 import { getAnnouncements } from '@/api/announcements';
 import PageHeader from '@/components/common/PageHeader.vue';
@@ -94,10 +98,6 @@ async function loadAnnouncements() {
   }
 }
 
-const handleCreate = () => {
-  ElMessage.info('点击了新建按钮，下一步要弹窗');
-};
-
 function handleSizeChange() {
   query.page = 1;
   void loadAnnouncements();
@@ -137,7 +137,6 @@ function formatDateTime(value?: string) {
 }
 
 .pager {
-  display: flex;
   justify-content: flex-end;
   margin-top: 16px;
 }

@@ -175,12 +175,14 @@ const submitHint = computed(() => {
 });
 const submitButtonText = computed(() => (canSubmit.value ? '提交任务' : submitHint.value));
 const taskAttachmentHref = computed(() => {
-  if (!task.value || !(task.value.attachmentFileId || task.value.attachmentUrl)) return null;
+  if (!task.value || !(task.value.attachment || task.value.attachmentFileId || task.value.attachmentUrl)) return null;
   return task.value.attachmentUrl || `/api/v1/tasks/${task.value.id}/attachment`;
 });
 const submissionAttachmentHref = computed(() => {
   if (!task.value || !currentSubmission.value) return null;
-  if (!(currentSubmission.value.attachmentFileId || currentSubmission.value.attachmentUrl)) return null;
+  if (!(currentSubmission.value.attachment || currentSubmission.value.attachmentFileId || currentSubmission.value.attachmentUrl)) {
+    return null;
+  }
   return currentSubmission.value.attachmentUrl || `/api/v1/tasks/${task.value.id}/submission/attachment`;
 });
 

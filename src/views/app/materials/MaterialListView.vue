@@ -136,7 +136,7 @@ function getDirectionLabel(material: Material) {
 }
 
 function hasAttachment(material: Material) {
-  return Boolean(material.hasAttachment || material.attachmentFileId || material.attachmentUrl);
+  return Boolean(material.attachment || material.hasAttachment || material.attachmentFileId || material.attachmentUrl);
 }
 
 function getAttachmentHref(material: Material) {

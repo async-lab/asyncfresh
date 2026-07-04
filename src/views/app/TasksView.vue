@@ -106,7 +106,7 @@ function getSubmissionStatus(task: Task): DisplaySubmissionStatus {
 }
 
 function getAttachmentHref(task: Task) {
-  if (!(task.attachmentFileId || task.attachmentUrl)) return null;
+  if (!(task.attachment || task.attachmentFileId || task.attachmentUrl)) return null;
   return task.attachmentUrl || `/api/v1/tasks/${task.id}/attachment`;
 }
 

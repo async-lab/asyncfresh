@@ -53,7 +53,9 @@ const directionLabel = computed(() => {
 });
 const attachmentHref = computed(() => {
   if (!material.value) return null;
-  if (!(material.value.hasAttachment || material.value.attachmentFileId || material.value.attachmentUrl)) return null;
+  if (!(material.value.attachment || material.value.hasAttachment || material.value.attachmentFileId || material.value.attachmentUrl)) {
+    return null;
+  }
   return material.value.attachmentUrl || `/api/v1/materials/${material.value.id}/attachment`;
 });
 
