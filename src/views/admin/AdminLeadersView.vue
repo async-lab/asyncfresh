@@ -68,7 +68,7 @@ async function loadData() {
   try {
     const [groupList, leaderPage] = await Promise.all([
       getAdminGroups(),
-      getAdminUsers({ role: 'LEADER', status: 'ACTIVE', page: 1, size: 100 })
+      getAdminUsers({ role: 'LEADER', status: 'ACTIVE', page: 1, size: 50 })
     ]);
     groups.value = groupList;
     leaders.value = leaderPage.list;

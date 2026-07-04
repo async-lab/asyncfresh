@@ -2,6 +2,9 @@
   <div class="page">
     <PageHeader title="时期管理" description="配置报名、选拔、面试等招新时期的起止时间和启用状态。">
       <template #actions>
+        <el-button v-if="!periods.length" type="primary" :loading="initializing" @click="initializePeriods">
+          初始化时期配置
+        </el-button>
         <el-button :icon="Refresh" :loading="loading" @click="loadPeriods">刷新</el-button>
       </template>
     </PageHeader>
@@ -44,7 +47,7 @@
             v-model="form.startTime"
             class="full"
             type="datetime"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
             placeholder="请选择开始时间"
           />
         </el-form-item>
@@ -53,7 +56,7 @@
             v-model="form.endTime"
             class="full"
             type="datetime"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
             placeholder="请选择结束时间"
           />
         </el-form-item>
@@ -74,7 +77,7 @@ import { EditPen, Refresh } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
-import { getAdminPeriods, updateAdminPeriod, type PeriodConfig } from '@/api/admin';
+import { getAdminPeriods, saveAdminPeriods, updateAdminPeriod, type PeriodConfig } from '@/api/admin';
 import PageHeader from '@/components/common/PageHeader.vue';
 import type { PeriodType } from '@/types/api';
 import { periodLabels } from '@/utils/labels';
@@ -83,6 +86,7 @@ const periodOptions: PeriodType[] = ['REGISTRATION', 'SELECTION', 'INTERVIEW', '
 const periods = ref<PeriodConfig[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const initializing = ref(false);
 const dialogVisible = ref(false);
 const form = reactive<PeriodConfig>(createEmptyPeriod());
 
@@ -119,6 +123,17 @@ async function savePeriod() {
   }
 }
 
+async function initializePeriods() {
+  initializing.value = true;
+  try {
+    await saveAdminPeriods(createDefaultPeriods());
+    ElMessage.success('时期配置已初始化');
+    await loadPeriods();
+  } finally {
+    initializing.value = false;
+  }
+}
+
 function createEmptyPeriod(): PeriodConfig {
   return {
     periodType: 'REGISTRATION',
@@ -126,6 +141,59 @@ function createEmptyPeriod(): PeriodConfig {
     endTime: '',
     enabled: true
   };
+}
+
+function createDefaultPeriods(): PeriodConfig[] {
+  const now = new Date();
+  const registrationStart = addDays(now, -1);
+  const registrationEnd = addDays(now, 14);
+  const selectionStart = addDays(registrationEnd, 1);
+  const selectionEnd = addDays(selectionStart, 14);
+  const interviewStart = addDays(selectionEnd, 1);
+  const interviewEnd = addDays(interviewStart, 7);
+
+  return [
+    {
+      periodType: 'REGISTRATION',
+      startTime: formatInputDateTime(registrationStart),
+      endTime: formatInputDateTime(registrationEnd),
+      enabled: true
+    },
+    {
+      periodType: 'SELECTION',
+      startTime: formatInputDateTime(selectionStart),
+      endTime: formatInputDateTime(selectionEnd),
+      enabled: true
+    },
+    {
+      periodType: 'INTERVIEW',
+      startTime: formatInputDateTime(interviewStart),
+      endTime: formatInputDateTime(interviewEnd),
+      enabled: true
+    }
+  ];
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatInputDateTime(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const offsetMinutes = -date.getTimezoneOffset();
+  const offsetSign = offsetMinutes >= 0 ? '+' : '-';
+  const offsetHours = Math.floor(Math.abs(offsetMinutes) / 60);
+  const offsetRemainderMinutes = Math.abs(offsetMinutes) % 60;
+
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate())
+  ].join('-') +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}` +
+    `${offsetSign}${pad(offsetHours)}:${pad(offsetRemainderMinutes)}`;
 }
 
 function getPeriodLabel(period: PeriodType) {

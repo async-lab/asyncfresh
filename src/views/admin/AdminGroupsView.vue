@@ -114,7 +114,7 @@ import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { createGroup, deleteGroup, getAdminGroups, updateGroup, type GroupPayload } from '@/api/admin';
+import { createGroup, deleteGroup, getAdminGroups, getAdminUsers, updateGroup, type GroupPayload } from '@/api/admin';
 import { getGroup, getGroupMembers } from '@/api/groups';
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
@@ -128,6 +128,7 @@ const route = useRoute();
 const router = useRouter();
 const metaStore = useMetaStore();
 const groups = ref<Group[]>([]);
+const users = ref<Record<number, string>>({});
 const members = ref<GroupMember[]>([]);
 const detailGroup = ref<Group | null>(null);
 const loading = ref(false);
@@ -167,7 +168,12 @@ watch(
 async function loadGroups() {
   loading.value = true;
   try {
-    groups.value = await getAdminGroups(query);
+    const [groupList, userPage] = await Promise.all([
+      getAdminGroups(query),
+      getAdminUsers({ page: 1, size: 50 })
+    ]);
+    groups.value = groupList;
+    users.value = Object.fromEntries(userPage.list.map((user) => [user.id, user.username]));
   } finally {
     loading.value = false;
   }
@@ -294,7 +300,8 @@ function findDirectionName(id: number) {
 }
 
 function getLeaderLabel(group: Group) {
-  return group.leaderUserId ? `用户 #${group.leaderUserId}` : '未任命';
+  if (!group.leaderUserId) return '未任命';
+  return users.value[group.leaderUserId] || `用户 #${group.leaderUserId}`;
 }
 </script>
 
