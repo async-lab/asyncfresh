@@ -8,10 +8,6 @@ import {
 } from '@/api/auth';
 import type { ChangePasswordPayload, LoginPayload } from '@/api/auth';
 import type { Role, User } from '@/types/api';
-import { clearMockUser, findMockUser, loadMockUser, saveMockUser } from '@/utils/mockAuth';
-
-const enableMockAuth = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
-const useMockApi = import.meta.env.VITE_USE_MOCK_API === 'true';
 
 interface AuthState {
   user: User | null;
@@ -40,18 +36,7 @@ export const useAuthStore = defineStore('auth', {
           email: payload.email.trim().toLowerCase(),
           rememberMe: Boolean(payload.rememberMe)
         };
-        const mockUser = enableMockAuth ? findMockUser(normalizedPayload) : null;
-        if (enableMockAuth && mockUser) {
-          this.user = mockUser;
-          saveMockUser(mockUser);
-          this.initialized = true;
-          return this.user;
-        }
-
         this.user = await loginApi(normalizedPayload);
-        if (!useMockApi) {
-          clearMockUser();
-        }
         this.initialized = true;
         return this.user;
       } finally {
@@ -61,12 +46,6 @@ export const useAuthStore = defineStore('auth', {
     async fetchMe() {
       this.loading = true;
       try {
-        const mockUser = enableMockAuth ? loadMockUser() : null;
-        if (enableMockAuth && mockUser) {
-          this.user = mockUser;
-          return this.user;
-        }
-
         this.user = await getMe();
         return this.user;
       } finally {
@@ -75,15 +54,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async logout() {
-      const mockUser = enableMockAuth ? loadMockUser() : null;
-
-      if (enableMockAuth && mockUser) {
-        clearMockUser();
-        this.user = null;
-        this.initialized = true;
-        return;
-      }
-
       try {
         await logoutApi();
       } finally {
@@ -94,16 +64,7 @@ export const useAuthStore = defineStore('auth', {
     async changePassword(payload: ChangePasswordPayload) {
       this.loading = true;
       try {
-        const mockUser = enableMockAuth ? loadMockUser() : null;
-        if (enableMockAuth && mockUser) {
-          clearMockUser();
-          this.user = null;
-          this.initialized = true;
-          return;
-        }
-
         await changePasswordApi(payload);
-        clearMockUser();
         this.user = null;
         this.initialized = true;
       } finally {
@@ -111,7 +72,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     clear() {
-      clearMockUser();
       this.user = null;
       this.initialized = true;
     },

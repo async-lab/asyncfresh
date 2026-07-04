@@ -22,19 +22,6 @@
       <router-link v-else to="/login">普通登录</router-link>
       <router-link to="/forgot-password">找回密码</router-link>
     </div>
-
-    <div v-if="showDemoAccounts" class="demo-box">
-      <div class="demo-title">演示账号</div>
-      <el-button
-        v-for="account in mockAccounts"
-        :key="account.email"
-        size="small"
-        :disabled="authStore.loading"
-        @click="loginWithMock(account)"
-      >
-        {{ account.label }}
-      </el-button>
-    </div>
   </div>
 </template>
 
@@ -47,13 +34,10 @@ import PageHeader from '@/components/common/PageHeader.vue';
 import { useAuthStore } from '@/stores/auth';
 import { getHomePathByRole, resolvePostLoginPath } from '@/utils/authRouting';
 import { isValidEmail, normalizeEmail } from '@/utils/authValidation';
-import { mockAccounts, type MockAccount } from '@/utils/mockAuth';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
-const enableMockAuth = import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
-const showDemoAccounts = enableMockAuth || import.meta.env.VITE_USE_MOCK_API === 'true';
 
 const isAdminLogin = computed(() => route.name === 'admin-login');
 const form = reactive({
@@ -94,12 +78,6 @@ async function handleSubmit() {
   const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : undefined;
   await router.push(resolvePostLoginPath(user.role, redirect));
 }
-
-async function loginWithMock(account: MockAccount) {
-  form.email = account.email;
-  form.password = account.password;
-  await handleSubmit();
-}
 </script>
 
 <style scoped>
@@ -116,21 +94,5 @@ async function loginWithMock(account: MockAccount) {
   justify-content: space-between;
   margin-top: 16px;
   color: var(--app-primary);
-}
-
-.demo-box {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid var(--app-border);
-}
-
-.demo-title {
-  width: 100%;
-  color: var(--app-muted);
-  font-size: 13px;
 }
 </style>

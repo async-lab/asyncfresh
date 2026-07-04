@@ -32,9 +32,9 @@ src/components/markdown
 - 登录态刷新后能通过 `/auth/me` 恢复。
 - 公共组件能被用户端页面直接复用。
 
-## 2. Mock 和接口规范
+## 2. 接口规范
 
-在正式开发页面前，先补齐用户端主流程需要的接口封装和 Mock：
+在正式开发页面前，先补齐用户端主流程需要的接口封装：
 
 ```text
 src/api/auth.ts
@@ -44,21 +44,19 @@ src/api/announcements.ts
 src/api/materials.ts
 src/api/groups.ts
 src/api/files.ts
-src/mocks/data.ts
-src/mocks/adapter.ts
 ```
 
 完成目标：
 
 - 新增接口先写到 `src/api/*.ts`，页面只调用接口函数。
-- Mock 返回保持统一 `ApiResponse<T>` 结构。
+- 后端返回保持统一 `ApiResponse<T>` 结构。
 - 分页接口保持 `PageResult<T>` 结构。
 - 页面不写临时假数据。
 
 验收点：
 
-- 开启 `VITE_USE_MOCK_API=true` 后，用户端主要页面能正常取数。
-- Mock 数据覆盖认证、报名、任务、公告、资料、分组、成绩等主流程。
+- 用户端主要页面能通过接口封装正常取数。
+- 接口封装覆盖认证、报名、任务、公告、资料、分组、成绩等主流程。
 
 ## 3. 认证与账号体系
 
@@ -82,7 +80,7 @@ src/api/auth.ts
 
 验收点：
 
-- Mock 新生、负责人、管理员账号均可登录。
+- 新生、负责人、管理员账号均可通过真实后端登录。
 - 刷新受保护页面后登录态不丢失。
 - 退出登录后本地登录态被清除。
 
@@ -162,11 +160,7 @@ src/views/app/scores
 
 ## 7. 真实后端联调
 
-关闭 Mock 后联调真实后端：
-
-```env
-VITE_USE_MOCK_API=false
-```
+联调真实后端：
 
 完成目标：
 
@@ -207,7 +201,7 @@ npm run build
 
 ```text
 工程与公共底座
--> Mock 和接口规范
+-> 接口规范
 -> 认证与账号体系
 -> 用户端报名闭环
 -> 用户端任务链路

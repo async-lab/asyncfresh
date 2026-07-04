@@ -1,7 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { ElMessage } from 'element-plus';
 
-import { mockApiAdapter } from '@/mocks/adapter';
 import type { ApiResponse } from '@/types/api';
 
 const http = axios.create({
@@ -9,8 +8,7 @@ const http = axios.create({
   timeout: 15000,
   withCredentials: true,
   xsrfCookieName: '',
-  xsrfHeaderName: '',
-  adapter: import.meta.env.VITE_USE_MOCK_API === 'true' ? mockApiAdapter : undefined
+  xsrfHeaderName: ''
 });
 
 const csrfFreeAuthPaths = new Set([
