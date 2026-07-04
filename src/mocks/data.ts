@@ -2,10 +2,12 @@ import type {
   AdminDashboardSummary,
   Announcement,
   Application,
+  AuditLog,
   Direction,
   Group,
   GroupMember,
   Material,
+  NotificationItem,
   PageResult,
   Task,
   TaskScore,
@@ -230,6 +232,7 @@ export const mockAnnouncements: Announcement[] = [
 export const mockMaterials: Material[] = [
   {
     id: 1,
+    groupId: 10,
     title: 'Java 学习指南',
     summary: '后端方向入门资料',
     content: '## Java 入门\n建议先掌握集合、异常、IO 和基础 Web。',
@@ -242,6 +245,7 @@ export const mockMaterials: Material[] = [
   },
   {
     id: 2,
+    groupId: 11,
     title: 'Vue 组件开发规范',
     summary: '前端方向组件化学习资料',
     content: '## Vue 组件\n关注 props、emit、状态管理和路由拆分。',
@@ -355,6 +359,42 @@ export const mockDashboardSummary: AdminDashboardSummary = {
   leaderCount: 6,
   taskCompletionRate: 0.76
 };
+
+export const mockAuditLogs: AuditLog[] = [
+  {
+    id: 1,
+    operatorName: 'admin',
+    module: '公告管理',
+    action: '发布公告',
+    target: '招新报名开放通知',
+    detail: '发布全局公告',
+    ip: '127.0.0.1',
+    createdAt: '2026-06-24T15:30:00+08:00'
+  },
+  {
+    id: 2,
+    operatorName: 'leader',
+    module: '任务管理',
+    action: '批阅任务',
+    target: '完成 Java 基础练习',
+    detail: '评分 92 分',
+    ip: '127.0.0.1',
+    createdAt: '2026-06-27T20:00:00+08:00'
+  }
+];
+
+export const mockNotifications: NotificationItem[] = [
+  {
+    id: 1,
+    title: '选拔期即将开始',
+    content: '请各位同学关注组内公告和任务安排。',
+    channel: 'SYSTEM',
+    targetRole: 'FRESHMAN',
+    status: 'SENT',
+    createdAt: '2026-06-29T09:00:00+08:00',
+    sentAt: '2026-06-29T09:05:00+08:00'
+  }
+];
 
 export function pageOf<T>(list: T[], page = 1, size = 10): PageResult<T> {
   const start = (page - 1) * size;

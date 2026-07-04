@@ -15,11 +15,13 @@ import {
 import {
   mockAnnouncements,
   mockApplications,
+  mockAuditLogs,
   mockDashboardSummary,
   mockDirections,
   mockGroupMembers,
   mockGroups,
   mockMaterials,
+  mockNotifications,
   mockPeriods,
   mockScores,
   mockSubmissions,
@@ -380,6 +382,55 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     return mockDashboardSummary;
   }
 
+  if (method === 'get' && path === '/admin/audit-logs') {
+    let list = [...mockAuditLogs];
+    const keyword = stringParam(params.keyword);
+    const module = stringParam(params.module);
+    if (module) list = list.filter((item) => item.module === module);
+    if (keyword) {
+      list = list.filter((item) =>
+        [item.operatorName, item.action, item.target, item.detail].filter(Boolean).some((value) => String(value).includes(keyword))
+      );
+    }
+    return pageOf(list, numberParam(params.page, 1), numberParam(params.size, 10));
+  }
+
+  if (method === 'get' && path === '/admin/notifications') {
+    let list = [...mockNotifications];
+    const keyword = stringParam(params.keyword);
+    if (params.status) list = list.filter((item) => item.status === params.status);
+    if (keyword) {
+      list = list.filter((item) => [item.title, item.content].some((value) => value.includes(keyword)));
+    }
+    return pageOf(list, numberParam(params.page, 1), numberParam(params.size, 10));
+  }
+
+  if (method === 'post' && path === '/admin/notifications') {
+    const notification = {
+      ...body,
+      id: nextId(mockNotifications),
+      status: 'DRAFT',
+      createdAt: now(),
+      sentAt: null
+    };
+    mockNotifications.unshift(notification);
+    return notification;
+  }
+
+  const notificationSendId = matchId(path, /^\/admin\/notifications\/(\d+)\/send$/);
+  if (method === 'post' && notificationSendId) {
+    const notification = findById(mockNotifications, notificationSendId, '通知不存在');
+    notification.status = 'SENT';
+    notification.sentAt = now();
+    return notification;
+  }
+
+  const notificationId = matchId(path, /^\/admin\/notifications\/(\d+)$/);
+  if (method === 'delete' && notificationId) {
+    removeById(mockNotifications, notificationId);
+    return null;
+  }
+
   if (method === 'get' && path === '/admin/periods') {
     return mockPeriods;
   }
@@ -468,6 +519,13 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     );
   }
 
+  if (method === 'get' && path === '/leader/groups/ungrouped-applications') {
+    return filterApplications(
+      mockApplications.filter((item) => item.status === 'SUBMITTED' && !item.groupId),
+      params
+    );
+  }
+
   if (method === 'post' && path === '/admin/groups') {
     const group: Group = { ...body, id: nextId(mockGroups), leaderUserId: null };
     mockGroups.unshift(group);
@@ -489,6 +547,33 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
 
   if (method === 'post' && /^\/admin\/groups\/\d+\/applications\/\d+$/.test(path)) {
     const [, groupIdText, applicationIdText] = path.match(/^\/admin\/groups\/(\d+)\/applications\/(\d+)$/) || [];
+    const groupIdValue = Number(groupIdText);
+    const applicationIdValue = Number(applicationIdText);
+    const group = findById(mockGroups, groupIdValue, '分组不存在');
+    const application = findById(mockApplications, applicationIdValue, '报名申请不存在');
+
+    application.groupId = group.id;
+    application.status = 'GROUPED';
+    application.updatedAt = now();
+    mockGroupMembers[group.id] = mockGroupMembers[group.id] || [];
+    if (!mockGroupMembers[group.id].some((item) => item.applicationId === application.id)) {
+      mockGroupMembers[group.id].push({
+        userId: application.userId || application.id,
+        username: mockUsers.find((item) => item.id === application.userId)?.username || application.realName,
+        realName: application.realName,
+        applicationId: application.id,
+        grade: application.grade,
+        admissionYear: application.admissionYear,
+        directionLevel1Name: getDirectionName(application.directionLevel1Id),
+        directionLevel2Name: getDirectionName(application.directionLevel2Id),
+        applicationStatus: 'GROUPED'
+      });
+    }
+    return null;
+  }
+
+  if (method === 'post' && /^\/leader\/groups\/\d+\/applications\/\d+$/.test(path)) {
+    const [, groupIdText, applicationIdText] = path.match(/^\/leader\/groups\/(\d+)\/applications\/(\d+)$/) || [];
     const groupIdValue = Number(groupIdText);
     const applicationIdValue = Number(applicationIdText);
     const group = findById(mockGroups, groupIdValue, '分组不存在');
@@ -537,6 +622,16 @@ function handleMockRequest(method: string, path: string, params: Record<string, 
     application.groupId = null;
     application.status = 'REJECTED';
     application.statusRemark = body.reason || '不符合当前分组要求';
+    application.updatedAt = now();
+    return null;
+  }
+
+  const leaderRejectApplicationId = matchId(path, /^\/leader\/applications\/(\d+)\/reject$/);
+  if (method === 'post' && leaderRejectApplicationId) {
+    const application = findById(mockApplications, leaderRejectApplicationId, '报名申请不存在');
+    application.groupId = null;
+    application.status = 'REJECTED';
+    application.statusRemark = body.reason || '不符合当前责任包要求';
     application.updatedAt = now();
     return null;
   }
@@ -743,6 +838,9 @@ function filterAnnouncements(list: Announcement[], params: Record<string, unknow
 function filterMaterials(list: Material[], params: Record<string, unknown>) {
   let result = [...list];
 
+  if (params.groupId) {
+    result = result.filter((item) => item.groupId === Number(params.groupId));
+  }
   if (params.directionLevel1Id) {
     result = result.filter((item) => item.directionLevel1Id === Number(params.directionLevel1Id));
   }

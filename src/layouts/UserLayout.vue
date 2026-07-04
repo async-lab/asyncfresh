@@ -38,17 +38,37 @@
           </el-menu-item>
         </template>
         <template v-else>
+          <el-menu-item index="/leader">
+            <el-icon><House /></el-icon>
+            <span>工作台</span>
+          </el-menu-item>
+          <el-menu-item index="/leader/groups">
+            <el-icon><Grid /></el-icon>
+            <span>责任包</span>
+          </el-menu-item>
+          <el-menu-item index="/leader/groups/0/members">
+            <el-icon><Avatar /></el-icon>
+            <span>组员信息</span>
+          </el-menu-item>
+          <el-menu-item index="/leader/applications">
+            <el-icon><DocumentChecked /></el-icon>
+            <span>未分组申请</span>
+          </el-menu-item>
           <el-menu-item index="/leader/announcements">
             <el-icon><Notification /></el-icon>
             <span>组内公告</span>
+          </el-menu-item>
+          <el-menu-item index="/leader/materials">
+            <el-icon><Files /></el-icon>
+            <span>组内资料</span>
           </el-menu-item>
           <el-menu-item index="/leader/tasks">
             <el-icon><Notebook /></el-icon>
             <span>组内任务</span>
           </el-menu-item>
-          <el-menu-item index="/leader/groups/0/members">
-            <el-icon><Avatar /></el-icon>
-            <span>组员信息</span>
+          <el-menu-item index="/leader/exports">
+            <el-icon><Download /></el-icon>
+            <span>导出与批下载</span>
           </el-menu-item>
         </template>
       </el-menu>
@@ -72,8 +92,12 @@
 import {
   Avatar,
   Bell,
+  DocumentChecked,
+  Download,
   EditPen,
+  Files,
   Finished,
+  Grid,
   House,
   Notebook,
   Notification,
