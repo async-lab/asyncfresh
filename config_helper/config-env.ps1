@@ -86,6 +86,7 @@ $EnvironmentVariables = [ordered]@{
     DEFAULT_ADMIN_USERNAME    = "epochlab"
     DEFAULT_ADMIN_PASSWORD    = "Aa123456"
     DEFAULT_ADMIN_EMAIL       = "epoch@mail.cuit.dev"
+    APP_BRAND_NAME            = "Epoch"
 }
 
 function Test-ModeValid {
