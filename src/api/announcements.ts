@@ -9,7 +9,7 @@ export interface AnnouncementQuery extends PageQuery {
 
 export interface AnnouncementPayload {
   title: string;
-  content: string;
+  contentMarkdown: string;
   scope: Scope;
   groupId?: number | null;
 }

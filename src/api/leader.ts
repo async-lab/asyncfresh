@@ -4,7 +4,7 @@ export {
   getAnnouncements,
   updateLeaderAnnouncement
 } from './announcements';
-export { getGroup, getGroupMembers, getGroups } from './groups';
+export { getGroup, getGroupMembers } from './groups';
 export {
   createLeaderMaterial,
   deleteLeaderMaterial,
@@ -15,6 +15,7 @@ export {
   createLeaderTask,
   deleteLeaderTask,
   getLeaderTaskSubmissions,
+  getLeaderManagedTasks,
   getTasks,
   returnLeaderSubmission,
   reviewLeaderSubmission,
@@ -35,7 +36,22 @@ export function getLeaderGroupTasksExportUrl(groupId: number | string) {
 }
 
 import { getData, postData } from './http';
-import type { Application, Grade } from '@/types/api';
+import type { Application, Grade, Group, PageQuery, PageResult } from '@/types/api';
+
+export function getGroups(params?: PageQuery) {
+  return getData<Group[]>('/leader/groups').then((groups) => {
+    const page = params?.page ?? 1;
+    const size = params?.size ?? (groups.length || 1);
+
+    return {
+      list: groups,
+      page,
+      size,
+      total: groups.length,
+      totalPages: groups.length ? Math.ceil(groups.length / size) : 0
+    } satisfies PageResult<Group>;
+  });
+}
 
 export function getLeaderUngroupedApplications(params?: {
   directionLevel1Id?: number;

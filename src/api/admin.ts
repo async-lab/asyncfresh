@@ -27,6 +27,7 @@ export {
 export {
   createAdminTask,
   deleteAdminTask,
+  getAdminManagedTasks,
   getAdminTaskSubmissions,
   getTasks,
   returnAdminSubmission,
@@ -59,7 +60,33 @@ export interface GroupPayload {
 }
 
 export function getDashboardSummary() {
-  return getData<AdminDashboardSummary>('/admin/dashboard/overview');
+  return Promise.all([
+    getData<AdminDashboardOverview>('/admin/dashboard/overview'),
+    getData<PageResult<User>>('/admin/users', { role: 'LEADER', page: 1, size: 1 })
+  ]).then(([overview, leaders]) => ({
+    userCount: overview.totalUsers,
+    applicationCount: overview.totalApplications,
+    groupedUserCount: overview.groupedApplications,
+    groupedApplicationCount: overview.groupedApplications,
+    unassignedApplicationCount: overview.ungroupedApplications,
+    leaderCount: leaders.total,
+    taskCompletionRate:
+      overview.totalSubmittedTaskResults + overview.totalReviewedTaskResults === 0
+        ? 0
+        : overview.totalReviewedTaskResults /
+          (overview.totalSubmittedTaskResults + overview.totalReviewedTaskResults)
+  }));
+}
+
+interface AdminDashboardOverview {
+  totalUsers: number;
+  totalApplications: number;
+  groupedApplications: number;
+  ungroupedApplications: number;
+  totalGroups: number;
+  totalTasks: number;
+  totalSubmittedTaskResults: number;
+  totalReviewedTaskResults: number;
 }
 
 export function getAdminPeriods() {
@@ -217,4 +244,16 @@ export function sendAdminNotification(id: number | string) {
 
 export function deleteAdminNotification(id: number | string) {
   return deleteData<null>(`/admin/notifications/${id}`);
+}
+
+export function getCurrentNotifications(params?: { unreadOnly?: boolean; page?: number; size?: number }) {
+  return getData<PageResult<NotificationItem>>('/notifications', params);
+}
+
+export function markNotificationRead(id: number | string) {
+  return postData<null>(`/notifications/${id}/read`);
+}
+
+export function markAllNotificationsRead() {
+  return postData<null>('/notifications/read-all');
 }
