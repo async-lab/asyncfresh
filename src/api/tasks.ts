@@ -1,5 +1,5 @@
 import { deleteData, getData, postData, putData } from './http';
-import type { PageQuery, SubmissionStatus, Task, TaskScore, TaskSubmission } from '@/types/api';
+import type { PageQuery, SubmissionStatus, Task, TaskAttachment, TaskScore, TaskSubmission } from '@/types/api';
 
 export interface TaskQuery extends PageQuery {
   groupId?: number;
@@ -28,16 +28,29 @@ export interface ReviewPayload {
 
 export interface GroupSubmissionSummary {
   userId: number;
-  username: string;
-  realName: string;
-  latestSubmissionId?: number | null;
+  username?: string | null;
+  realName?: string | null;
+  status: SubmissionStatus;
+  contentMarkdown?: string | null;
+  attachment?: TaskAttachment | null;
   submittedAt?: string | null;
-  reviewed: boolean;
+  reviewerUserId?: number | null;
+  reviewerUsername?: string | null;
   score?: number | null;
+  reviewComment?: string | null;
+  reviewedAt?: string | null;
 }
 
 export function getTasks(params?: TaskQuery) {
   return getData<Task[]>('/tasks', params);
+}
+
+export function getLeaderManagedTasks(groupId: number | string) {
+  return getData<Task[]>(`/leader/groups/${groupId}/tasks`);
+}
+
+export function getAdminManagedTasks(groupId: number | string) {
+  return getData<Task[]>(`/admin/groups/${groupId}/tasks`);
 }
 
 export function getTask(id: number | string) {

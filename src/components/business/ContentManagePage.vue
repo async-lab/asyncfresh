@@ -37,7 +37,7 @@
         </el-table-column>
         <el-table-column v-if="kind !== 'announcements'" label="附件" width="92">
           <template #default="{ row }">
-            <el-tag v-if="row.attachmentFileId || row.attachmentUrl" type="success" effect="plain">有附件</el-tag>
+            <el-tag v-if="hasAttachment(row)" type="success" effect="plain">有附件</el-tag>
             <span v-else class="muted">无</span>
           </template>
         </el-table-column>
@@ -109,7 +109,7 @@
       </template>
     </el-drawer>
 
-    <el-drawer v-model="reviewVisible" title="任务批阅" size="720px">
+    <el-drawer v-model="reviewVisible" title="任务批阅" size="860px">
       <div class="review-head">
         <strong>{{ currentTask?.title }}</strong>
         <el-button :icon="Download" @click="downloadSubmissions">批下载</el-button>
@@ -122,12 +122,21 @@
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.reviewed ? 'success' : 'warning'" effect="plain">{{ row.reviewed ? '已批阅' : '待批阅' }}</el-tag>
+            <el-tag :type="getSubmissionStatusType(row.status)" effect="plain">{{ getSubmissionStatusLabel(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="附件" width="86">
+          <template #default="{ row }">
+            <el-tag v-if="row.attachment" type="success" effect="plain">有</el-tag>
+            <span v-else class="muted">无</span>
           </template>
         </el-table-column>
         <el-table-column prop="score" label="分数" width="80" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
+            <el-button text type="primary" :icon="View" :disabled="!hasSubmissionDetail(row)" @click="openSubmissionDetail(row)">
+              查看
+            </el-button>
             <el-button text type="primary" @click="openReviewDialog(row)">评分</el-button>
             <el-popconfirm title="确认打回该提交？" confirm-button-text="打回" cancel-button-text="取消" @confirm="returnSubmission(row)">
               <template #reference>
@@ -153,11 +162,49 @@
         <el-button type="primary" :loading="scoreSubmitting" @click="submitReview">保存评分</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="submissionVisible" title="提交详情" width="680px">
+      <template v-if="submissionTarget">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="姓名">{{ submissionTarget.realName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="账号">{{ submissionTarget.username || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :type="getSubmissionStatusType(submissionTarget.status)" effect="plain">
+              {{ getSubmissionStatusLabel(submissionTarget.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="提交时间">{{ formatDateTime(submissionTarget.submittedAt) }}</el-descriptions-item>
+          <el-descriptions-item label="分数">{{ submissionTarget.score ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="批阅时间">{{ formatDateTime(submissionTarget.reviewedAt) }}</el-descriptions-item>
+        </el-descriptions>
+
+        <section class="submission-section">
+          <h3>提交内容</h3>
+          <div v-if="submissionTarget.contentMarkdown" class="submission-content">
+            <MarkdownViewer :content="submissionTarget.contentMarkdown" />
+          </div>
+          <el-empty v-else description="暂无提交内容" :image-size="72" />
+        </section>
+
+        <section class="submission-section">
+          <h3>附件</h3>
+          <el-button v-if="submissionTarget.attachment" :icon="Download" @click="downloadSubmissionAttachment(submissionTarget)">
+            {{ submissionTarget.attachment.originalFileName || '下载附件' }}
+          </el-button>
+          <span v-else class="muted">无</span>
+        </section>
+
+        <section v-if="submissionTarget.reviewComment" class="submission-section">
+          <h3>评语</h3>
+          <p class="review-comment">{{ submissionTarget.reviewComment }}</p>
+        </section>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Checked, Delete, Download, Edit, Plus, Refresh } from '@element-plus/icons-vue';
+import { Checked, Delete, Download, Edit, Plus, Refresh, View } from '@element-plus/icons-vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -169,11 +216,11 @@ import {
   deleteAdminMaterial,
   deleteAdminTask,
   getAdminGroups,
+  getAdminManagedTasks,
   getAdminTaskBatchDownloadUrl,
   getAdminTaskSubmissions,
   getAnnouncements,
   getMaterials,
-  getTasks,
   returnAdminSubmission,
   reviewAdminSubmission,
   updateAdminAnnouncement,
@@ -190,6 +237,7 @@ import {
   getGroups,
   getLeaderTaskBatchDownloadUrl,
   getLeaderTaskSubmissions,
+  getLeaderManagedTasks,
   returnLeaderSubmission,
   reviewLeaderSubmission,
   updateLeaderAnnouncement,
@@ -201,8 +249,9 @@ import FileUploader from '@/components/common/FileUploader.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import PageTable from '@/components/common/PageTable.vue';
 import MarkdownEditor from '@/components/markdown/MarkdownEditor.vue';
-import type { Announcement, Group, Material, Scope, Task } from '@/types/api';
-import { scopeLabels } from '@/utils/labels';
+import MarkdownViewer from '@/components/markdown/MarkdownViewer.vue';
+import type { Announcement, Group, Material, Scope, Task, TaskAttachment } from '@/types/api';
+import { scopeLabels, submissionStatusLabels } from '@/utils/labels';
 
 type Mode = 'leader' | 'admin';
 type Kind = 'announcements' | 'materials' | 'tasks';
@@ -282,6 +331,8 @@ const scoreVisible = ref(false);
 const scoreSubmitting = ref(false);
 const scoreTarget = ref<GroupSubmissionSummary | null>(null);
 const scoreForm = reactive({ score: 0, comment: '' });
+const submissionVisible = ref(false);
+const submissionTarget = ref<GroupSubmissionSummary | null>(null);
 
 onMounted(async () => {
   await loadGroups();
@@ -308,7 +359,12 @@ async function loadItems() {
     } else if (props.kind === 'materials') {
       items.value = await getMaterials({ keyword: query.keyword || undefined, groupId: query.groupId });
     } else {
-      items.value = await getTasks({ keyword: query.keyword || undefined, groupId: query.groupId });
+      if (!query.groupId) {
+        items.value = [];
+      } else {
+        items.value =
+          props.mode === 'admin' ? await getAdminManagedTasks(query.groupId) : await getLeaderManagedTasks(query.groupId);
+      }
     }
     query.page = 1;
   } finally {
@@ -328,8 +384,10 @@ function openEdit(item: ManagedItem) {
   form.contentMarkdown = item.contentMarkdown || item.content || '';
   form.scope = 'scope' in item ? item.scope || 'GROUP' : 'GROUP';
   form.groupId = 'groupId' in item ? item.groupId || undefined : undefined;
-  form.attachmentFileId = 'attachmentFileId' in item ? item.attachmentFileId || null : null;
-  form.attachmentFileName = 'attachmentFileName' in item ? item.attachmentFileName || '' : '';
+  const attachment = getAttachment(item);
+  form.attachmentFileId = attachment?.id ?? attachment?.fileId ?? ('attachmentFileId' in item ? item.attachmentFileId || null : null);
+  form.attachmentFileName =
+    attachment?.originalFileName ?? ('attachmentFileName' in item ? item.attachmentFileName || '' : '');
   form.removeAttachment = false;
   form.maxScore = 'maxScore' in item ? item.maxScore : 100;
   form.deadlineAt = 'deadlineAt' in item ? item.deadlineAt : '';
@@ -355,7 +413,7 @@ async function submitForm() {
     if (props.kind === 'announcements') {
       const payload = {
         title: form.title,
-        content: form.contentMarkdown,
+        contentMarkdown: form.contentMarkdown,
         scope: props.mode === 'leader' ? ('GROUP' as Scope) : form.scope,
         groupId: form.scope === 'GROUP' ? form.groupId || null : null
       };
@@ -437,9 +495,14 @@ async function openReviews(task: Task) {
 
 function openReviewDialog(row: GroupSubmissionSummary) {
   scoreTarget.value = row;
-  scoreForm.score = row.score || 0;
-  scoreForm.comment = '';
+  scoreForm.score = row.score ?? 0;
+  scoreForm.comment = row.reviewComment || '';
   scoreVisible.value = true;
+}
+
+function openSubmissionDetail(row: GroupSubmissionSummary) {
+  submissionTarget.value = row;
+  submissionVisible.value = true;
 }
 
 async function submitReview() {
@@ -464,6 +527,7 @@ async function returnSubmission(row: GroupSubmissionSummary) {
     ? await returnAdminSubmission(currentTask.value.id, row.userId)
     : await returnLeaderSubmission(currentTask.value.id, row.userId);
   ElMessage.success('已打回提交');
+  await openReviews(currentTask.value);
 }
 
 function downloadSubmissions() {
@@ -477,6 +541,42 @@ function downloadSubmissions() {
 
 function getGroupName(groupId?: number | null) {
   return groups.value.find((group) => group.id === groupId)?.name || (groupId ? `责任包 #${groupId}` : '-');
+}
+
+function hasSubmissionDetail(row: GroupSubmissionSummary) {
+  return Boolean(row.contentMarkdown || row.attachment);
+}
+
+function getSubmissionStatusLabel(status?: GroupSubmissionSummary['status']) {
+  return status ? submissionStatusLabels[status] || status : '-';
+}
+
+function getSubmissionStatusType(status?: GroupSubmissionSummary['status']) {
+  if (status === 'REVIEWED') return 'success';
+  if (status === 'SUBMITTED') return 'warning';
+  return 'info';
+}
+
+function downloadSubmissionAttachment(row: GroupSubmissionSummary) {
+  if (!currentTask.value || !row.attachment) return;
+  const url =
+    props.mode === 'admin'
+      ? `/api/v1/admin/tasks/${currentTask.value.id}/submissions/${row.userId}/attachment`
+      : `/api/v1/leader/tasks/${currentTask.value.id}/submissions/${row.userId}/attachment`;
+  window.open(url, '_blank');
+}
+
+function getAttachment(item: ManagedItem): TaskAttachment | null {
+  return 'attachment' in item ? item.attachment || null : null;
+}
+
+function hasAttachment(item: ManagedItem) {
+  return Boolean(
+    getAttachment(item) ||
+      ('attachmentFileId' in item && item.attachmentFileId) ||
+      ('attachmentUrl' in item && item.attachmentUrl) ||
+      ('hasAttachment' in item && item.hasAttachment)
+  );
 }
 
 function formatDateTime(value?: string | null) {
@@ -534,5 +634,30 @@ function formatDateTime(value?: string | null) {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.submission-section {
+  margin-top: 18px;
+}
+
+.submission-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.submission-content {
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  background: var(--el-fill-color-blank);
+}
+
+.review-comment {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  color: var(--app-text);
 }
 </style>
