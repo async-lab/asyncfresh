@@ -29,6 +29,14 @@ export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
 export type DisplaySubmissionStatus = SubmissionStatus | 'EXPIRED';
 export type FilePurpose = 'TASK_ATTACHMENT' | 'TASK_SUBMISSION_ATTACHMENT' | 'MATERIAL_ATTACHMENT';
 
+export interface TaskAttachment {
+  id?: number;
+  fileId?: number;
+  originalFileName: string;
+  contentType?: string | null;
+  sizeBytes?: number | null;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -120,6 +128,7 @@ export interface Material {
   summary?: string;
   content?: string;
   contentMarkdown?: string;
+  attachment?: TaskAttachment | null;
   attachmentFileId?: number | null;
   attachmentFileName?: string | null;
   attachmentUrl?: string | null;
@@ -138,6 +147,8 @@ export interface Task {
   content?: string;
   contentMarkdown?: string;
   scope?: Scope;
+  groupName?: string;
+  attachment?: TaskAttachment | null;
   attachmentFileId?: number | null;
   attachmentFileName?: string | null;
   attachmentUrl?: string | null;
@@ -159,6 +170,7 @@ export interface TaskSubmission {
   submittedAt?: string | null;
   content?: string;
   contentMarkdown?: string | null;
+  attachment?: TaskAttachment | null;
   attachmentFileId?: number | null;
   attachmentFileName?: string | null;
   attachmentUrl?: string | null;
@@ -204,6 +216,7 @@ export interface GroupMember {
 
 export interface UploadedFile {
   id: number;
+  fileId?: number;
   fileName: string;
   originalFileName?: string;
   contentType?: string;
@@ -236,9 +249,15 @@ export interface NotificationItem {
   id: number;
   title: string;
   content: string;
-  channel: 'SYSTEM' | 'EMAIL';
+  type?: string;
+  relatedType?: string | null;
+  relatedId?: number | null;
+  senderUserId?: number | null;
+  readAt?: string | null;
+  updatedAt?: string;
+  channel?: 'SYSTEM' | 'EMAIL';
   targetRole?: Role;
-  status: 'DRAFT' | 'SENT';
+  status?: 'DRAFT' | 'SENT';
   createdAt: string;
   sentAt?: string | null;
 }

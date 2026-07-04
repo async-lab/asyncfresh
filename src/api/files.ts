@@ -25,5 +25,15 @@ export async function uploadFile(file: File, purpose: FilePurpose | BizType): Pr
     }
   });
 
-  return response.data.data;
+  const uploadedFile = response.data.data;
+  const id = uploadedFile.id ?? uploadedFile.fileId;
+  if (id == null) {
+    throw new Error('Upload response missing file id');
+  }
+
+  return {
+    ...uploadedFile,
+    id,
+    fileName: uploadedFile.fileName ?? uploadedFile.originalFileName ?? String(id)
+  };
 }
