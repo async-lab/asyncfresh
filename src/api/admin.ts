@@ -1,15 +1,38 @@
 import { deleteData, getData, patchData, postData, putData } from './http';
 import type {
   AdminDashboardSummary,
+  AuditLog,
   Application,
   Direction,
   Grade,
   Group,
+  NotificationItem,
   PageResult,
   PeriodType,
   Role,
   User
 } from '@/types/api';
+export {
+  createAdminAnnouncement,
+  deleteAdminAnnouncement,
+  getAnnouncements,
+  updateAdminAnnouncement
+} from './announcements';
+export {
+  createAdminMaterial,
+  deleteAdminMaterial,
+  getMaterials,
+  updateAdminMaterial
+} from './materials';
+export {
+  createAdminTask,
+  deleteAdminTask,
+  getAdminTaskSubmissions,
+  getTasks,
+  returnAdminSubmission,
+  reviewAdminSubmission,
+  updateAdminTask
+} from './tasks';
 
 export interface PeriodConfig {
   id?: number;
@@ -152,4 +175,46 @@ export function getGroupsExportUrl() {
 
 export function getGroupTasksExportUrl(groupId: number | string) {
   return `/api/v1/admin/exports/groups/${groupId}/tasks`;
+}
+
+export function getAdminTaskBatchDownloadUrl(groupId: number | string, taskId?: number | string) {
+  const suffix = taskId ? `?taskId=${taskId}` : '';
+  return `/api/v1/admin/groups/${groupId}/tasks/submissions/download${suffix}`;
+}
+
+export function getAdminAuditLogs(params?: {
+  module?: string;
+  keyword?: string;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<AuditLog>>('/admin/audit-logs', params);
+}
+
+export interface NotificationPayload {
+  title: string;
+  content: string;
+  channel: NotificationItem['channel'];
+  targetRole?: Role;
+}
+
+export function getAdminNotifications(params?: {
+  status?: NotificationItem['status'];
+  keyword?: string;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<NotificationItem>>('/admin/notifications', params);
+}
+
+export function createAdminNotification(payload: NotificationPayload) {
+  return postData<NotificationItem, NotificationPayload>('/admin/notifications', payload);
+}
+
+export function sendAdminNotification(id: number | string) {
+  return postData<NotificationItem>(`/admin/notifications/${id}/send`);
+}
+
+export function deleteAdminNotification(id: number | string) {
+  return deleteData<null>(`/admin/notifications/${id}`);
 }

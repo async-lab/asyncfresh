@@ -2,6 +2,7 @@ import { deleteData, getData, postData, putData } from './http';
 import type { Material, PageQuery } from '@/types/api';
 
 export interface MaterialQuery extends PageQuery {
+  groupId?: number;
   directionLevel1Id?: number;
   directionLevel2Id?: number;
   keyword?: string;

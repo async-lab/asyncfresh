@@ -32,6 +32,20 @@ const AdminApplicationsView = () => import('@/views/admin/AdminApplicationsView.
 const AdminGroupsView = () => import('@/views/admin/AdminGroupsView.vue');
 const AdminLeadersView = () => import('@/views/admin/AdminLeadersView.vue');
 const PlaceholderView = () => import('@/views/PlaceholderView.vue');
+const LeaderDashboardView = () => import('@/views/leader/dashboard/index.vue');
+const LeaderGroupsView = () => import('@/views/leader/groups/index.vue');
+const LeaderGroupMembersView = () => import('@/views/leader/groups/MembersView.vue');
+const LeaderApplicationsView = () => import('@/views/leader/applications/index.vue');
+const LeaderAnnouncementView = () => import('@/views/leader/announcements/index.vue');
+const LeaderMaterialsView = () => import('@/views/leader/materials/index.vue');
+const LeaderTasksView = () => import('@/views/leader/tasks/index.vue');
+const LeaderExportsView = () => import('@/views/leader/exports/index.vue');
+const AdminAnnouncementsView = () => import('@/views/admin/announcements/index.vue');
+const AdminMaterialsView = () => import('@/views/admin/materials/index.vue');
+const AdminTasksView = () => import('@/views/admin/tasks/index.vue');
+const AdminExportsView = () => import('@/views/admin/exports/index.vue');
+const AdminAuditView = () => import('@/views/admin/audit/index.vue');
+const AdminNotificationsView = () => import('@/views/admin/notifications/index.vue');
 const ForbiddenView = () => import('@/views/error/ForbiddenView.vue');
 const NotFoundView = () => import('@/views/error/NotFoundView.vue');
 
@@ -226,13 +240,34 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/leader',
     component: UserLayout,
-    redirect: '/leader/announcements',
     meta: { requiresAuth: true, roles: ['LEADER'], layout: 'user' },
     children: [
       {
+        path: '',
+        name: 'leader-dashboard',
+        component: LeaderDashboardView,
+        meta: {
+          title: '负责人工作台',
+          description: '汇总责任包、组员、任务和待处理申请。',
+          requiresAuth: true,
+          roles: ['LEADER']
+        }
+      },
+      {
+        path: 'groups',
+        name: 'leader-groups',
+        component: LeaderGroupsView,
+        meta: {
+          title: '责任包',
+          description: '查看负责人名下责任包信息。',
+          requiresAuth: true,
+          roles: ['LEADER']
+        }
+      },
+      {
         path: 'announcements',
         name: 'leader-announcements',
-        component: PlaceholderView,
+        component: LeaderAnnouncementView,
         meta: {
           title: '组内公告管理',
           description: '负责人发布、编辑和删除自己负责组的公告。',
@@ -241,9 +276,32 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
+        path: 'applications',
+        name: 'leader-applications',
+        component: LeaderApplicationsView,
+        meta: {
+          title: '未分组申请处理',
+          description: '处理待分组申请并加入责任包。',
+          requiresAuth: true,
+          roles: ['LEADER'],
+          periodHint: ['SELECTION']
+        }
+      },
+      {
+        path: 'materials',
+        name: 'leader-materials',
+        component: LeaderMaterialsView,
+        meta: {
+          title: '组内资料管理',
+          description: '维护责任包内资料和附件。',
+          requiresAuth: true,
+          roles: ['LEADER']
+        }
+      },
+      {
         path: 'tasks',
         name: 'leader-tasks',
-        component: PlaceholderView,
+        component: LeaderTasksView,
         meta: {
           title: '组内任务管理',
           description: '负责人发布、编辑和删除自己负责组的任务。',
@@ -255,7 +313,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tasks/:id/reviews',
         name: 'leader-task-reviews',
-        component: PlaceholderView,
+        component: LeaderTasksView,
         meta: {
           title: '任务批阅',
           description: '查看组内提交情况并进行评分和评语填写。',
@@ -266,10 +324,21 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'groups/:id/members',
         name: 'leader-group-members',
-        component: PlaceholderView,
+        component: LeaderGroupMembersView,
         meta: {
           title: '组员信息',
           description: '查看负责组成员、报名申请和方向信息。',
+          requiresAuth: true,
+          roles: ['LEADER']
+        }
+      },
+      {
+        path: 'exports',
+        name: 'leader-exports',
+        component: LeaderExportsView,
+        meta: {
+          title: '负责人导出',
+          description: '导出责任包信息、任务成绩并批量下载提交。',
           requiresAuth: true,
           roles: ['LEADER']
         }
@@ -381,7 +450,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'announcements',
         name: 'admin-announcements',
-        component: PlaceholderView,
+        component: AdminAnnouncementsView,
         meta: {
           title: '公告管理',
           description: '管理全局公告和全部组内公告。',
@@ -392,7 +461,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'materials',
         name: 'admin-materials',
-        component: PlaceholderView,
+        component: AdminMaterialsView,
         meta: {
           title: '资料管理',
           description: '发布、编辑、删除学习资料和附件。',
@@ -403,7 +472,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tasks',
         name: 'admin-tasks',
-        component: PlaceholderView,
+        component: AdminTasksView,
         meta: {
           title: '任务管理',
           description: '按分组管理任务、提交、批阅和打回。',
@@ -415,10 +484,43 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'export',
         name: 'admin-export',
-        component: PlaceholderView,
+        component: AdminExportsView,
         meta: {
           title: '成绩总览与导出',
           description: '导出报名信息、分组结果和任务成绩。',
+          requiresAuth: true,
+          roles: ['ADMIN']
+        }
+      },
+      {
+        path: 'task-downloads',
+        name: 'admin-task-downloads',
+        component: AdminExportsView,
+        meta: {
+          title: '任务批下载',
+          description: '按责任包和任务批量下载提交附件。',
+          requiresAuth: true,
+          roles: ['ADMIN']
+        }
+      },
+      {
+        path: 'audit-logs',
+        name: 'admin-audit-logs',
+        component: AdminAuditView,
+        meta: {
+          title: '审计日志',
+          description: '查看关键业务操作审计记录。',
+          requiresAuth: true,
+          roles: ['ADMIN']
+        }
+      },
+      {
+        path: 'notifications',
+        name: 'admin-notifications',
+        component: AdminNotificationsView,
+        meta: {
+          title: '通知中心',
+          description: '创建和发送系统或邮件通知。',
           requiresAuth: true,
           roles: ['ADMIN']
         }

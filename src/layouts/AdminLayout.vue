@@ -43,9 +43,21 @@
           <el-icon><List /></el-icon>
           <span>任务管理</span>
         </el-menu-item>
+        <el-menu-item index="/admin/task-downloads">
+          <el-icon><FolderOpened /></el-icon>
+          <span>任务批下载</span>
+        </el-menu-item>
         <el-menu-item index="/admin/export">
           <el-icon><Download /></el-icon>
-          <span>成绩与导出</span>
+          <span>Excel导出</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/audit-logs">
+          <el-icon><Tickets /></el-icon>
+          <span>审计日志</span>
+        </el-menu-item>
+        <el-menu-item index="/admin/notifications">
+          <el-icon><Message /></el-icon>
+          <span>通知中心</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -71,11 +83,14 @@ import {
   DocumentChecked,
   Download,
   Files,
+  FolderOpened,
   Grid,
   Guide,
   List,
   Medal,
+  Message,
   Notification,
+  Tickets,
   UserFilled
 } from '@element-plus/icons-vue';
 import { computed } from 'vue';

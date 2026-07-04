@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <PageHeader title="组内公告管理" description="负责人发布、编辑和删除自己负责组的公告。" />
+    <PageHeader title="公告" description="查看全局公告和本人所在分组可见公告。" />
 
     <section class="page-section">
       <div class="page-toolbar list-toolbar">
@@ -125,10 +125,6 @@ function formatDateTime(value?: string) {
 
 <style scoped>
 .list-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
@@ -137,7 +133,6 @@ function formatDateTime(value?: string) {
 }
 
 .pager {
-  display: flex;
   justify-content: flex-end;
   margin-top: 16px;
 }

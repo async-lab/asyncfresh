@@ -220,3 +220,25 @@ export interface AdminDashboardSummary {
   leaderCount: number;
   taskCompletionRate: number;
 }
+
+export interface AuditLog {
+  id: number;
+  operatorName: string;
+  module: string;
+  action: string;
+  target?: string;
+  detail?: string;
+  ip?: string;
+  createdAt: string;
+}
+
+export interface NotificationItem {
+  id: number;
+  title: string;
+  content: string;
+  channel: 'SYSTEM' | 'EMAIL';
+  targetRole?: Role;
+  status: 'DRAFT' | 'SENT';
+  createdAt: string;
+  sentAt?: string | null;
+}
