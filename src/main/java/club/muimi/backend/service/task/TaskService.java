@@ -144,7 +144,7 @@ public class TaskService {
                 group.getName(),
                 task.getTitle(),
                 task.getContentMarkdown(),
-                toAttachmentVo(storedFileMap.get(task.getAttachmentFileId())),
+                toAttachmentVo(findStoredFile(storedFileMap, task.getAttachmentFileId())),
                 task.getMaxScore(),
                 toOffsetDateTime(task.getDeadlineAt()),
                 task.getPublisherUserId(),
@@ -476,7 +476,7 @@ public class TaskService {
                             application == null ? null : application.getRealName(),
                             submission == null ? TaskSubmissionStatus.PENDING : submission.getStatus(),
                             submission == null ? null : submission.getContentMarkdown(),
-                            submission == null ? null : toAttachmentVo(storedFileMap.get(submission.getAttachmentFileId())),
+                            submission == null ? null : toAttachmentVo(findStoredFile(storedFileMap, submission.getAttachmentFileId())),
                             submission == null ? null : toOffsetDateTime(submission.getSubmittedAt()),
                             submission == null ? null : submission.getReviewerUserId(),
                             submission == null || submission.getReviewerUserId() == null
@@ -657,7 +657,7 @@ public class TaskService {
                 group.getName(),
                 task.getTitle(),
                 task.getContentMarkdown(),
-                toAttachmentVo(storedFileMap.get(task.getAttachmentFileId())),
+                toAttachmentVo(findStoredFile(storedFileMap, task.getAttachmentFileId())),
                 task.getMaxScore(),
                 toOffsetDateTime(task.getDeadlineAt()),
                 task.getPublisherUserId(),
@@ -684,7 +684,7 @@ public class TaskService {
                 userId,
                 submission.getStatus(),
                 submission.getContentMarkdown(),
-                toAttachmentVo(storedFileMap.get(submission.getAttachmentFileId())),
+                toAttachmentVo(findStoredFile(storedFileMap, submission.getAttachmentFileId())),
                 toOffsetDateTime(submission.getSubmittedAt()),
                 submission.getReviewerUserId(),
                 reviewer == null ? null : reviewer.getUsername(),
@@ -714,6 +714,13 @@ public class TaskService {
         }
         return storedFileRepository.findAllByIdIn(ids).stream()
                 .collect(Collectors.toMap(StoredFile::getId, Function.identity()));
+    }
+
+    private StoredFile findStoredFile(Map<Long, StoredFile> storedFileMap, Long fileId) {
+        if (fileId == null || storedFileMap == null || storedFileMap.isEmpty()) {
+            return null;
+        }
+        return storedFileMap.get(fileId);
     }
 
     private TaskAttachmentVo toAttachmentVo(StoredFile storedFile) {

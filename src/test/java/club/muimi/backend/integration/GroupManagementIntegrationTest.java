@@ -11,12 +11,14 @@ import club.muimi.backend.entity.Direction;
 import club.muimi.backend.entity.GroupMember;
 import club.muimi.backend.entity.RecruitmentGroup;
 import club.muimi.backend.entity.RecruitmentPeriod;
+import club.muimi.backend.entity.RecruitmentTask;
 import club.muimi.backend.entity.User;
 import club.muimi.backend.repository.ApplicationRepository;
 import club.muimi.backend.repository.DirectionRepository;
 import club.muimi.backend.repository.GroupMemberRepository;
 import club.muimi.backend.repository.RecruitmentGroupRepository;
 import club.muimi.backend.repository.RecruitmentPeriodRepository;
+import club.muimi.backend.repository.RecruitmentTaskRepository;
 import club.muimi.backend.repository.UserRepository;
 import club.muimi.backend.service.auth.AuthService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,6 +39,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -91,6 +94,8 @@ class GroupManagementIntegrationTest {
     @Autowired
     private RecruitmentPeriodRepository recruitmentPeriodRepository;
     @Autowired
+    private RecruitmentTaskRepository recruitmentTaskRepository;
+    @Autowired
     private WebApplicationContext webApplicationContext;
     @Autowired
     private ObjectMapper objectMapper;
@@ -101,6 +106,7 @@ class GroupManagementIntegrationTest {
     private final List<Long> createdApplicationIds = new ArrayList<>();
     private final List<Long> createdGroupIds = new ArrayList<>();
     private final List<Long> createdGroupMemberIds = new ArrayList<>();
+    private final List<Long> createdTaskIds = new ArrayList<>();
     private RecruitmentPeriod originalSelectionPeriodSnapshot;
     private Long managedSelectionPeriodId;
     private boolean createdSelectionPeriodForTest;
@@ -118,6 +124,10 @@ class GroupManagementIntegrationTest {
             groupMemberRepository.findById(groupMemberId).ifPresent(groupMemberRepository::delete);
         }
         createdGroupMemberIds.clear();
+        for (Long taskId : createdTaskIds) {
+            recruitmentTaskRepository.findById(taskId).ifPresent(recruitmentTaskRepository::delete);
+        }
+        createdTaskIds.clear();
         for (Long applicationId : createdApplicationIds) {
             applicationRepository.findById(applicationId).ifPresent(applicationRepository::delete);
         }
@@ -167,6 +177,40 @@ class GroupManagementIntegrationTest {
         createdGroupMemberIds.add(groupMember.getId());
         assertThat(applicationRepository.findById(application.getId()).orElseThrow().getStatus())
                 .isEqualTo(ApplicationStatus.GROUPED);
+    }
+
+    @Test
+    void adminShouldCreateMarkdownOnlyTaskWithoutAttachment() throws Exception {
+        openSelectionPeriod();
+        String suffix = String.valueOf(System.nanoTime());
+        User admin = createUser("admin_task_" + suffix, "AdminPass123", Role.ADMIN);
+        Direction root = createDirection(null, "任务方向-" + suffix, 1, true);
+        Direction child = createDirection(root.getId(), "任务子方向-" + suffix, 2, true);
+        RecruitmentGroup group = createGroup("任务组-" + suffix, root.getId(), child.getId(), Grade.YEAR_1, 2026, 10, null);
+        AuthCookies adminCookies = loginAs(admin.getEmail(), "AdminPass123");
+
+        long taskId = extractId(mockMvc.perform(post("/api/v1/admin/groups/{groupId}/tasks", group.getId())
+                        .cookie(adminCookies.authCookie(), adminCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", adminCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "title": "Markdown任务-%s",
+                                  "contentMarkdown": "# 任务说明\\n\\n只提交 markdown。",
+                                  "removeAttachment": false,
+                                  "maxScore": 100,
+                                  "deadlineAt": "%s"
+                                }
+                                """.formatted(suffix, OffsetDateTime.now().plusDays(3))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("Markdown任务-" + suffix))
+                .andExpect(jsonPath("$.data.contentMarkdown").value("# 任务说明\n\n只提交 markdown。"))
+                .andReturn());
+        createdTaskIds.add(taskId);
+
+        RecruitmentTask task = recruitmentTaskRepository.findById(taskId).orElseThrow();
+        assertThat(task.getAttachmentFileId()).isNull();
+        assertThat(task.getContentMarkdown()).isEqualTo("# 任务说明\n\n只提交 markdown。");
     }
 
     @Test
@@ -508,6 +552,10 @@ class GroupManagementIntegrationTest {
     }
 
     private long extractGroupId(org.springframework.test.web.servlet.MvcResult result) throws IOException {
+        return extractId(result);
+    }
+
+    private long extractId(org.springframework.test.web.servlet.MvcResult result) throws IOException {
         JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
         return root.path("data").path("id").asLong();
     }
