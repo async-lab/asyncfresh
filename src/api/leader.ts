@@ -67,6 +67,6 @@ export function addLeaderApplicationToGroup(groupId: number | string, applicatio
   return postData<null>(`/leader/groups/${groupId}/applications/${applicationId}`);
 }
 
-export function rejectLeaderApplication(applicationId: number | string, reason?: string) {
-  return postData<null, { reason?: string }>(`/leader/applications/${applicationId}/reject`, { reason });
+export function rejectLeaderApplication(applicationId: number | string, remark?: string) {
+  return postData<null, { remark?: string }>(`/leader/applications/${applicationId}/reject`, { remark });
 }

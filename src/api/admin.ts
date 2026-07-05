@@ -180,8 +180,8 @@ export function unassignApplicationFromGroup(groupId: number | string, applicati
   });
 }
 
-export function rejectAdminApplication(applicationId: number | string, reason?: string) {
-  return postData<null, { reason?: string }>(`/admin/applications/${applicationId}/reject`, { reason });
+export function rejectAdminApplication(applicationId: number | string, remark?: string) {
+  return postData<null, { remark?: string }>(`/admin/applications/${applicationId}/reject`, { remark });
 }
 
 export function assignLeader(groupId: number | string, userId: number) {
