@@ -24,17 +24,23 @@ const metaStore = useMetaStore();
   place-items: center;
   padding: 24px;
   background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(22, 131, 95, 0.1)),
+    radial-gradient(circle at 18% 18%, rgba(198, 179, 141, 0.12), transparent 26%),
+    radial-gradient(circle at 84% 18%, rgba(165, 155, 212, 0.1), transparent 24%),
+    linear-gradient(180deg, #f6f1e8, #f2ebe1 52%, #ebe4d8),
     var(--app-bg);
 }
 
 .auth-panel {
-  width: min(440px, 100%);
-  padding: 28px;
-  border: 1px solid var(--app-border);
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 20px 50px rgba(31, 41, 55, 0.08);
+  width: min(460px, 100%);
+  padding: 30px;
+  border: 1px solid rgba(126, 114, 97, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 240, 230, 0.86)),
+    var(--app-surface-strong);
+  box-shadow:
+    14px 16px 32px rgba(145, 128, 106, 0.12),
+    -10px -10px 22px rgba(255, 255, 255, 0.86);
 }
 
 .brand {
@@ -46,5 +52,6 @@ const metaStore = useMetaStore();
 
 .brand strong {
   font-size: 20px;
+  color: var(--app-text);
 }
 </style>

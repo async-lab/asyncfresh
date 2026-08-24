@@ -244,6 +244,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
+        alias: 'dashboard',
         name: 'leader-dashboard',
         component: LeaderDashboardView,
         meta: {
@@ -482,23 +483,13 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
-        path: 'export',
-        name: 'admin-export',
+        path: 'exports',
+        alias: ['export', 'task-downloads'],
+        name: 'admin-exports',
         component: AdminExportsView,
         meta: {
           title: '成绩总览与导出',
           description: '导出报名信息、分组结果和任务成绩。',
-          requiresAuth: true,
-          roles: ['ADMIN']
-        }
-      },
-      {
-        path: 'task-downloads',
-        name: 'admin-task-downloads',
-        component: AdminExportsView,
-        meta: {
-          title: '任务批下载',
-          description: '按责任包和任务批量下载提交附件。',
           requiresAuth: true,
           roles: ['ADMIN']
         }
