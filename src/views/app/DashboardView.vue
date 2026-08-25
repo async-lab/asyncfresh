@@ -12,7 +12,7 @@
       当前不是报名期，报名新增和编辑入口已关闭。
     </el-alert>
 
-    <div class="metric-grid" v-loading="loading">
+    <section class="summary-strip" v-loading="loading">
       <div class="metric-card">
         <span class="muted">当前时期</span>
         <strong>{{ currentPeriodLabel }}</strong>
@@ -33,38 +33,43 @@
         <strong>{{ groupCount }}</strong>
         <small>{{ groupText }}</small>
       </div>
-    </div>
+    </section>
 
-    <div class="page-section">
-      <div class="page-toolbar">
-        <h2>报名概览</h2>
-        <el-button text type="primary" @click="$router.push('/app/applications')">查看全部</el-button>
-      </div>
-
-      <div v-if="recentApplications.length" class="application-list">
-        <div v-for="application in recentApplications" :key="application.id" class="application-item">
+    <div class="content-grid">
+      <section class="page-section main-panel">
+        <div class="page-toolbar">
           <div>
-            <strong>{{ getDirectionLabel(application) }}</strong>
-            <span class="muted">更新于 {{ formatDateTime(application.updatedAt) }}</span>
+            <h2>报名概览</h2>
+            <p class="muted">把最近更新的申请放在更靠前的位置，便于快速回到正在推进的事项。</p>
           </div>
-          <StatusTag :value="application.status" />
+          <el-button text type="primary" @click="$router.push('/app/applications')">查看全部</el-button>
         </div>
-      </div>
-      <el-empty v-else description="暂无报名申请" :image-size="80">
-        <el-button type="primary" :disabled="!metaStore.isRegistration" @click="$router.push('/app/applications')">
-          新增申请
-        </el-button>
-      </el-empty>
-    </div>
 
-    <div class="page-section">
-      <h2>快捷入口</h2>
-      <el-space wrap>
-        <el-button type="primary" @click="$router.push('/app/applications')">我的报名</el-button>
-        <el-button @click="$router.push('/app/tasks')">查看任务</el-button>
-        <el-button @click="$router.push('/app/announcements')">公告通知</el-button>
-        <el-button @click="$router.push('/app/materials')">学习资料</el-button>
-      </el-space>
+        <div v-if="recentApplications.length" class="application-list">
+          <div v-for="application in recentApplications" :key="application.id" class="application-item">
+            <div>
+              <strong>{{ getDirectionLabel(application) }}</strong>
+              <span class="muted">更新于 {{ formatDateTime(application.updatedAt) }}</span>
+            </div>
+            <StatusTag :value="application.status" />
+          </div>
+        </div>
+        <el-empty v-else description="暂无报名申请" :image-size="80">
+          <el-button type="primary" :disabled="!metaStore.isRegistration" @click="$router.push('/app/applications')">
+            新增申请
+          </el-button>
+        </el-empty>
+      </section>
+
+      <aside class="page-section rail-panel">
+        <h2>快捷入口</h2>
+        <el-space direction="vertical" alignment="stretch" class="action-stack">
+          <el-button type="primary" @click="$router.push('/app/applications')">我的报名</el-button>
+          <el-button @click="$router.push('/app/tasks')">查看任务</el-button>
+          <el-button @click="$router.push('/app/announcements')">公告通知</el-button>
+          <el-button @click="$router.push('/app/materials')">学习资料</el-button>
+        </el-space>
+      </aside>
     </div>
   </div>
 </template>
@@ -174,6 +179,12 @@ h2 {
   font-size: 18px;
 }
 
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .metric-card {
   min-height: 128px;
 }
@@ -214,10 +225,52 @@ h2 {
   font-size: 13px;
 }
 
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.main-panel {
+  min-width: 0;
+}
+
+.main-panel p {
+  margin: 6px 0 0;
+}
+
+.rail-panel {
+  position: sticky;
+  top: 18px;
+}
+
+.action-stack {
+  width: 100%;
+}
+
 @media (max-width: 640px) {
   .application-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (max-width: 1280px) {
+  .summary-strip,
+  .content-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rail-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-strip,
+  .content-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

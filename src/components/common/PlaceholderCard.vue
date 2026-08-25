@@ -25,9 +25,14 @@ defineProps<{
   gap: 12px;
   align-items: flex-start;
   padding: 20px;
-  border: 1px dashed var(--app-border);
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 238, 229, 0.86)),
+    var(--app-surface-strong);
+  box-shadow:
+    10px 10px 22px rgba(145, 128, 106, 0.08),
+    -8px -8px 18px rgba(255, 255, 255, 0.82);
 }
 
 h2 {

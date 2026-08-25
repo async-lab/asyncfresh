@@ -108,8 +108,12 @@ function formatDateTime(value?: string) {
 .summary {
   margin: 0 0 18px;
   padding: 12px 14px;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid rgba(126, 114, 97, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 240, 230, 0.82));
+  box-shadow:
+    8px 8px 18px rgba(145, 128, 106, 0.08),
+    -6px -6px 14px rgba(255, 255, 255, 0.74);
   color: var(--app-muted);
   line-height: 1.7;
 }

@@ -9,7 +9,7 @@
           <el-select v-if="kind !== 'announcements'" v-model="query.groupId" class="group-select" placeholder="选择责任包" clearable>
             <el-option v-for="group in groups" :key="group.id" :label="group.name" :value="group.id" />
           </el-select>
-          <el-select v-if="kind === 'announcements' && mode === 'admin'" v-model="query.scope" class="scope-select">
+          <el-select v-if="kind === 'announcements' && mode === 'admin'" v-model="query.scope" class="scope-select" placeholder="全部范围">
             <el-option label="全部范围" value="" />
             <el-option label="全局" value="GLOBAL" />
             <el-option label="组内" value="GROUP" />

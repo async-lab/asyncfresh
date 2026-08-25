@@ -333,9 +333,14 @@ h2 {
 .submission-card,
 .score-card {
   padding: 14px;
-  border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border: 1px solid rgba(126, 114, 97, 0.1);
+  border-radius: 16px;
   margin-bottom: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(246, 240, 230, 0.84));
+  box-shadow:
+    10px 10px 22px rgba(145, 128, 106, 0.08),
+    -8px -8px 18px rgba(255, 255, 255, 0.78);
 }
 
 .progress-card small,
@@ -357,6 +362,7 @@ h2 {
   display: block;
   margin-top: 8px;
   font-size: 22px;
+  color: var(--app-text);
 }
 
 .full {
