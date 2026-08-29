@@ -140,6 +140,10 @@ a {
   justify-content: space-between;
 }
 
+.page-toolbar + .page-table {
+  margin-top: 20px;
+}
+
 .muted {
   color: var(--app-muted);
 }

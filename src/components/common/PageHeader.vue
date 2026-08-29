@@ -1,10 +1,12 @@
 <template>
   <div class="page-header">
-    <div>
+    <div class="page-header__content">
       <h1>{{ title }}</h1>
       <p v-if="description">{{ description }}</p>
     </div>
-    <slot name="actions" />
+    <div v-if="$slots.actions" class="page-header__actions">
+      <slot name="actions" />
+    </div>
   </div>
 </template>
 
@@ -21,6 +23,22 @@ defineProps<{
   gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.page-header__content {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.page-header__actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 h1 {
@@ -34,10 +52,16 @@ p {
   color: var(--app-muted);
 }
 
+@media (max-width: 960px) {
+  .page-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 640px) {
   .page-header {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 12px;
   }
 
   h1 {

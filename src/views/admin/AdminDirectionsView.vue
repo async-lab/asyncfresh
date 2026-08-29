@@ -15,27 +15,29 @@
         :tree-props="{ children: 'children' }"
         empty-text="暂无方向"
       >
-        <el-table-column prop="name" label="方向名称" min-width="180" />
-        <el-table-column label="层级" width="90">
+        <el-table-column prop="name" label="方向名称" min-width="300" />
+        <el-table-column label="层级" min-width="140">
           <template #default="{ row }">{{ row.level === 1 ? '一级' : '二级' }}</template>
         </el-table-column>
-        <el-table-column prop="sortOrder" label="排序" width="90" />
-        <el-table-column label="状态" width="100">
+        <el-table-column prop="sortOrder" label="排序" min-width="130" />
+        <el-table-column label="状态" min-width="150">
           <template #default="{ row }">
             <el-tag :type="row.enabled === false ? 'info' : 'success'" effect="light">
               {{ row.enabled === false ? '停用' : '启用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" min-width="380" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button v-if="row.level === 1" text type="primary" :icon="Plus" @click="openCreateDialog(row.id)">
-              新增子方向
-            </el-button>
-            <el-button text :icon="EditPen" @click="openEditDialog(row)">编辑</el-button>
-            <ConfirmAction title="确认删除该方向？" @confirm="handleDelete(row)">
-              <el-button text type="danger" :icon="Delete">删除</el-button>
-            </ConfirmAction>
+            <div class="direction-actions">
+              <el-button v-if="row.level === 1" text type="primary" :icon="Plus" @click="openCreateDialog(row.id)">
+                新增子方向
+              </el-button>
+              <el-button text :icon="EditPen" @click="openEditDialog(row)">编辑</el-button>
+              <ConfirmAction title="确认删除该方向？" @confirm="handleDelete(row)">
+                <el-button text type="danger" :icon="Delete">删除</el-button>
+              </ConfirmAction>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -165,5 +167,19 @@ function createEmptyForm(parentId?: number): DirectionPayload {
 <style scoped>
 .full {
   width: 100%;
+}
+
+.direction-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.direction-actions :deep(.el-button) {
+  margin-left: 0;
 }
 </style>

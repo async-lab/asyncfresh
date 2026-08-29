@@ -594,28 +594,42 @@ function formatDateTime(value?: string | null) {
 </script>
 
 <style scoped>
-.content-toolbar,
-.toolbar-left {
+.content-toolbar {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   flex-wrap: wrap;
 }
 
 .toolbar-left {
-  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex: 1 1 480px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.content-toolbar > :deep(.el-button) {
+  flex-shrink: 0;
 }
 
 .keyword-input {
   width: 260px;
+  flex: 1 1 260px;
+  min-width: 220px;
 }
 
 .group-select {
   width: 220px;
+  flex: 1 1 220px;
+  min-width: 180px;
 }
 
 .scope-select {
   width: 130px;
+  flex: 0 1 130px;
 }
 
 .full {
@@ -659,5 +673,28 @@ function formatDateTime(value?: string | null) {
   white-space: pre-wrap;
   line-height: 1.7;
   color: var(--app-text);
+}
+
+@media (max-width: 960px) {
+  .content-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left {
+    width: 100%;
+  }
+
+  .content-toolbar > :deep(.el-button) {
+    width: 100%;
+  }
+
+  .keyword-input,
+  .group-select,
+  .scope-select {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+  }
 }
 </style>
