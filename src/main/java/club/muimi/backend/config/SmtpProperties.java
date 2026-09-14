@@ -14,6 +14,7 @@ public class SmtpProperties {
     private Integer port;
     private String username;
     private String password;
+    private String from;
 
     @PostConstruct
     public void validate() {
@@ -21,6 +22,7 @@ public class SmtpProperties {
         requireConfigured(host, "MAIL_SMTP_HOST");
         requireConfigured(username, "MAIL_ACCOUNT");
         requireConfigured(password, "MAIL_AUTH_CODE");
+        requireConfigured(from, "MAIL_FROM");
     }
 
     private void requireConfigured(String value, String envName) {

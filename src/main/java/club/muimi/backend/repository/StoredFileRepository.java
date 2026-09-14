@@ -12,6 +12,8 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, Long> {
 
     Optional<StoredFile> findByIdAndUploaderUserId(Long id, Long uploaderUserId);
 
+    boolean existsByUploaderUserId(Long uploaderUserId);
+
     List<StoredFile> findAllByIdIn(Collection<Long> ids);
 
     List<StoredFile> findAllByBindingTypeIsNullAndBindingIdIsNullAndCreatedAtBefore(LocalDateTime createdAt);

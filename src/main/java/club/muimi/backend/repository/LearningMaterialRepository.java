@@ -10,5 +10,7 @@ public interface LearningMaterialRepository extends JpaRepository<LearningMateri
 
     List<LearningMaterial> findAllByGroupIdOrderByCreatedAtDesc(Long groupId);
 
+    boolean existsByPublisherUserId(Long publisherUserId);
+
     List<LearningMaterial> findAllByGroupIdInOrderByCreatedAtDesc(Collection<Long> groupIds);
 }

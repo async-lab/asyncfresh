@@ -10,8 +10,10 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class SmtpMailService implements MailService {
 
@@ -30,12 +32,19 @@ public class SmtpMailService implements MailService {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(smtpProperties.getUsername());
+            helper.setFrom(smtpProperties.getFrom());
             helper.setTo(email);
             helper.setSubject(buildSubject(scene));
             helper.setText(buildBody(code, scene), true);
             javaMailSender.send(mimeMessage);
         } catch (MessagingException | MailException exception) {
+            log.error("SMTP email send failed: host={}, port={}, account={}, from={}, recipient={}",
+                    smtpProperties.getHost(),
+                    smtpProperties.getPort(),
+                    smtpProperties.getUsername(),
+                    smtpProperties.getFrom(),
+                    email,
+                    exception);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "验证码邮件发送失败，请稍后再试");
         }
     }

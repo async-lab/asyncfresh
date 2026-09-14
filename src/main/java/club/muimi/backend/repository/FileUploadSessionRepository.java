@@ -11,5 +11,7 @@ public interface FileUploadSessionRepository extends JpaRepository<FileUploadSes
 
     Optional<FileUploadSession> findByIdAndUploaderUserId(Long id, Long uploaderUserId);
 
+    boolean existsByUploaderUserId(Long uploaderUserId);
+
     List<FileUploadSession> findAllByUpdatedAtBefore(LocalDateTime updatedAt);
 }

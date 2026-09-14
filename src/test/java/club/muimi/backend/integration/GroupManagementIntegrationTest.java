@@ -180,6 +180,99 @@ class GroupManagementIntegrationTest {
     }
 
     @Test
+    void adminShouldListAllApplicationsIncludingGroupedRejectedAndWithdrawn() throws Exception {
+        openSelectionPeriod();
+        String suffix = String.valueOf(System.nanoTime());
+        User admin = createUser("admin_list_app_" + suffix, "AdminPass123", Role.ADMIN);
+        User submittedUser = createUser("freshman_submitted_" + suffix, "FreshPass123", Role.FRESHMAN);
+        User groupedUser = createUser("freshman_grouped_" + suffix, "FreshPass123", Role.FRESHMAN);
+        User rejectedUser = createUser("freshman_rejected_" + suffix, "FreshPass123", Role.FRESHMAN);
+        User withdrawnUser = createUser("freshman_withdrawn_" + suffix, "FreshPass123", Role.FRESHMAN);
+        Direction root = createDirection(null, "列表方向-" + suffix, 1, true);
+        Direction child = createDirection(root.getId(), "列表子方向-" + suffix, 2, true);
+        Application submitted = createApplication(submittedUser.getId(), root.getId(), child.getId(), Grade.YEAR_1, 2026);
+        Application grouped = createApplication(groupedUser.getId(), root.getId(), child.getId(), Grade.YEAR_1, 2026);
+        Application rejected = createApplication(rejectedUser.getId(), root.getId(), child.getId(), Grade.YEAR_1, 2026);
+        Application withdrawn = createApplication(withdrawnUser.getId(), root.getId(), child.getId(), Grade.YEAR_1, 2026);
+        RecruitmentGroup group = createGroup("列表组-" + suffix, root.getId(), child.getId(), Grade.YEAR_1, 2026, 10, null);
+
+        grouped.setStatus(ApplicationStatus.GROUPED);
+        applicationRepository.save(grouped);
+        GroupMember groupMember = groupMemberRepository.save(GroupMember.builder()
+                .groupId(group.getId())
+                .userId(groupedUser.getId())
+                .applicationId(grouped.getId())
+                .build());
+        createdGroupMemberIds.add(groupMember.getId());
+
+        rejected.setStatus(ApplicationStatus.REJECTED);
+        rejected.setStatusRemark("名额已满");
+        applicationRepository.save(rejected);
+
+        withdrawn.setStatus(ApplicationStatus.WITHDRAWN);
+        withdrawn.setStatusRemark("本人撤回");
+        applicationRepository.save(withdrawn);
+
+        AuthCookies adminCookies = loginAs(admin.getEmail(), "AdminPass123");
+
+        JsonNode allApplications = objectMapper.readTree(mockMvc.perform(get("/api/v1/admin/applications")
+                        .param("keyword", suffix)
+                        .param("size", "50")
+                        .cookie(adminCookies.authCookie(), adminCookies.csrfCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(4))
+                .andReturn()
+                .getResponse()
+                .getContentAsString())
+                .path("data")
+                .path("list");
+
+        assertThat(allApplications).hasSize(4);
+        assertThat(allApplications.findValuesAsText("id")).containsExactlyInAnyOrder(
+                String.valueOf(submitted.getId()),
+                String.valueOf(grouped.getId()),
+                String.valueOf(rejected.getId()),
+                String.valueOf(withdrawn.getId())
+        );
+        assertThat(allApplications.findValuesAsText("status")).containsExactlyInAnyOrder(
+                "SUBMITTED",
+                "GROUPED",
+                "REJECTED",
+                "WITHDRAWN"
+        );
+
+        JsonNode groupedPage = objectMapper.readTree(mockMvc.perform(get("/api/v1/admin/applications")
+                        .param("keyword", suffix)
+                        .param("status", "GROUPED")
+                        .cookie(adminCookies.authCookie(), adminCookies.csrfCookie()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.list[0].id").value(grouped.getId()))
+                .andExpect(jsonPath("$.data.list[0].groupId").value(group.getId()))
+                .andExpect(jsonPath("$.data.list[0].groupName").value(group.getName()))
+                .andReturn()
+                .getResponse()
+                .getContentAsString())
+                .path("data")
+                .path("list");
+        assertThat(groupedPage).hasSize(1);
+
+        JsonNode ungrouped = objectMapper.readTree(mockMvc.perform(get("/api/v1/admin/groups/ungrouped-applications")
+                        .cookie(adminCookies.authCookie(), adminCookies.csrfCookie()))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString())
+                .path("data");
+        List<Long> ungroupedIds = new ArrayList<>();
+        for (JsonNode item : ungrouped) {
+            ungroupedIds.add(item.path("id").asLong());
+        }
+        assertThat(ungroupedIds).contains(submitted.getId());
+        assertThat(ungroupedIds).doesNotContain(grouped.getId(), rejected.getId(), withdrawn.getId());
+    }
+
+    @Test
     void adminShouldCreateMarkdownOnlyTaskWithoutAttachment() throws Exception {
         openSelectionPeriod();
         String suffix = String.valueOf(System.nanoTime());

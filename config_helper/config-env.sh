@@ -71,8 +71,8 @@ APP_STORAGE_CHUNK_SIZE=0B
 APP_STORAGE_CLEANUP_ENABLED=true
 APP_STORAGE_TEMP_SESSION_TTL=24h
 APP_STORAGE_ORPHAN_FILE_TTL=24h
-APP_STORAGE_ALLOWED_EXTENSIONS=pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,png,jpg,jpeg,gif,webp,json,java,py,c,cpp,js,ts
-APP_STORAGE_ALLOWED_CONTENT_TYPES=application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/x-7z-compressed,text/plain,text/markdown,text/x-markdown,text/markdown;charset=UTF-8,image/png,image/jpeg,image/gif,image/webp,application/json,text/javascript,application/javascript,text/x-java-source,text/x-python,text/x-c,text/x-c++src
+APP_STORAGE_ALLOWED_EXTENSIONS=pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,markdown,png,jpg,jpeg,gif,webp,json,java,py,c,cpp,js,ts
+APP_STORAGE_ALLOWED_CONTENT_TYPES=application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/x-7z-compressed,text/plain,text/markdown,text/x-markdown,application/markdown,text/x-web-markdown,image/png,image/jpeg,image/gif,image/webp,application/json,text/javascript,application/javascript,text/x-java-source,text/x-python,text/x-c,text/x-c++src
 TASK_ATTACHMENT_MAX_SIZE=20MB
 MULTIPART_MAX_FILE_SIZE=256MB
 MULTIPART_MAX_REQUEST_SIZE=256MB

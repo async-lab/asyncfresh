@@ -21,6 +21,8 @@ public interface RecruitmentGroupRepository extends JpaRepository<RecruitmentGro
 
     List<RecruitmentGroup> findAllByLeaderUserIdIn(Collection<Long> leaderUserIds);
 
+    boolean existsByLeaderUserId(Long leaderUserId);
+
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);

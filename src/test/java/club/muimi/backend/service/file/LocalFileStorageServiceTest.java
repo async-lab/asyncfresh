@@ -5,12 +5,14 @@ import club.muimi.backend.common.enums.StoredFilePurpose;
 import club.muimi.backend.common.enums.UserStatus;
 import club.muimi.backend.config.FileStorageProperties;
 import club.muimi.backend.config.TaskModuleProperties;
+import club.muimi.backend.entity.StoredFile;
 import club.muimi.backend.exception.ForbiddenException;
 import club.muimi.backend.exception.ValidationException;
 import club.muimi.backend.repository.FileUploadSessionRepository;
 import club.muimi.backend.repository.StoredFileRepository;
 import club.muimi.backend.security.auth.LoginUser;
 import club.muimi.backend.service.user.CurrentUserService;
+import club.muimi.backend.vo.file.StoredFileVo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +24,9 @@ import org.springframework.util.unit.DataSize;
 
 import java.nio.file.Path;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -186,6 +190,161 @@ class LocalFileStorageServiceTest {
                 .hasMessage("文件名长度不能超过 255 个字符");
     }
 
+
+    @Test
+    void uploadDirectShouldAcceptMarkdownWithDeclaredMarkdownContentType() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf", "txt", "md", "markdown"),
+                java.util.List.of("application/pdf", "text/plain", "text/markdown", "text/x-markdown")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "notes.md",
+                "text/markdown",
+                "# hello".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("notes.md");
+        assertThat(storedFile.contentType()).isEqualTo("text/markdown");
+    }
+
+    @Test
+    void uploadDirectShouldAcceptMarkdownWhenBrowserSendsGenericOctetStream() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf", "txt", "md"),
+                java.util.List.of("application/pdf", "text/plain", "text/markdown")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "guide.md",
+                "application/octet-stream",
+                "# guide".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("guide.md");
+    }
+
+    @Test
+    void uploadDirectShouldAcceptMarkdownWhenWhitelistIsBoundAsSingleCommaSeparatedValue() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf,doc,docx,txt,md,markdown"),
+                java.util.List.of("application/pdf,text/plain,text/markdown;charset=UTF-8,text/x-markdown")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "readme.markdown",
+                "text/markdown; charset=UTF-8",
+                "# readme".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("readme.markdown");
+        assertThat(storedFile.contentType()).isEqualTo("text/markdown");
+    }
+
+    @Test
+    void uploadDirectShouldAcceptMarkdownWhenBrowserSendsUnlistedContentType() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf", "txt", "md"),
+                java.util.List.of("application/pdf", "text/plain", "text/markdown")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "notes.md",
+                "application/json",
+                "# hello".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("notes.md");
+    }
+
+    @Test
+    void uploadDirectShouldAcceptMarkdownEvenWhenConfigOmitsMarkdownExtension() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf", "txt"),
+                java.util.List.of("application/pdf", "text/plain")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLoginUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "group-notes.md",
+                "text/x-web-markdown",
+                "# group notes".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.TASK_SUBMISSION_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("group-notes.md");
+    }
+
+    @Test
+    void uploadDirectShouldAcceptGroupMaterialMarkdownFromLeader() {
+        localFileStorageService = createStorageService(
+                java.util.List.of("pdf", "txt"),
+                java.util.List.of("application/pdf", "text/plain")
+        );
+        stubSuccessfulSave();
+        when(currentUserService.requireCurrentUser()).thenReturn(buildLeaderUser());
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "group-material.md",
+                "application/octet-stream",
+                "# material".getBytes()
+        );
+
+        StoredFileVo storedFile = localFileStorageService.uploadDirect(StoredFilePurpose.MATERIAL_ATTACHMENT, file);
+
+        assertThat(storedFile.originalFileName()).isEqualTo("group-material.md");
+    }
+
+    private LocalFileStorageService createStorageService(
+            java.util.List<String> allowedExtensions,
+            java.util.List<String> allowedContentTypes
+    ) {
+        FileStorageProperties fileStorageProperties = new FileStorageProperties();
+        fileStorageProperties.setRootPath(tempDir.toString());
+        fileStorageProperties.setChunkSize(DataSize.ofBytes(0));
+        fileStorageProperties.setAllowedExtensions(allowedExtensions);
+        fileStorageProperties.setAllowedContentTypes(allowedContentTypes);
+        fileStorageProperties.validate();
+
+        TaskModuleProperties taskModuleProperties = new TaskModuleProperties();
+        taskModuleProperties.setAttachmentMaxSize(DataSize.ofMegabytes(20));
+        taskModuleProperties.validate();
+
+        return new LocalFileStorageService(
+                fileStorageProperties,
+                taskModuleProperties,
+                storedFileRepository,
+                fileUploadSessionRepository,
+                currentUserService
+        );
+    }
+
+    private void stubSuccessfulSave() {
+        when(storedFileRepository.save(any(StoredFile.class))).thenAnswer(invocation -> {
+            StoredFile storedFile = invocation.getArgument(0);
+            storedFile.setId(11L);
+            return storedFile;
+        });
+    }
+
     private LoginUser buildLoginUser() {
         return new LoginUser(
                 1L,
@@ -196,6 +355,19 @@ class LocalFileStorageServiceTest {
                 UserStatus.ACTIVE,
                 0L,
                 "jti-1"
+        );
+    }
+
+    private LoginUser buildLeaderUser() {
+        return new LoginUser(
+                2L,
+                "leader",
+                "leader@example.com",
+                "hashed",
+                Role.LEADER,
+                UserStatus.ACTIVE,
+                0L,
+                "jti-2"
         );
     }
 }

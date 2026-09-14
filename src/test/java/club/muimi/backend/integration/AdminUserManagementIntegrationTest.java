@@ -32,8 +32,11 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -270,6 +273,165 @@ class AdminUserManagementIntegrationTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("该负责人仍绑定负责的分组，不能降级为新生"));
+    }
+
+
+    @Test
+    void adminShouldCreateUpdateAndDeleteUser() throws Exception {
+        String suffix = String.valueOf(System.nanoTime());
+        String adminEmail = "admin_crud_" + suffix + "@example.com";
+        String createdEmail = "created_user_" + suffix + "@example.com";
+        String updatedEmail = "updated_user_" + suffix + "@example.com";
+        createdEmails.add(adminEmail);
+        createdEmails.add(createdEmail);
+        createdEmails.add(updatedEmail);
+
+        userRepository.save(User.builder()
+                .username("admin_crud_" + suffix)
+                .email(adminEmail)
+                .passwordHash(passwordEncoder.encode("AdminPass123"))
+                .emailVerified(true)
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .lastLoginAt(LocalDateTime.now())
+                .build());
+
+        AuthCookies authCookies = loginAs(adminEmail, "AdminPass123");
+        String username = "created_user_" + suffix;
+
+        String createBody = """
+                {
+                  "username": "%s",
+                  "email": "%s",
+                  "password": "UserPass123",
+                  "role": "LEADER",
+                  "status": "ACTIVE",
+                  "emailVerified": true
+                }
+                """.formatted(username, createdEmail);
+
+        String createResponse = mockMvc.perform(post("/api/v1/admin/users")
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("用户创建成功"))
+                .andExpect(jsonPath("$.data.username").value(username))
+                .andExpect(jsonPath("$.data.email").value(createdEmail))
+                .andExpect(jsonPath("$.data.role").value("LEADER"))
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long createdUserId = userRepository.findByEmail(createdEmail).orElseThrow().getId();
+        org.assertj.core.api.Assertions.assertThat(createResponse).contains("\"id\":" + createdUserId);
+
+        String updatedUsername = "updated_user_" + suffix;
+        String updateBody = """
+                {
+                  "username": "%s",
+                  "email": "%s",
+                  "password": "UserPass456",
+                  "role": "FRESHMAN",
+                  "status": "DISABLED",
+                  "emailVerified": true
+                }
+                """.formatted(updatedUsername, updatedEmail);
+
+        mockMvc.perform(put("/api/v1/admin/users/{userId}", createdUserId)
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("用户信息更新成功"))
+                .andExpect(jsonPath("$.data.username").value(updatedUsername))
+                .andExpect(jsonPath("$.data.email").value(updatedEmail))
+                .andExpect(jsonPath("$.data.role").value("FRESHMAN"))
+                .andExpect(jsonPath("$.data.status").value("DISABLED"));
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}", createdUserId)
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "username": "%s",
+                                  "email": "%s",
+                                  "role": "FRESHMAN",
+                                  "status": "ACTIVE",
+                                  "emailVerified": true
+                                }
+                                """.formatted(updatedUsername, updatedEmail)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+
+        mockMvc.perform(delete("/api/v1/admin/users/{userId}", createdUserId)
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("用户删除成功"));
+
+        org.assertj.core.api.Assertions.assertThat(userRepository.findByEmail(updatedEmail)).isEmpty();
+        org.assertj.core.api.Assertions.assertThat(userRepository.findByEmail(createdEmail)).isEmpty();
+    }
+
+    @Test
+    void adminShouldNotDeleteSelfOrUsersWithRelatedData() throws Exception {
+        String suffix = String.valueOf(System.nanoTime());
+        String adminEmail = "admin_del_" + suffix + "@example.com";
+        String leaderEmail = "leader_del_" + suffix + "@example.com";
+        createdEmails.add(adminEmail);
+        createdEmails.add(leaderEmail);
+
+        User admin = userRepository.save(User.builder()
+                .username("admin_del_" + suffix)
+                .email(adminEmail)
+                .passwordHash(passwordEncoder.encode("AdminPass123"))
+                .emailVerified(true)
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .lastLoginAt(LocalDateTime.now())
+                .build());
+        User leader = userRepository.save(User.builder()
+                .username("leader_del_" + suffix)
+                .email(leaderEmail)
+                .passwordHash(passwordEncoder.encode("LeaderPass123"))
+                .emailVerified(true)
+                .role(Role.LEADER)
+                .status(UserStatus.ACTIVE)
+                .tokenVersion(0L)
+                .lastLoginAt(LocalDateTime.now())
+                .build());
+        RecruitmentGroup group = recruitmentGroupRepository.save(RecruitmentGroup.builder()
+                .name("group_del_" + suffix)
+                .directionLevel1Id(1L)
+                .directionLevel2Id(2L)
+                .grade(club.muimi.backend.common.enums.Grade.YEAR_1)
+                .admissionYear(2026)
+                .maxSize(20)
+                .leaderUserId(leader.getId())
+                .build());
+        createdGroupIds.add(group.getId());
+
+        AuthCookies authCookies = loginAs(adminEmail, "AdminPass123");
+
+        mockMvc.perform(delete("/api/v1/admin/users/{userId}", admin.getId())
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("管理员不能删除自己的账号"));
+
+        mockMvc.perform(delete("/api/v1/admin/users/{userId}", leader.getId())
+                        .cookie(authCookies.authCookie(), authCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", authCookies.csrfCookie().getValue()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("该负责人仍绑定负责的分组，不能删除"));
     }
 
     private AuthCookies loginAs(String email, String password) throws IOException {

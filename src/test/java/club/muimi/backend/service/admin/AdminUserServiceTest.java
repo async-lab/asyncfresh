@@ -2,6 +2,8 @@ package club.muimi.backend.service.admin;
 
 import club.muimi.backend.common.enums.Role;
 import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.CreateAdminUserRequest;
+import club.muimi.backend.dto.admin.UpdateAdminUserRequest;
 import club.muimi.backend.dto.admin.UpdateUserRoleRequest;
 import club.muimi.backend.dto.admin.UpdateUserStatusRequest;
 import club.muimi.backend.entity.RecruitmentGroup;
@@ -27,8 +29,13 @@ import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +53,10 @@ class AdminUserServiceTest {
     private CurrentUserService currentUserService;
     @Mock
     private AuditLogService auditLogService;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private UserReferenceChecker userReferenceChecker;
 
     private AdminUserService adminUserService;
 
@@ -57,7 +68,9 @@ class AdminUserServiceTest {
                 groupMemberRepository,
                 recruitmentGroupRepository,
                 currentUserService,
-                auditLogService
+                auditLogService,
+                passwordEncoder,
+                userReferenceChecker
         );
     }
 
@@ -207,6 +220,52 @@ class AdminUserServiceTest {
 
         assertThat(result.list()).hasSize(1);
         assertThat(result.list().getFirst().leaderGroupCount()).isEqualTo(2L);
+        assertThat(result.list().getFirst().groups()).isEmpty();
+        assertThat(result.list().getFirst().groupCount()).isEqualTo(0L);
+    }
+
+    @Test
+    void listUsersShouldIncludeMemberGroupNames() {
+        User freshman = User.builder()
+                .id(2L)
+                .username("freshman")
+                .email("freshman@example.com")
+                .passwordHash("hashed")
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .build();
+        when(userRepository.searchUsers(null, null, null, PageRequest.of(0, 10, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))))
+                .thenReturn(new PageImpl<>(List.of(freshman)));
+        when(applicationRepository.findAllByUserIdIn(List.of(2L))).thenReturn(List.of());
+        when(groupMemberRepository.findAllByUserIdIn(List.of(2L))).thenReturn(List.of(
+                club.muimi.backend.entity.GroupMember.builder()
+                        .id(1L)
+                        .groupId(9L)
+                        .userId(2L)
+                        .applicationId(3L)
+                        .build()
+        ));
+        when(recruitmentGroupRepository.findAllByIdIn(org.mockito.ArgumentMatchers.anyCollection())).thenReturn(List.of(
+                RecruitmentGroup.builder()
+                        .id(9L)
+                        .name("前端一组")
+                        .directionLevel1Id(1L)
+                        .directionLevel2Id(2L)
+                        .grade(club.muimi.backend.common.enums.Grade.YEAR_1)
+                        .admissionYear(2026)
+                        .maxSize(10)
+                        .build()
+        ));
+        when(recruitmentGroupRepository.findAllByLeaderUserIdIn(List.of(2L))).thenReturn(List.of());
+
+        var result = adminUserService.listUsers(1, 10, null, null, null);
+
+        assertThat(result.list()).hasSize(1);
+        assertThat(result.list().getFirst().groups())
+                .extracting(club.muimi.backend.vo.auth.GroupSimpleVo::name)
+                .containsExactly("前端一组");
+        assertThat(result.list().getFirst().groupCount()).isEqualTo(1L);
     }
 
     @Test
@@ -233,5 +292,197 @@ class AdminUserServiceTest {
         assertThat(result.leaderGroups())
                 .extracting(club.muimi.backend.vo.auth.GroupSimpleVo::id)
                 .containsExactly(20L, 10L);
+    }
+
+    @Test
+    void createUserShouldCreateFreshmanByDefault() {
+        LoginUser admin = adminUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.existsByUsername("newbie")).thenReturn(false);
+        when(userRepository.existsByEmail("newbie@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("Pass1234")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(10L);
+            return user;
+        });
+        stubUserDetail(10L);
+
+        var result = adminUserService.createUser(new CreateAdminUserRequest(
+                "newbie",
+                "newbie@example.com",
+                "Pass1234",
+                null,
+                null,
+                null
+        ));
+
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.username()).isEqualTo("newbie");
+        assertThat(result.role()).isEqualTo(Role.FRESHMAN);
+        assertThat(result.status()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(result.emailVerified()).isTrue();
+    }
+
+    @Test
+    void createUserShouldRejectDuplicateUsername() {
+        LoginUser admin = adminUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.existsByUsername("newbie")).thenReturn(true);
+
+        assertThatThrownBy(() -> adminUserService.createUser(new CreateAdminUserRequest(
+                "newbie",
+                "newbie@example.com",
+                "Pass1234",
+                Role.FRESHMAN,
+                UserStatus.ACTIVE,
+                true
+        )))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("用户名已存在");
+    }
+
+    @Test
+    void createUserShouldRejectAdminRole() {
+        LoginUser admin = adminUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+
+        assertThatThrownBy(() -> adminUserService.createUser(new CreateAdminUserRequest(
+                "newbie",
+                "newbie@example.com",
+                "Pass1234",
+                Role.ADMIN,
+                UserStatus.ACTIVE,
+                true
+        )))
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("用户角色只能在 FRESHMAN 与 LEADER 之间调整");
+    }
+
+    @Test
+    void updateUserShouldUpdateProfileAndResetPassword() {
+        LoginUser admin = adminUser();
+        User freshman = managedUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(freshman));
+        when(userRepository.existsByUsernameAndIdNot("freshman2", 2L)).thenReturn(false);
+        when(userRepository.existsByEmailAndIdNot("freshman2@example.com", 2L)).thenReturn(false);
+        when(passwordEncoder.encode("NewPass123")).thenReturn("encoded-new");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        stubUserDetail(2L);
+
+        var result = adminUserService.updateUser(2L, new UpdateAdminUserRequest(
+                "freshman2",
+                "freshman2@example.com",
+                "NewPass123",
+                Role.LEADER,
+                UserStatus.DISABLED,
+                true
+        ));
+
+        assertThat(result.username()).isEqualTo("freshman2");
+        assertThat(result.email()).isEqualTo("freshman2@example.com");
+        assertThat(result.role()).isEqualTo(Role.LEADER);
+        assertThat(result.status()).isEqualTo(UserStatus.DISABLED);
+        assertThat(freshman.getPasswordHash()).isEqualTo("encoded-new");
+        assertThat(freshman.getTokenVersion()).isEqualTo(4L);
+    }
+
+    @Test
+    void updateUserShouldRejectSelfUpdate() {
+        LoginUser admin = adminUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+
+        assertThatThrownBy(() -> adminUserService.updateUser(1L, new UpdateAdminUserRequest(
+                "admin",
+                "admin@example.com",
+                null,
+                Role.FRESHMAN,
+                UserStatus.ACTIVE,
+                true
+        )))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("管理员不能修改自己的账号信息");
+    }
+
+    @Test
+    void deleteUserShouldRemoveManagedUser() {
+        LoginUser admin = adminUser();
+        User freshman = managedUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(freshman));
+
+        adminUserService.deleteUser(2L);
+
+        verify(userReferenceChecker).ensureDeletable(2L);
+        verify(userRepository).delete(freshman);
+    }
+
+    @Test
+    void deleteUserShouldRejectSelfDeletion() {
+        LoginUser admin = adminUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+
+        assertThatThrownBy(() -> adminUserService.deleteUser(1L))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("管理员不能删除自己的账号");
+    }
+
+    @Test
+    void deleteUserShouldRejectAdminAccount() {
+        LoginUser admin = adminUser();
+        User targetAdmin = User.builder()
+                .id(2L)
+                .username("admin2")
+                .email("admin2@example.com")
+                .passwordHash("hashed")
+                .role(Role.ADMIN)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(targetAdmin));
+
+        assertThatThrownBy(() -> adminUserService.deleteUser(2L))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("管理员账号不允许通过该接口删除");
+    }
+
+    @Test
+    void deleteUserShouldRejectWhenRelatedDataExists() {
+        LoginUser admin = adminUser();
+        User freshman = managedUser();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(freshman));
+        doThrow(new ConflictException("该负责人仍绑定负责的分组，不能删除"))
+                .when(userReferenceChecker).ensureDeletable(2L);
+
+        assertThatThrownBy(() -> adminUserService.deleteUser(2L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("该负责人仍绑定负责的分组，不能删除");
+    }
+
+    private LoginUser adminUser() {
+        return new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+    }
+
+    private User managedUser() {
+        return User.builder()
+                .id(2L)
+                .username("freshman")
+                .email("freshman@example.com")
+                .passwordHash("hashed")
+                .role(Role.FRESHMAN)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(true)
+                .tokenVersion(3L)
+                .build();
+    }
+
+    private void stubUserDetail(Long userId) {
+        when(groupMemberRepository.findAllByUserId(userId)).thenReturn(List.of());
+        when(recruitmentGroupRepository.findAllByLeaderUserIdOrderByCreatedAtDesc(userId)).thenReturn(List.of());
+        when(applicationRepository.countByUserId(userId)).thenReturn(0L);
     }
 }

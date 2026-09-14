@@ -18,4 +18,8 @@ public interface TaskSubmissionRepository extends JpaRepository<TaskSubmission, 
     List<TaskSubmission> findAllByTaskIdIn(Collection<Long> taskIds);
 
     List<TaskSubmission> findAllByTaskId(Long taskId);
+
+    boolean existsByUserId(Long userId);
+
+    boolean existsByReviewerUserId(Long reviewerUserId);
 }

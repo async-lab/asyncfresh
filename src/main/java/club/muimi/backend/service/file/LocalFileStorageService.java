@@ -46,6 +46,25 @@ public class LocalFileStorageService implements FileStorageService {
     private static final String BINDING_TYPE_MATERIAL = "MATERIAL";
     private static final int MAX_ORIGINAL_FILE_NAME_LENGTH = 255;
 
+    private static final Set<String> GENERIC_CONTENT_TYPES = Set.of(
+            "application/octet-stream",
+            "binary/octet-stream",
+            "application/unknown",
+            "application/x-unknown",
+            "unknown/unknown"
+    );
+
+    private static final Set<String> BUILTIN_MARKDOWN_EXTENSIONS = Set.of("md", "markdown");
+    private static final Set<String> BUILTIN_MARKDOWN_CONTENT_TYPES = Set.of(
+            "text/markdown",
+            "text/x-markdown",
+            "text/x-web-markdown",
+            "application/markdown",
+            "application/x-markdown",
+            "text/plain"
+    );
+
+
     private final FileStorageProperties fileStorageProperties;
     private final TaskModuleProperties taskModuleProperties;
     private final StoredFileRepository storedFileRepository;
@@ -443,18 +462,48 @@ public class LocalFileStorageService implements FileStorageService {
         if (extension != null && !extension.matches("[a-z0-9]{1,20}")) {
             throw new ValidationException("当前文件扩展名不受支持");
         }
-        Set<String> allowedExtensions = normalizeConfiguredValues(fileStorageProperties.getAllowedExtensions());
-        if (!allowedExtensions.isEmpty() && (extension == null || !allowedExtensions.contains(extension))) {
-            throw new ValidationException("当前文件扩展名不受支持");
+        Set<String> allowedExtensions = new LinkedHashSet<>(normalizeConfiguredValues(fileStorageProperties.getAllowedExtensions()));
+        if (!allowedExtensions.isEmpty()) {
+            allowedExtensions.addAll(BUILTIN_MARKDOWN_EXTENSIONS);
+            if (extension == null || !allowedExtensions.contains(extension)) {
+                throw new ValidationException("当前文件扩展名不受支持");
+            }
         }
 
-        Set<String> allowedContentTypes = normalizeConfiguredValues(fileStorageProperties.getAllowedContentTypes());
+        // Browser/OS MIME for Markdown is unreliable, especially on Windows.
+        // Once the extension is allowed, do not reject the upload because of MIME.
+        if (isMarkdownExtension(extension)) {
+            return;
+        }
+
+        Set<String> allowedContentTypes = new LinkedHashSet<>(normalizeConfiguredContentTypes(fileStorageProperties.getAllowedContentTypes()));
+        if (!allowedContentTypes.isEmpty()) {
+            allowedContentTypes.addAll(BUILTIN_MARKDOWN_CONTENT_TYPES);
+        }
         String normalizedContentType = normalizeContentType(contentType);
+        if (normalizedContentType != null && GENERIC_CONTENT_TYPES.contains(normalizedContentType)) {
+            normalizedContentType = null;
+        }
         if (!allowedContentTypes.isEmpty()
                 && normalizedContentType != null
                 && !allowedContentTypes.contains(normalizedContentType)) {
             throw new ValidationException("当前文件类型不受支持");
         }
+    }
+
+    private boolean isMarkdownExtension(String extension) {
+        return extension != null && BUILTIN_MARKDOWN_EXTENSIONS.contains(extension);
+    }
+
+    private Set<String> normalizeConfiguredContentTypes(java.util.List<String> values) {
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String value : normalizeConfiguredValues(values)) {
+            String contentType = normalizeContentType(value);
+            if (contentType != null) {
+                normalized.add(contentType);
+            }
+        }
+        return normalized;
     }
 
     private Set<String> normalizeConfiguredValues(java.util.List<String> values) {
@@ -466,7 +515,12 @@ public class LocalFileStorageService implements FileStorageService {
             if (value == null || value.isBlank()) {
                 continue;
             }
-            normalized.add(value.trim().toLowerCase(Locale.ROOT));
+            for (String part : value.split(",")) {
+                String item = part.trim().toLowerCase(Locale.ROOT);
+                if (!item.isEmpty()) {
+                    normalized.add(item);
+                }
+            }
         }
         return normalized;
     }

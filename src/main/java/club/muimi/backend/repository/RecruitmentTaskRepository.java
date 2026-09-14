@@ -18,4 +18,6 @@ public interface RecruitmentTaskRepository extends JpaRepository<RecruitmentTask
 
     @Query(value = "select * from recruitment_task where id = :id for update", nativeQuery = true)
     Optional<RecruitmentTask> findByIdForUpdate(Long id);
+
+    boolean existsByPublisherUserId(Long publisherUserId);
 }
