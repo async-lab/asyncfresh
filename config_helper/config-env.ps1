@@ -47,7 +47,7 @@ $Mode = "Temporary" # 可选：Temporary / Permanent
 #>
 $EnvironmentVariables = [ordered]@{
     SERVER_PORT              = "8080"
-    DB_URL                    = "jdbc:mysql://localhost:3306/fresh?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&sessionVariables=default_storage_engine=InnoDB"
+    DB_URL                    = "jdbc:mysql://localhost:3307/fresh?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&sessionVariables=default_storage_engine=InnoDB"
     DB_USERNAME               = "epoch"
     DB_PASSWORD               = "123456"
     JWT_SECRET                = "please-change-this-to-a-strong-secret-with-at-least-32-chars"
@@ -70,23 +70,24 @@ $EnvironmentVariables = [ordered]@{
     APP_STORAGE_CLEANUP_ENABLED                = "true"
     APP_STORAGE_TEMP_SESSION_TTL               = "24h"
     APP_STORAGE_ORPHAN_FILE_TTL                = "24h"
-    APP_STORAGE_ALLOWED_EXTENSIONS             = "pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,png,jpg,jpeg,gif,webp,json,java,py,c,cpp,js,ts"
-    APP_STORAGE_ALLOWED_CONTENT_TYPES          = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/x-7z-compressed,text/plain,text/markdown,text/x-markdown,text/markdown;charset=UTF-8,image/png,image/jpeg,image/gif,image/webp,application/json,text/javascript,application/javascript,text/x-java-source,text/x-python,text/x-c,text/x-c++src"
+    APP_STORAGE_ALLOWED_EXTENSIONS             = "pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,markdown,png,jpg,jpeg,gif,webp,json,java,py,c,cpp,js,ts"
+    APP_STORAGE_ALLOWED_CONTENT_TYPES          = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-zip-compressed,application/x-rar-compressed,application/x-7z-compressed,text/plain,text/markdown,text/x-markdown,application/markdown,text/x-web-markdown,image/png,image/jpeg,image/gif,image/webp,application/json,text/javascript,application/javascript,text/x-java-source,text/x-python,text/x-c,text/x-c++src"
     TASK_ATTACHMENT_MAX_SIZE                    = "20MB"
     MULTIPART_MAX_FILE_SIZE                     = "256MB"
     MULTIPART_MAX_REQUEST_SIZE                  = "256MB"
     APP_AUDIT_MAJOR_EVENT_LOG_FILE_PATH         = "./logs/business-audit.log"
-    MAIL_SMTP_HOST            = "smtpdm.aliyun.com"
-    MAIL_SMTP_PORT            = "465"
-    MAIL_SMTP_SSL_ENABLE      = "true"
-    MAIL_SMTP_STARTTLS_ENABLE = "false"
-    MAIL_ACCOUNT              = "epoch@mail.cuit.dev"
-    MAIL_AUTH_CODE            = "M7qN2vK8pR4xT9cL6zA3"
+    MAIL_SMTP_HOST            = "smtp-relay.brevo.com"
+    MAIL_SMTP_PORT            = "587"
+    MAIL_SMTP_SSL_ENABLE      = "false"
+    MAIL_SMTP_STARTTLS_ENABLE = "true"
+    MAIL_ACCOUNT              = "b8e2d8001@smtp-brevo.com"
+    MAIL_AUTH_CODE            = "please-replace-with-your-brevo-smtp-key"
+    MAIL_FROM                 = "asyncfresh@outlook.com"
     DEFAULT_ADMIN_ENABLED     = "true"
-    DEFAULT_ADMIN_USERNAME    = "epochlab"
+    DEFAULT_ADMIN_USERNAME    = "asyncfresh"
     DEFAULT_ADMIN_PASSWORD    = "Aa123456"
-    DEFAULT_ADMIN_EMAIL       = "epoch@mail.cuit.dev"
-    APP_BRAND_NAME            = "Epoch"
+    DEFAULT_ADMIN_EMAIL       = "asyncfresh@outlook.com"
+    APP_BRAND_NAME            = "Asynclab"
 }
 
 function Test-ModeValid {
@@ -130,7 +131,6 @@ if (-not (Test-ModeValid -Value $Mode)) {
 if ($EnvironmentVariables.Count -eq 0) {
     throw "EnvironmentVariables 不能为空。"
 }
-
 foreach ($entry in $EnvironmentVariables.GetEnumerator()) {
     if ([string]::IsNullOrWhiteSpace([string]$entry.Key)) {
         throw "检测到空的环境变量名，请修正脚本中的 EnvironmentVariables。"
