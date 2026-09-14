@@ -407,7 +407,7 @@ const routes: RouteRecordRaw[] = [
         component: AdminApplicationsView,
         meta: {
           title: '报名管理',
-          description: '处理未分组申请、加入分组和拒绝申请。',
+          description: '查看全部报名申请，处理待分组、已分组、已驳回和已撤回记录。',
           requiresAuth: true,
           roles: ['ADMIN'],
           periodHint: ['SELECTION']

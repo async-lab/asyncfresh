@@ -28,7 +28,7 @@ export function getLeaderTaskBatchDownloadUrl(groupId: number | string, taskId?:
 }
 
 export function getLeaderGroupExportUrl(groupId: number | string) {
-  return `/api/v1/leader/exports/groups/${groupId}`;
+  return `/api/v1/leader/exports/groups/${groupId}/members`;
 }
 
 export function getLeaderGroupTasksExportUrl(groupId: number | string) {

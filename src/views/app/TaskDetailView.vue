@@ -82,6 +82,7 @@
             ref="uploadRef"
             v-model:file-list="fileList"
             drag
+            accept=".md,.markdown,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.png,.jpg,.jpeg,.gif,.webp,.json,.java,.py,.c,.cpp,.js,.ts"
             :limit="1"
             :http-request="handleUploadRequest"
             :before-upload="beforeUpload"
@@ -90,7 +91,7 @@
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或点击上传</div>
             <template #tip>
-              <div class="el-upload__tip">单个附件不超过 20MB，正文和附件至少填写一项。</div>
+              <div class="el-upload__tip">支持 Markdown（.md / .markdown），单个附件不超过 20MB，正文和附件至少填写一项。</div>
             </template>
           </el-upload>
           <div v-if="uploadedFile" class="uploaded-file">

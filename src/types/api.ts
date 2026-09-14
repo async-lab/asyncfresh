@@ -72,6 +72,8 @@ export interface Direction {
 export interface Application {
   id: number;
   userId?: number;
+  username?: string;
+  email?: string;
   realName: string;
   phone: string;
   college: string;
@@ -81,10 +83,13 @@ export interface Application {
   admissionYear: number;
   directionLevel1Id: number;
   directionLevel2Id: number;
+  directionLevel1Name?: string | null;
+  directionLevel2Name?: string | null;
   introduction?: string;
   status: ApplicationStatus;
   statusRemark?: string | null;
   groupId?: number | null;
+  groupName?: string | null;
   createdAt: string;
   updatedAt: string;
 }

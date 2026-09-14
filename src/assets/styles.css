@@ -292,6 +292,33 @@ a {
   background: rgba(126, 114, 97, 0.08);
 }
 
+.el-table__fixed-right,
+.el-table__fixed-right-patch {
+  background-color: #fffdf8;
+}
+
+.el-table td.el-table-fixed-column--right,
+.el-table__fixed-right td.el-table__cell,
+.el-table td.el-table__cell:has(.table-actions) {
+  background-color: #fffdf8 !important;
+}
+
+.el-table th.el-table-fixed-column--right,
+.el-table__fixed-right th.el-table__cell {
+  background-color: #f0ebf7 !important;
+}
+
+.el-table__body tr:hover > td.el-table-fixed-column--right,
+.el-table__fixed-right .el-table__body tr:hover > td.el-table__cell,
+.el-table__body tr:hover > td.el-table__cell:has(.table-actions) {
+  background-color: #f3eef8 !important;
+}
+
+.el-table td.el-table-fixed-column--right.is-first-column,
+.el-table th.el-table-fixed-column--right.is-first-column {
+  box-shadow: -10px 0 14px -10px rgba(145, 128, 106, 0.28);
+}
+
 .el-card,
 .el-dialog,
 .el-drawer,

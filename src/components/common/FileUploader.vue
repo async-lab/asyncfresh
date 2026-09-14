@@ -1,6 +1,7 @@
 <template>
   <div class="file-uploader">
     <el-upload
+      accept=".md,.markdown,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.png,.jpg,.jpeg,.gif,.webp,.json,.java,.py,.c,.cpp,.js,.ts"
       :auto-upload="false"
       :disabled="disabled || uploading"
       :limit="1"
@@ -11,6 +12,7 @@
         {{ buttonText }}
       </el-button>
     </el-upload>
+    <p class="file-uploader__hint">支持 .md / .markdown、PDF、Office、图片和常见代码文件</p>
     <div v-if="fileName || modelValue" class="file-uploader__current">
       <el-tag effect="light" type="info">
         {{ fileName || `文件 #${modelValue}` }}
@@ -91,6 +93,14 @@ function clearFile() {
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+}
+
+.file-uploader__hint {
+  margin: 0;
+  width: 100%;
+  color: var(--app-muted, #8a8175);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .file-uploader__current {

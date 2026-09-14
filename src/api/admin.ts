@@ -140,6 +140,27 @@ export function updateUserRole(id: number | string, role: Exclude<Role, 'ADMIN'>
   return patchData<User, { role: Exclude<Role, 'ADMIN'> }>(`/admin/users/${id}/role`, { role });
 }
 
+export interface AdminUserPayload {
+  username: string;
+  email: string;
+  password?: string;
+  role?: Exclude<Role, 'ADMIN'>;
+  status?: UserStatus;
+  emailVerified?: boolean;
+}
+
+export function createAdminUser(payload: AdminUserPayload) {
+  return postData<User, AdminUserPayload>('/admin/users', payload);
+}
+
+export function updateAdminUser(id: number | string, payload: AdminUserPayload) {
+  return putData<User, AdminUserPayload>(`/admin/users/${id}`, payload);
+}
+
+export function deleteAdminUser(id: number | string) {
+  return deleteData<null>(`/admin/users/${id}`);
+}
+
 export function getAdminGroups(params?: {
   directionLevel1Id?: number;
   directionLevel2Id?: number;
@@ -157,6 +178,19 @@ export function getAdminUngroupedApplications(params?: {
   keyword?: string;
 }) {
   return getData<Application[]>('/admin/groups/ungrouped-applications', params);
+}
+
+export function getAdminApplications(params?: {
+  keyword?: string;
+  status?: Application['status'];
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<Application>>('/admin/applications', params);
 }
 
 export function createGroup(payload: GroupPayload) {

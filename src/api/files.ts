@@ -20,9 +20,7 @@ export async function uploadFile(file: File, purpose: FilePurpose | BizType): Pr
     params: {
       purpose: normalizedPurpose
     },
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    timeout: 120000
   });
 
   const uploadedFile = response.data.data;
