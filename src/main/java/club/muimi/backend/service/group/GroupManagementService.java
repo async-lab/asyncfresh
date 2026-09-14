@@ -5,6 +5,8 @@ import club.muimi.backend.common.enums.AuditModule;
 import club.muimi.backend.common.enums.AuditSeverity;
 import club.muimi.backend.common.enums.NotificationType;
 import club.muimi.backend.common.enums.Role;
+import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.AdminAddGroupMemberRequest;
 import club.muimi.backend.entity.Application;
 import club.muimi.backend.entity.Direction;
 import club.muimi.backend.entity.GroupMember;
@@ -156,6 +158,55 @@ public class GroupManagementService {
                 .build());
     }
 
+    @Transactional
+    public void addMemberToGroup(Long groupId, AdminAddGroupMemberRequest request) {
+        LoginUser currentUser = currentUserService.requireCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new ForbiddenException("当前角色无权添加分组成员");
+        }
+        periodService.ensureSelectionOpenForGrouping();
+
+        RecruitmentGroup group = recruitmentGroupRepository.findByIdForUpdate(groupId)
+                .orElseThrow(() -> new NotFoundException("分组不存在"));
+
+        User targetUser = userRepository.findById(request.userId())
+                .orElseThrow(() -> new NotFoundException("用户不存在"));
+        if (targetUser.getStatus() != UserStatus.ACTIVE) {
+            throw new ConflictException("该用户已被禁用，无法加入分组");
+        }
+        if (targetUser.getRole() == Role.ADMIN) {
+            throw new ConflictException("不能将管理员加入分组");
+        }
+
+        if (groupMemberRepository.existsByUserIdAndGroupId(targetUser.getId(), group.getId())) {
+            throw new ConflictException("该用户已在当前分组中");
+        }
+
+        long currentSize = groupMemberRepository.countByGroupIdForUpdate(group.getId());
+        if (currentSize >= group.getMaxSize()) {
+            throw new ConflictException("目标分组人数已满");
+        }
+
+        Application application = prepareApplicationForGroup(group, targetUser, request);
+        assignApplicationToGroup(groupId, application.getId());
+
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("groupId", group.getId());
+        detail.put("groupName", group.getName());
+        detail.put("userId", targetUser.getId());
+        detail.put("applicationId", application.getId());
+        detail.put("adminSupplement", true);
+        auditLogService.record(AuditLogCommand.builder(
+                        AuditModule.GROUP,
+                        "ADD_GROUP_MEMBER",
+                        AuditSeverity.IMPORTANT,
+                        "管理员补录成员到分组"
+                ).actor(currentUser)
+                .target("GROUP", group.getId())
+                .detail(detail)
+                .build());
+    }
+
     @Transactional(readOnly = true)
     public GroupDetailVo getGroupDetail(Long groupId) {
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
@@ -227,6 +278,100 @@ public class GroupManagementService {
         if (currentSize >= group.getMaxSize()) {
             throw new ConflictException("目标分组人数已满");
         }
+    }
+
+    private Application prepareApplicationForGroup(
+            RecruitmentGroup group,
+            User targetUser,
+            AdminAddGroupMemberRequest request
+    ) {
+        Optional<Application> existing = applicationRepository.findByUserIdAndDirectionLevel2Id(
+                targetUser.getId(),
+                group.getDirectionLevel2Id()
+        );
+        if (existing.isEmpty()) {
+            Application application = Application.builder()
+                    .userId(targetUser.getId())
+                    .realName(request.realName().trim())
+                    .phoneNumber(request.phone().trim())
+                    .college(request.college().trim())
+                    .major(request.major().trim())
+                    .className(request.className().trim())
+                    .grade(group.getGrade())
+                    .admissionYear(group.getAdmissionYear())
+                    .directionLevel1Id(group.getDirectionLevel1Id())
+                    .directionLevel2Id(group.getDirectionLevel2Id())
+                    .introduction(normalizeNullableText(request.introduction()))
+                    .status(ApplicationStatus.SUBMITTED)
+                    .statusRemark(null)
+                    .build();
+            return saveApplicationHandlingDuplicate(application);
+        }
+
+        Application application = applicationRepository.findByIdForUpdate(existing.get().getId())
+                .orElseThrow(() -> new NotFoundException("报名申请不存在"));
+        return updateExistingApplicationForGroup(application, group, request);
+    }
+
+    private Application updateExistingApplicationForGroup(
+            Application application,
+            RecruitmentGroup group,
+            AdminAddGroupMemberRequest request
+    ) {
+        if (application.getStatus() == ApplicationStatus.GROUPED) {
+            throw new ConflictException("该用户该方向已完成分组，请先取消原分组");
+        }
+        if (application.getStatus() == ApplicationStatus.SUBMITTED) {
+            if (!matchesGroupDimensions(application, group)) {
+                throw new ConflictException("该用户该方向已有待分组申请，但与当前分组条件不匹配");
+            }
+            applyMemberProfile(application, request);
+            return saveApplicationHandlingDuplicate(application);
+        }
+        if (application.getStatus() == ApplicationStatus.WITHDRAWN
+                || application.getStatus() == ApplicationStatus.REJECTED) {
+            applyMemberProfile(application, request);
+            application.setGrade(group.getGrade());
+            application.setAdmissionYear(group.getAdmissionYear());
+            application.setDirectionLevel1Id(group.getDirectionLevel1Id());
+            application.setDirectionLevel2Id(group.getDirectionLevel2Id());
+            application.setStatus(ApplicationStatus.SUBMITTED);
+            application.setStatusRemark(null);
+            return saveApplicationHandlingDuplicate(application);
+        }
+        throw new ConflictException("当前报名申请状态不允许分组");
+    }
+
+    private void applyMemberProfile(Application application, AdminAddGroupMemberRequest request) {
+        application.setRealName(request.realName().trim());
+        application.setPhoneNumber(request.phone().trim());
+        application.setCollege(request.college().trim());
+        application.setMajor(request.major().trim());
+        application.setClassName(request.className().trim());
+        application.setIntroduction(normalizeNullableText(request.introduction()));
+    }
+
+    private boolean matchesGroupDimensions(Application application, RecruitmentGroup group) {
+        return Objects.equals(application.getDirectionLevel1Id(), group.getDirectionLevel1Id())
+                && Objects.equals(application.getDirectionLevel2Id(), group.getDirectionLevel2Id())
+                && application.getGrade() == group.getGrade()
+                && Objects.equals(application.getAdmissionYear(), group.getAdmissionYear());
+    }
+
+    private Application saveApplicationHandlingDuplicate(Application application) {
+        try {
+            return applicationRepository.saveAndFlush(application);
+        } catch (DataIntegrityViolationException exception) {
+            throw new ConflictException("同一方向只能提交一份报名申请");
+        }
+    }
+
+    private String normalizeNullableText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private List<ManageableGroupVo> buildManageableGroupVos(List<RecruitmentGroup> groups) {

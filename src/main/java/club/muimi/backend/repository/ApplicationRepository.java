@@ -25,6 +25,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     @Query(value = "select * from `application` where id = :id for update", nativeQuery = true)
     Optional<Application> findByIdForUpdate(Long id);
 
+    Optional<Application> findByUserIdAndDirectionLevel2Id(Long userId, Long directionLevel2Id);
+
     boolean existsByUserIdAndDirectionLevel2Id(Long userId, Long directionLevel2Id);
 
     boolean existsByUserIdAndDirectionLevel2IdAndIdNot(Long userId, Long directionLevel2Id, Long id);

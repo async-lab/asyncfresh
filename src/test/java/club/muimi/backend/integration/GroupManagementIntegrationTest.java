@@ -180,6 +180,79 @@ class GroupManagementIntegrationTest {
     }
 
     @Test
+    void adminShouldAddMemberWithoutExistingApplicationDuringSelection() throws Exception {
+        openSelectionPeriod();
+        String suffix = String.valueOf(System.nanoTime());
+        User admin = createUser("admin_add_member_" + suffix, "AdminPass123", Role.ADMIN);
+        User freshman = createUser("freshman_add_member_" + suffix, "FreshPass123", Role.FRESHMAN);
+        Direction root = createDirection(null, "补录方向-" + suffix, 1, true);
+        Direction child = createDirection(root.getId(), "补录子方向-" + suffix, 2, true);
+        RecruitmentGroup group = createGroup("补录组-" + suffix, root.getId(), child.getId(), Grade.YEAR_1, 2026, 10, null);
+        AuthCookies adminCookies = loginAs(admin.getEmail(), "AdminPass123");
+
+        mockMvc.perform(post("/api/v1/admin/groups/{groupId}/members", group.getId())
+                        .cookie(adminCookies.authCookie(), adminCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", adminCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "realName": "李四",
+                                  "phone": "13800000002",
+                                  "college": "计算机学院",
+                                  "major": "软件工程",
+                                  "className": "2班",
+                                  "introduction": "选拔期补录"
+                                }
+                                """.formatted(freshman.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("成员添加成功"));
+
+        Application created = applicationRepository.findByUserIdAndDirectionLevel2Id(freshman.getId(), child.getId())
+                .orElseThrow();
+        createdApplicationIds.add(created.getId());
+        GroupMember groupMember = groupMemberRepository.findByApplicationId(created.getId()).orElseThrow();
+        createdGroupMemberIds.add(groupMember.getId());
+        assertThat(created.getStatus()).isEqualTo(ApplicationStatus.GROUPED);
+        assertThat(created.getDirectionLevel1Id()).isEqualTo(root.getId());
+        assertThat(created.getGrade()).isEqualTo(Grade.YEAR_1);
+        assertThat(created.getAdmissionYear()).isEqualTo(2026);
+        assertThat(groupMember.getGroupId()).isEqualTo(group.getId());
+        assertThat(groupMember.getUserId()).isEqualTo(freshman.getId());
+    }
+
+    @Test
+    void leaderShouldNotAddMemberThroughAdminEndpoint() throws Exception {
+        openSelectionPeriod();
+        String suffix = String.valueOf(System.nanoTime());
+        User leader = createUser("leader_add_member_" + suffix, "LeaderPass123", Role.LEADER);
+        User freshman = createUser("freshman_leader_add_" + suffix, "FreshPass123", Role.FRESHMAN);
+        Direction root = createDirection(null, "负责人补录-" + suffix, 1, true);
+        Direction child = createDirection(root.getId(), "负责人补录子-" + suffix, 2, true);
+        RecruitmentGroup group = createGroup("负责人补录组-" + suffix, root.getId(), child.getId(), Grade.YEAR_1, 2026, 10, leader.getId());
+        AuthCookies leaderCookies = loginAs(leader.getEmail(), "LeaderPass123");
+
+        mockMvc.perform(post("/api/v1/admin/groups/{groupId}/members", group.getId())
+                        .cookie(leaderCookies.authCookie(), leaderCookies.csrfCookie())
+                        .header("X-CSRF-TOKEN", leaderCookies.csrfCookie().getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "realName": "王五",
+                                  "phone": "13800000003",
+                                  "college": "计算机学院",
+                                  "major": "软件工程",
+                                  "className": "3班"
+                                }
+                                """.formatted(freshman.getId())))
+                .andExpect(status().isForbidden());
+
+        assertThat(applicationRepository.findByUserIdAndDirectionLevel2Id(freshman.getId(), child.getId())).isEmpty();
+        assertThat(groupMemberRepository.existsByUserIdAndGroupId(freshman.getId(), group.getId())).isFalse();
+    }
+
+    @Test
     void adminShouldListAllApplicationsIncludingGroupedRejectedAndWithdrawn() throws Exception {
         openSelectionPeriod();
         String suffix = String.valueOf(System.nanoTime());

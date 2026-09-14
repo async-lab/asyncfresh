@@ -1,6 +1,7 @@
 package club.muimi.backend.controller.admin;
 
 import club.muimi.backend.common.api.ApiResponse;
+import club.muimi.backend.dto.admin.AdminAddGroupMemberRequest;
 import club.muimi.backend.dto.admin.AssignGroupLeaderRequest;
 import club.muimi.backend.dto.admin.GroupUpsertRequest;
 import club.muimi.backend.dto.admin.UnassignGroupApplicationRequest;
@@ -80,6 +81,15 @@ public class AdminGroupController {
     @GetMapping("/ungrouped-applications")
     public ApiResponse<List<UngroupedApplicationVo>> listUngroupedApplications() {
         return ApiResponse.success(groupManagementService.listUngroupedApplications(), "ok");
+    }
+
+    @PostMapping("/{groupId}/members")
+    public ApiResponse<Void> addMember(
+            @PathVariable Long groupId,
+            @Valid @RequestBody AdminAddGroupMemberRequest request
+    ) {
+        groupManagementService.addMemberToGroup(groupId, request);
+        return ApiResponse.success(null, "成员添加成功");
     }
 
     @PostMapping("/{groupId}/applications/{applicationId}")
