@@ -1,5 +1,5 @@
 <template>
-  <AppShell title="实验室招新">
+  <AppShell title="AWAIT-YOU">
     <template #side>
       <el-menu :key="menuRenderKey" :default-active="activeMenuPath" :default-openeds="defaultOpeneds" unique-opened router>
         <template v-if="!authStore.isLeader">

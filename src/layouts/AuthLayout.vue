@@ -2,7 +2,7 @@
   <main class="auth-layout">
     <section class="auth-panel">
       <div class="brand">
-        <strong>实验室招新平台</strong>
+        <strong>AWAIT-YOU</strong>
         <PeriodBadge :period="metaStore.period" />
       </div>
       <router-view />

@@ -544,7 +544,7 @@ router.beforeEach(async (to) => {
   const authStore = useAuthStore();
   const metaStore = useMetaStore();
 
-  document.title = to.meta.title ? `${to.meta.title} - 实验室招新平台` : '实验室招新平台';
+  document.title = to.meta.title ? `${to.meta.title} - AWAIT-YOU` : 'AWAIT-YOU';
 
   if (!metaStore.initialized && !metaStore.loading) {
     await metaStore.bootstrap().catch(() => undefined);

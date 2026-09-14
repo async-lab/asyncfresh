@@ -1,5 +1,5 @@
 <template>
-  <AppShell title="招新管理端">
+  <AppShell title="AWAIT-YOU 管理端">
     <template #side>
       <el-menu :key="menuRenderKey" :default-active="activeMenuPath" :default-openeds="defaultOpeneds" unique-opened router>
         <el-sub-menu v-for="group in navGroups" :key="group.key" :index="group.key">

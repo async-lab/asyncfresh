@@ -209,6 +209,20 @@ export function addApplicationToGroup(groupId: number | string, applicationId: n
   return postData<null>(`/admin/groups/${groupId}/applications/${applicationId}`);
 }
 
+export interface AdminAddGroupMemberPayload {
+  userId: number;
+  realName: string;
+  phone: string;
+  college: string;
+  major: string;
+  className: string;
+  introduction?: string;
+}
+
+export function addGroupMember(groupId: number | string, payload: AdminAddGroupMemberPayload) {
+  return postData<null, AdminAddGroupMemberPayload>(`/admin/groups/${groupId}/members`, payload);
+}
+
 export function unassignApplicationFromGroup(groupId: number | string, applicationId: number | string, remark?: string) {
   return postData<null, { remark?: string }>(`/admin/groups/${groupId}/applications/${applicationId}/unassign`, {
     remark

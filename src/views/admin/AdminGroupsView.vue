@@ -92,7 +92,14 @@
             <el-descriptions-item label="负责人">{{ getLeaderLabel(detailGroup) }}</el-descriptions-item>
           </el-descriptions>
 
-          <h3>成员</h3>
+          <div class="member-header">
+            <h3>成员</h3>
+            <el-button type="primary" :icon="Plus" :disabled="!canAddMember" @click="openAddMemberDialog">
+              添加成员
+            </el-button>
+          </div>
+          <p v-if="!metaStore.isSelection" class="muted">当前不是选拔期，无法补录成员。</p>
+          <p v-else-if="isGroupFull" class="muted">当前分组已满员，无法继续添加成员。</p>
           <el-table :data="members" empty-text="暂无成员">
             <el-table-column prop="realName" label="姓名" width="110" />
             <el-table-column prop="username" label="用户名" width="130" />
@@ -107,23 +114,97 @@
         <el-empty v-else description="分组不存在或已不可访问" />
       </div>
     </el-drawer>
+
+    <el-dialog v-model="addMemberVisible" title="添加成员" :width="dialogWidth" :close-on-click-modal="false">
+      <el-alert type="info" show-icon :closable="false" class="add-member-tip">
+        方向、年级和入学年份将按当前分组写入报名申请，不会重新开放公众报名。
+      </el-alert>
+      <el-descriptions v-if="detailGroup" :column="1" border class="add-member-meta">
+        <el-descriptions-item label="目标分组">{{ detailGroup.name }}</el-descriptions-item>
+        <el-descriptions-item label="方向">{{ getGroupDirectionLabel(detailGroup) }}</el-descriptions-item>
+        <el-descriptions-item label="年级">{{ getGradeLabel(detailGroup.grade) }}</el-descriptions-item>
+        <el-descriptions-item label="入学年份">{{ detailGroup.admissionYear }}</el-descriptions-item>
+      </el-descriptions>
+      <el-form label-position="top" :model="addMemberForm">
+        <el-form-item label="选择用户">
+          <el-select
+            v-model="addMemberForm.userId"
+            class="full"
+            filterable
+            remote
+            clearable
+            reserve-keyword
+            placeholder="搜索用户名或邮箱"
+            :remote-method="searchAddMemberUsers"
+            :loading="addMemberUserLoading"
+          >
+            <el-option
+              v-for="user in addMemberUserOptions"
+              :key="user.id"
+              :label="`${user.username} (${user.email})`"
+              :value="user.id"
+            />
+          </el-select>
+        </el-form-item>
+        <div class="form-grid add-member-grid">
+          <el-form-item label="真实姓名">
+            <el-input v-model="addMemberForm.realName" maxlength="32" />
+          </el-form-item>
+          <el-form-item label="手机号">
+            <el-input v-model="addMemberForm.phone" maxlength="11" />
+          </el-form-item>
+          <el-form-item label="学院">
+            <el-input v-model="addMemberForm.college" maxlength="64" />
+          </el-form-item>
+          <el-form-item label="专业">
+            <el-input v-model="addMemberForm.major" maxlength="64" />
+          </el-form-item>
+          <el-form-item label="班级">
+            <el-input v-model="addMemberForm.className" maxlength="64" />
+          </el-form-item>
+        </div>
+        <el-form-item label="自我介绍">
+          <el-input
+            v-model="addMemberForm.introduction"
+            type="textarea"
+            :rows="4"
+            maxlength="1000"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addMemberVisible = false">取消</el-button>
+        <el-button type="primary" :loading="addMemberSaving" :disabled="!canAddMember" @click="submitAddMember">
+          确认添加
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Delete, EditPen, Plus, Search, View } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import { createGroup, deleteGroup, getAdminGroups, getAdminUsers, updateGroup, type GroupPayload } from '@/api/admin';
+import {
+  addGroupMember,
+  createGroup,
+  deleteGroup,
+  getAdminGroups,
+  getAdminUsers,
+  updateGroup,
+  type GroupPayload
+} from '@/api/admin';
 import { getGroup, getGroupMembers } from '@/api/groups';
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import SearchBar from '@/components/common/SearchBar.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
 import { useMetaStore } from '@/stores/meta';
-import type { Grade, Group, GroupMember } from '@/types/api';
+import type { Grade, Group, GroupMember, User } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 import { useOverlayLayout } from '@/composables/useMediaQuery';
 
@@ -140,6 +221,24 @@ const detailLoading = ref(false);
 const saving = ref(false);
 const dialogVisible = ref(false);
 const detailVisible = ref(false);
+const addMemberVisible = ref(false);
+const addMemberSaving = ref(false);
+const addMemberUserLoading = ref(false);
+const addMemberUserOptions = ref<User[]>([]);
+const addMemberForm = reactive({
+  userId: undefined as number | undefined,
+  realName: '',
+  phone: '',
+  college: '',
+  major: '',
+  className: '',
+  introduction: ''
+});
+const isGroupFull = computed(() => {
+  if (!detailGroup.value) return false;
+  return members.value.length >= detailGroup.value.maxSize;
+});
+const canAddMember = computed(() => Boolean(detailGroup.value) && metaStore.isSelection && !isGroupFull.value);
 const editingId = ref<number | null>(null);
 const directionPath = ref<number[]>([]);
 const formDirectionPath = ref<number[]>([]);
@@ -271,7 +370,83 @@ function openDetail(id: number) {
   void router.push({ name: 'admin-group-detail', params: { id } });
 }
 
+function resetAddMemberForm() {
+  addMemberForm.userId = undefined;
+  addMemberForm.realName = '';
+  addMemberForm.phone = '';
+  addMemberForm.college = '';
+  addMemberForm.major = '';
+  addMemberForm.className = '';
+  addMemberForm.introduction = '';
+  addMemberUserOptions.value = [];
+}
+
+function openAddMemberDialog() {
+  if (!canAddMember.value) {
+    ElMessage.warning(isGroupFull.value ? '当前分组已满员' : '当前不是选拔期，无法补录成员');
+    return;
+  }
+  resetAddMemberForm();
+  addMemberVisible.value = true;
+  void searchAddMemberUsers('');
+}
+
+async function searchAddMemberUsers(keyword = '') {
+  addMemberUserLoading.value = true;
+  try {
+    const page = await getAdminUsers({
+      keyword: String(keyword || '').trim() || undefined,
+      status: 'ACTIVE',
+      page: 1,
+      size: 20
+    });
+    const memberIds = new Set(members.value.map((item) => item.userId));
+    addMemberUserOptions.value = page.list.filter((user) => user.role !== 'ADMIN' && !memberIds.has(user.id));
+  } finally {
+    addMemberUserLoading.value = false;
+  }
+}
+
+async function submitAddMember() {
+  if (!detailGroup.value) return;
+  if (!canAddMember.value) {
+    ElMessage.warning(isGroupFull.value ? '当前分组已满员' : '当前不是选拔期，无法补录成员');
+    return;
+  }
+  if (!addMemberForm.userId) {
+    ElMessage.warning('请选择要添加的用户');
+    return;
+  }
+  if (!addMemberForm.realName.trim() || !addMemberForm.phone.trim() || !addMemberForm.college.trim() || !addMemberForm.major.trim() || !addMemberForm.className.trim()) {
+    ElMessage.warning('请填写姓名、手机号、学院、专业和班级');
+    return;
+  }
+  if (!/^1\d{10}$/.test(addMemberForm.phone.trim())) {
+    ElMessage.warning('手机号格式不正确');
+    return;
+  }
+
+  addMemberSaving.value = true;
+  try {
+    await addGroupMember(detailGroup.value.id, {
+      userId: addMemberForm.userId,
+      realName: addMemberForm.realName.trim(),
+      phone: addMemberForm.phone.trim(),
+      college: addMemberForm.college.trim(),
+      major: addMemberForm.major.trim(),
+      className: addMemberForm.className.trim(),
+      introduction: addMemberForm.introduction.trim() || undefined
+    });
+    ElMessage.success('成员添加成功');
+    addMemberVisible.value = false;
+    await Promise.all([loadDetail(detailGroup.value.id), loadGroups()]);
+  } finally {
+    addMemberSaving.value = false;
+  }
+}
+
 function handleDetailClosed() {
+  addMemberVisible.value = false;
   if (route.name === 'admin-group-detail') {
     void router.push({ name: 'admin-groups' });
   }
@@ -326,8 +501,36 @@ h3 {
   font-size: 16px;
 }
 
+.member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 10px;
+}
+
+.member-header h3 {
+  margin: 0;
+}
+
+.add-member-tip,
+.add-member-meta {
+  margin-bottom: 16px;
+}
+
+.add-member-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.muted {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
 @media (max-width: 720px) {
-  .form-grid {
+  .form-grid,
+  .add-member-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHeader :title="isAdminLogin ? '管理员登录' : '登录'" description="使用邮箱和密码进入招新平台。" />
+    <PageHeader :title="isAdminLogin ? '管理员登录' : '登录'" description="使用邮箱和密码进入 AWAIT-YOU。" />
 
     <el-form class="auth-form" label-position="top" @submit.prevent="handleSubmit">
       <el-form-item label="邮箱">
