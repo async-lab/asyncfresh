@@ -6,6 +6,15 @@ storage/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Local runtime ###
+.local-mysql/
+.mvn/codex-settings.xml
+*.pid
+*.rdb
+.env
+.env.*
+!.env.example
+
 ### STS ###
 .apt_generated
 .classpath
