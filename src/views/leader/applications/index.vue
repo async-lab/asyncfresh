@@ -24,12 +24,14 @@
         <el-table-column prop="introduction" label="自我介绍" min-width="220" show-overflow-tooltip />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" @click="assign(row.id)">加入</el-button>
-            <el-popconfirm title="确认驳回该申请？" confirm-button-text="驳回" cancel-button-text="取消" @confirm="reject(row.id)">
-              <template #reference>
-                <el-button text type="danger">驳回</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="table-actions">
+              <el-button text type="primary" @click="assign(row.id)">加入</el-button>
+              <el-popconfirm title="确认驳回该申请？" confirm-button-text="驳回" cancel-button-text="取消" @confirm="reject(row.id)">
+                <template #reference>
+                  <el-button text type="danger">驳回</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </PageTable>

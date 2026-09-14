@@ -25,7 +25,7 @@
           </article>
           <article class="kpi-card">
             <span class="muted">任务完成率</span>
-            <strong>{{ Math.round(summary.taskCompletionRate * 100) }}%</strong>
+            <strong>{{ taskCompletionPercent }}%</strong>
             <small>任务批阅与提交进度</small>
           </article>
         </div>
@@ -33,11 +33,13 @@
         <div class="content-grid">
           <section class="panel chart-panel">
             <div class="panel-head">
-              <div>
-                <h2>报名处理概览</h2>
+              <div class="panel-head-copy">
+                <div class="panel-head-title">
+                  <h2>报名处理概览</h2>
+                  <el-tag effect="plain">本期概览</el-tag>
+                </div>
                 <p>将已分组与待处理状态放在同一个视野里，方便快速分流。</p>
               </div>
-              <el-tag effect="plain">本期概览</el-tag>
             </div>
 
             <div class="chart-layout">
@@ -70,7 +72,7 @@
 
           <section class="panel">
             <div class="panel-head">
-              <div>
+              <div class="panel-head-copy">
                 <h2>系统节奏</h2>
                 <p>把关键动作拆成一眼可见的管理节奏。</p>
               </div>
@@ -78,25 +80,34 @@
 
             <div class="status-stack">
               <div class="status-row">
-                <div>
-                  <strong>未分配申请</strong>
-                  <p class="muted">需要优先处理的报名</p>
+                <div class="status-row-head">
+                  <div>
+                    <strong>未分配申请</strong>
+                    <p class="muted">需要优先处理的报名</p>
+                  </div>
+                  <span class="status-value">{{ pendingRate }}%</span>
                 </div>
-                <el-progress :percentage="pendingRate" :stroke-width="10" />
+                <el-progress :percentage="pendingRate" :stroke-width="10" :show-text="false" />
               </div>
               <div class="status-row">
-                <div>
-                  <strong>任务完成率</strong>
-                  <p class="muted">提交到批阅的整体进度</p>
+                <div class="status-row-head">
+                  <div>
+                    <strong>任务完成率</strong>
+                    <p class="muted">提交到批阅的整体进度</p>
+                  </div>
+                  <span class="status-value">{{ taskCompletionPercent }}%</span>
                 </div>
-                <el-progress :percentage="Math.round(summary.taskCompletionRate * 100)" :stroke-width="10" />
+                <el-progress :percentage="taskCompletionPercent" :stroke-width="10" :show-text="false" />
               </div>
               <div class="status-row">
-                <div>
-                  <strong>已分组覆盖</strong>
-                  <p class="muted">报名中进入分组的比例</p>
+                <div class="status-row-head">
+                  <div>
+                    <strong>已分组覆盖</strong>
+                    <p class="muted">报名中进入分组的比例</p>
+                  </div>
+                  <span class="status-value">{{ groupedRate }}%</span>
                 </div>
-                <el-progress :percentage="groupedRate" :stroke-width="10" />
+                <el-progress :percentage="groupedRate" :stroke-width="10" :show-text="false" />
               </div>
             </div>
           </section>
@@ -106,7 +117,7 @@
       <aside class="dashboard-rail">
         <section class="panel rail-card">
           <div class="panel-head">
-            <div>
+            <div class="panel-head-copy">
               <h2>快速操作</h2>
               <p>最常用的管理路径集中在这里。</p>
             </div>
@@ -122,7 +133,7 @@
 
         <section class="panel rail-card">
           <div class="panel-head">
-            <div>
+            <div class="panel-head-copy">
               <h2>关键指标</h2>
               <p>用更紧凑的模块呈现需要盯住的数字。</p>
             </div>
@@ -149,13 +160,13 @@
 </template>
 
 <script setup lang="ts">
-import * as echarts from 'echarts';
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import * as echarts from "echarts";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
-import { getDashboardSummary } from '@/api/admin';
-import PageHeader from '@/components/common/PageHeader.vue';
-import type { AdminDashboardSummary } from '@/types/api';
+import { getDashboardSummary } from "@/api/admin";
+import PageHeader from "@/components/common/PageHeader.vue";
+import type { AdminDashboardSummary } from "@/types/api";
 
 const router = useRouter();
 const loading = ref(false);
@@ -173,6 +184,7 @@ const summary = reactive<AdminDashboardSummary>({
 });
 
 const pendingApplications = computed(() => computedPendingApplications(summary));
+const taskCompletionPercent = computed(() => Math.round(summary.taskCompletionRate * 100));
 const pendingRate = computed(() => {
   if (!summary.applicationCount) return 0;
   return Math.round((summary.unassignedApplicationCount / summary.applicationCount) * 100);
@@ -185,11 +197,11 @@ const groupedRate = computed(() => {
 onMounted(async () => {
   await loadSummary();
   initChart();
-  window.addEventListener('resize', handleResize);
+  window.addEventListener("resize", handleResize);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
+  window.removeEventListener("resize", handleResize);
   chart?.dispose();
   chart = null;
 });
@@ -223,40 +235,40 @@ function renderChart() {
 
   chart.setOption({
     animationDuration: 700,
-    color: ['#a59bd4', '#c6b38d'],
+    color: ["#a59bd4", "#c6b38d"],
     tooltip: {
-      trigger: 'item',
+      trigger: "item",
       borderWidth: 0,
-      backgroundColor: 'rgba(251, 248, 242, 0.96)',
-      textStyle: { color: '#2f2b26' }
+      backgroundColor: "rgba(251, 248, 242, 0.96)",
+      textStyle: { color: "#2f2b26" }
     },
     series: [
       {
-        name: '报名处理',
-        type: 'pie',
-        radius: ['62%', '82%'],
+        name: "报名处理",
+        type: "pie",
+        radius: ["62%", "82%"],
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 12,
-          borderColor: '#fbf8f2',
+          borderColor: "#fbf8f2",
           borderWidth: 4
         },
         label: { show: false },
         labelLine: { show: false },
         data: [
-          { value: grouped, name: '已分组' },
-          { value: pending, name: '待处理' }
+          { value: grouped, name: "已分组" },
+          { value: pending, name: "待处理" }
         ]
       }
     ],
     graphic: {
-      type: 'text',
-      left: 'center',
-      top: 'center',
+      type: "text",
+      left: "center",
+      top: "center",
       style: {
         text: `${summary.applicationCount}\n报名总量`,
-        textAlign: 'center',
-        fill: '#2f2b26',
+        textAlign: "center",
+        fill: "#2f2b26",
         fontSize: 18,
         fontWeight: 700,
         lineHeight: 24
@@ -282,6 +294,9 @@ function computedPendingApplications(source: AdminDashboardSummary) {
 <style scoped>
 .dashboard-page {
   gap: 20px;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: dashboard;
 }
 
 .dashboard-layout {
@@ -305,6 +320,7 @@ function computedPendingApplications(source: AdminDashboardSummary) {
 }
 
 .kpi-card {
+  min-width: 0;
   padding: 18px;
   border: 1px solid rgba(126, 114, 97, 0.1);
   border-radius: 16px;
@@ -330,10 +346,19 @@ function computedPendingApplications(source: AdminDashboardSummary) {
   line-height: 1;
 }
 
+.kpi-card span,
+.kpi-card small {
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-break: auto;
+  text-wrap: pretty;
+}
+
 .kpi-card small {
   display: block;
   margin-top: 10px;
   color: var(--app-muted);
+  line-height: 1.5;
 }
 
 .content-grid {
@@ -343,6 +368,7 @@ function computedPendingApplications(source: AdminDashboardSummary) {
 }
 
 .panel {
+  min-width: 0;
   padding: 20px;
   border: 1px solid rgba(126, 114, 97, 0.1);
   border-radius: 16px;
@@ -360,15 +386,35 @@ function computedPendingApplications(source: AdminDashboardSummary) {
   margin-bottom: 16px;
 }
 
+.panel-head-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.panel-head-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
 .panel-head h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 
 .panel-head p {
   margin: 6px 0 0;
   color: var(--app-muted);
+  line-height: 1.55;
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-break: auto;
+  text-wrap: pretty;
 }
 
 .chart-layout {
@@ -432,27 +478,61 @@ function computedPendingApplications(source: AdminDashboardSummary) {
 
 .status-row {
   display: grid;
-  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.status-row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-row-head > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .status-row strong {
   display: block;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 
 .status-row p {
   margin: 6px 0 0;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: normal;
+  text-wrap: pretty;
+}
+
+.status-value {
+  flex: none;
+  color: var(--app-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .status-row :deep(.el-progress) {
   width: 100%;
+  min-width: 0;
+}
+
+.status-row :deep(.el-progress-bar) {
+  min-width: 0;
+  padding-right: 0;
 }
 
 .dashboard-rail {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
 }
 
 .rail-card {
@@ -494,15 +574,20 @@ function computedPendingApplications(source: AdminDashboardSummary) {
   color: var(--app-text);
 }
 
-@media (max-width: 1280px) {
-  .dashboard-layout,
-  .content-grid,
-  .chart-layout {
+@media (max-width: 1440px) {
+  .dashboard-layout {
     grid-template-columns: 1fr;
   }
 
   .rail-card {
     position: static;
+  }
+}
+
+@media (max-width: 1100px) {
+  .content-grid,
+  .chart-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -516,8 +601,31 @@ function computedPendingApplications(source: AdminDashboardSummary) {
   .kpi-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .status-row {
+@container dashboard (max-width: 1180px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .rail-card {
+    position: static;
+  }
+}
+
+@container dashboard (max-width: 840px) {
+  .content-grid,
+  .chart-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container dashboard (max-width: 520px) {
+  .kpi-grid {
     grid-template-columns: 1fr;
   }
 }

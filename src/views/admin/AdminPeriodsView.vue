@@ -29,13 +29,15 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="EditPen" @click="openDialog(row)">编辑</el-button>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="EditPen" @click="openDialog(row)">编辑</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
     </section>
 
-    <el-dialog v-model="dialogVisible" title="编辑时期" width="560px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" title="编辑时期" :width="dialogWidth" :close-on-click-modal="false">
       <el-form label-position="top" :model="form">
         <el-form-item label="时期">
           <el-select v-model="form.periodType" class="full">
@@ -81,7 +83,9 @@ import { getAdminPeriods, saveAdminPeriods, updateAdminPeriod, type PeriodConfig
 import PageHeader from '@/components/common/PageHeader.vue';
 import type { PeriodType } from '@/types/api';
 import { periodLabels } from '@/utils/labels';
+import { useOverlayLayout } from '@/composables/useMediaQuery';
 
+const { dialogWidth } = useOverlayLayout({ dialogWidth: '560px' });
 const periodOptions: PeriodType[] = ['REGISTRATION', 'SELECTION', 'INTERVIEW', 'NOT_OPEN', 'FINISHED'];
 const periods = ref<PeriodConfig[]>([]);
 const loading = ref(false);

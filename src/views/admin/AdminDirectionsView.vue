@@ -29,7 +29,7 @@
         </el-table-column>
         <el-table-column label="操作" min-width="380" fixed="right" align="center">
           <template #default="{ row }">
-            <div class="direction-actions">
+            <div class="table-actions">
               <el-button v-if="row.level === 1" text type="primary" :icon="Plus" @click="openCreateDialog(row.id)">
                 新增子方向
               </el-button>
@@ -43,7 +43,7 @@
       </el-table>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑方向' : '新增方向'" width="520px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑方向' : '新增方向'" :width="dialogWidth" :close-on-click-modal="false">
       <el-form label-position="top" :model="form">
         <el-form-item label="父级方向">
           <el-select v-model="form.parentId" class="full" clearable :disabled="Boolean(editingId)">
@@ -84,7 +84,9 @@ import {
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import type { Direction } from '@/types/api';
+import { useOverlayLayout } from '@/composables/useMediaQuery';
 
+const { dialogWidth } = useOverlayLayout({ dialogWidth: '520px' });
 const directions = ref<Direction[]>([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -167,19 +169,5 @@ function createEmptyForm(parentId?: number): DirectionPayload {
 <style scoped>
 .full {
   width: 100%;
-}
-
-.direction-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  white-space: nowrap;
-}
-
-.direction-actions :deep(.el-button) {
-  margin-left: 0;
 }
 </style>

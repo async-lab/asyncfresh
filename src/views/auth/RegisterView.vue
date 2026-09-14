@@ -11,13 +11,12 @@
         <el-input v-model="form.username" :disabled="!canRegister" placeholder="3 到 32 位字母、数字或下划线" />
       </el-form-item>
       <el-form-item label="邮箱">
-        <el-input v-model="form.email" :disabled="!canRegister" placeholder="user@example.com">
-          <template #append>
-            <el-button :disabled="!canSendCode || sendingCode" @click="handleSendCode">
-              {{ codeButtonText }}
-            </el-button>
-          </template>
-        </el-input>
+        <div class="code-field">
+          <el-input v-model="form.email" :disabled="!canRegister" placeholder="user@example.com" />
+          <el-button :disabled="!canSendCode || sendingCode" @click="handleSendCode">
+            {{ codeButtonText }}
+          </el-button>
+        </div>
       </el-form-item>
       <el-form-item label="密码">
         <el-input v-model="form.password" :disabled="!canRegister" :placeholder="passwordRuleMessage" show-password />
@@ -185,5 +184,31 @@ function validateForm() {
 .links {
   margin-top: 16px;
   color: var(--app-primary);
+}
+
+.code-field {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.code-field :deep(.el-input) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.code-field .el-button {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .code-field {
+    flex-direction: column;
+  }
+
+  .code-field .el-button {
+    width: 100%;
+    min-height: 40px;
+  }
 }
 </style>

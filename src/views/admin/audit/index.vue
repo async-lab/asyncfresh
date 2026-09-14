@@ -115,6 +115,12 @@ function formatDateTime(value?: string) {
   border-bottom: 1px solid rgba(126, 114, 97, 0.1);
 }
 
+.audit-table-shell,
+.audit-table-scroll {
+  max-width: 100%;
+  min-width: 0;
+}
+
 .audit-table-shell {
   display: flex;
   flex-direction: column;
@@ -124,10 +130,11 @@ function formatDateTime(value?: string) {
 .audit-table-scroll {
   overflow-x: auto;
   padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .audit-table {
-  min-width: 880px;
+  min-width: 720px;
 }
 
 .audit-table :deep(.el-table) {
@@ -198,5 +205,18 @@ function formatDateTime(value?: string) {
 
 .keyword-input {
   width: 260px;
+}
+
+@media (max-width: 960px) {
+  .audit-toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .module-select,
+  .keyword-input,
+  .audit-toolbar > :deep(.el-button) {
+    width: 100%;
+  }
 }
 </style>

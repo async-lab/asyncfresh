@@ -42,11 +42,13 @@
         <el-table-column label="批阅时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.reviewedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.taskId}`)">
-              任务详情
-            </el-button>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.taskId}`)">
+                任务详情
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>

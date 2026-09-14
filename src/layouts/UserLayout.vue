@@ -1,7 +1,6 @@
 <template>
-  <el-container class="shell">
-    <el-aside width="248px" class="side">
-      <div class="side-title">实验室招新</div>
+  <AppShell title="实验室招新">
+    <template #side>
       <el-menu :key="menuRenderKey" :default-active="activeMenuPath" :default-openeds="defaultOpeneds" unique-opened router>
         <template v-if="!authStore.isLeader">
           <el-menu-item index="/app">
@@ -57,20 +56,21 @@
           </el-sub-menu>
         </template>
       </el-menu>
-    </el-aside>
-    <el-container>
-      <el-header class="topbar">
-        <PeriodBadge :period="metaStore.period" />
-        <div class="account">
-          <span>{{ authStore.user?.username }}</span>
-          <el-button text @click="handleLogout">退出</el-button>
-        </div>
-      </el-header>
-      <el-main class="main">
-        <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+    </template>
+
+    <template #brand>
+      <PeriodBadge :period="metaStore.period" />
+    </template>
+
+    <template #actions>
+      <div class="account">
+        <span class="account-name">{{ authStore.user?.username }}</span>
+        <el-button text @click="handleLogout">退出</el-button>
+      </div>
+    </template>
+
+    <router-view />
+  </AppShell>
 </template>
 
 <script setup lang="ts">
@@ -96,6 +96,7 @@ import { computed, type Component } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import PeriodBadge from '@/components/common/PeriodBadge.vue';
+import AppShell from '@/layouts/AppShell.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useMetaStore } from '@/stores/meta';
 
@@ -202,7 +203,9 @@ const defaultOpeneds = computed(() => {
   return currentGroup ? [currentGroup.key] : [];
 });
 
-const menuRenderKey = computed(() => `${authStore.isLeader ? 'leader' : 'app'}-${activeMenuPath.value}-${defaultOpeneds.value[0] || 'none'}`);
+const menuRenderKey = computed(
+  () => `${authStore.isLeader ? 'leader' : 'app'}-${activeMenuPath.value}-${defaultOpeneds.value[0] || 'none'}`
+);
 
 async function handleLogout() {
   await authStore.logout();
@@ -211,144 +214,30 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-.shell {
-  min-height: 100vh;
-  padding: 18px;
-  gap: 18px;
-}
-
-.side {
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background: linear-gradient(180deg, #2f2b27 0%, #26221f 100%);
-  box-shadow: 14px 16px 32px rgba(145, 128, 106, 0.14);
-  color: #f5f1ea;
-}
-
-.side-title {
-  height: 56px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  font-weight: 700;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  color: #fffaf4;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
-}
-
-.side :deep(.el-menu) {
-  --el-menu-bg-color: transparent;
-  --el-menu-text-color: #d7d2cb;
-  --el-menu-hover-bg-color: transparent;
-  --el-menu-active-color: #ffffff;
-  border-right: 0;
-  background: transparent;
-}
-
-.side :deep(.el-menu-item),
-.side :deep(.el-sub-menu__title) {
-  margin: 4px 10px;
-  border-radius: 12px;
-}
-
-.side :deep(.el-sub-menu__title) {
-  height: 46px;
-  color: #f5f1ea;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.side :deep(.el-sub-menu__title:hover) {
-  background: rgba(165, 155, 212, 0.12);
-}
-
-.side :deep(.el-sub-menu__icon-arrow) {
-  color: rgba(245, 241, 234, 0.72);
-}
-
-.menu-group-title {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-weight: 700;
-}
-
-.menu-item {
-  padding-left: 36px !important;
-}
-
-.side :deep(.el-menu-item.is-active) {
-  background: rgba(165, 155, 212, 0.22);
-  box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.1),
-    inset -1px -1px 0 rgba(0, 0, 0, 0.22);
-}
-
-.side :deep(.el-menu-item:not(.is-active):hover) {
-  background: rgba(165, 155, 212, 0.12);
-}
-
-.side :deep(.el-menu-item .el-icon),
-.side :deep(.el-sub-menu__title .el-icon) {
-  color: inherit;
-}
-
-.shell > .el-container {
-  min-width: 0;
-  border: 1px solid rgba(126, 114, 97, 0.12);
-  border-radius: 20px;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(247, 242, 234, 0.94));
-  box-shadow: var(--app-shadow-raised);
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(126, 114, 97, 0.1);
-  min-height: 64px;
-  padding-inline: 20px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(247, 242, 234, 0.72));
-}
-
 .account {
   display: flex;
-  gap: 12px;
+  min-width: 0;
+  gap: 8px;
   align-items: center;
   color: var(--app-muted);
 }
 
-.main {
-  padding: 24px;
-  background:
-    radial-gradient(circle at 90% 0%, rgba(198, 179, 141, 0.05), transparent 24%),
-    radial-gradient(circle at 8% 14%, rgba(165, 155, 212, 0.06), transparent 22%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(249, 244, 235, 0.94));
+.account-name {
+  max-width: 28vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-width: 1100px) {
-  .shell {
-    flex-direction: column;
-    padding: 12px;
+@media (max-width: 960px) {
+  .account-name {
+    max-width: 36vw;
   }
+}
 
-  .side {
-    width: 100% !important;
-    border-radius: 18px;
-  }
-
-  .shell > .el-container {
-    border-radius: 18px;
-  }
-
-  .main {
-    padding: 18px;
-  }
-
-  .topbar {
-    padding-inline: 16px;
+@media (max-width: 420px) {
+  .account-name {
+    display: none;
   }
 }
 </style>

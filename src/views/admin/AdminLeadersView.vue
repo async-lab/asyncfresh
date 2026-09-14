@@ -26,16 +26,18 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="Check" :loading="actionGroupId === row.id" @click="handleAssign(row)">
-              任命
-            </el-button>
-            <ConfirmAction title="确认撤销该分组负责人？" @confirm="handleRemove(row)">
-              <el-button text type="danger" :icon="Close" :loading="actionGroupId === row.id" :disabled="!row.leaderUserId">
-                撤销
+            <div class="table-actions">
+              <el-button text type="primary" :icon="Check" :loading="actionGroupId === row.id" @click="handleAssign(row)">
+                任命
               </el-button>
-            </ConfirmAction>
+              <ConfirmAction title="确认撤销该分组负责人？" @confirm="handleRemove(row)">
+                <el-button text type="danger" :icon="Close" :loading="actionGroupId === row.id" :disabled="!row.leaderUserId">
+                  撤销
+                </el-button>
+              </ConfirmAction>
+            </div>
           </template>
         </el-table-column>
       </el-table>

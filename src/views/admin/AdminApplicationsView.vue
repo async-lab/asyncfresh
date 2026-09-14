@@ -47,20 +47,22 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button
-              text
-              type="primary"
-              :icon="Connection"
-              :loading="actionId === row.id"
-              @click="assignApplication(row)"
-            >
-              加入分组
-            </el-button>
-            <el-button text type="danger" :icon="Close" :loading="actionId === row.id" @click="rejectApplication(row)">
-              拒绝
-            </el-button>
+            <div class="table-actions">
+              <el-button
+                text
+                type="primary"
+                :icon="Connection"
+                :loading="actionId === row.id"
+                @click="assignApplication(row)"
+              >
+                加入分组
+              </el-button>
+              <el-button text type="danger" :icon="Close" :loading="actionId === row.id" @click="rejectApplication(row)">
+                拒绝
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>

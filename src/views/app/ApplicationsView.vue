@@ -13,7 +13,7 @@
     </el-alert>
 
     <div class="page-section">
-      <el-table v-loading="loading" :data="applications" empty-text="暂无报名申请">
+      <PageTable :data="applications" :loading="loading" empty-text="暂无报名申请">
         <el-table-column prop="realName" label="姓名" min-width="110" />
         <el-table-column label="意向方向" min-width="180">
           <template #default="{ row }">
@@ -37,32 +37,34 @@
         <el-table-column label="更新时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" @click="openDetail(row)">详情</el-button>
-            <el-button text :icon="EditPen" :disabled="!canEdit(row)" :title="getEditDisabledReason(row)" @click="openEditDialog(row)">
-              编辑
-            </el-button>
-            <el-button
-              text
-              type="danger"
-              :icon="Delete"
-              :loading="withdrawLoadingId === row.id"
-              :disabled="!canWithdraw(row)"
-              :title="getWithdrawDisabledReason(row)"
-              @click="handleWithdraw(row)"
-            >
-              撤回
-            </el-button>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="View" @click="openDetail(row)">详情</el-button>
+              <el-button text :icon="EditPen" :disabled="!canEdit(row)" :title="getEditDisabledReason(row)" @click="openEditDialog(row)">
+                编辑
+              </el-button>
+              <el-button
+                text
+                type="danger"
+                :icon="Delete"
+                :loading="withdrawLoadingId === row.id"
+                :disabled="!canWithdraw(row)"
+                :title="getWithdrawDisabledReason(row)"
+                @click="handleWithdraw(row)"
+              >
+                撤回
+              </el-button>
+            </div>
           </template>
         </el-table-column>
-      </el-table>
+      </PageTable>
     </div>
 
     <el-dialog
       v-model="formDialogVisible"
       :title="editingId ? '编辑报名申请' : '新增报名申请'"
-      width="680px"
+      :width="dialogWidth"
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" :disabled="submitting || !metaStore.isRegistration">
@@ -118,7 +120,7 @@
       </template>
     </el-dialog>
 
-    <el-drawer v-model="detailDrawerVisible" title="报名详情" size="520px" @closed="handleDetailClosed">
+    <el-drawer v-model="detailDrawerVisible" title="报名详情" :size="drawerSize" @closed="handleDetailClosed">
       <div v-loading="detailLoading" class="detail-body">
         <template v-if="detailApplication">
           <div class="detail-heading">
@@ -190,12 +192,15 @@ import {
   withdrawApplication
 } from '@/api/applications';
 import PageHeader from '@/components/common/PageHeader.vue';
+import PageTable from '@/components/common/PageTable.vue';
 import StatusTag from '@/components/common/StatusTag.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
 import { useMetaStore } from '@/stores/meta';
 import type { Application, ApplicationForm, Grade } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
+import { useOverlayLayout } from '@/composables/useMediaQuery';
 
+const { dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '680px', drawerSize: '520px' });
 const route = useRoute();
 const router = useRouter();
 const metaStore = useMetaStore();

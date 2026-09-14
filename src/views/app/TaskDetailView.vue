@@ -65,7 +65,7 @@
       </aside>
     </div>
 
-    <el-dialog v-model="submitDialogVisible" title="提交任务" width="620px" :close-on-click-modal="false">
+    <el-dialog v-model="submitDialogVisible" title="提交任务" :width="dialogWidth" :close-on-click-modal="false">
       <el-form ref="submitFormRef" :model="submitForm" label-position="top" :disabled="submitting">
         <el-form-item label="提交说明">
           <el-input
@@ -131,7 +131,9 @@ import StatusTag from '@/components/common/StatusTag.vue';
 import MarkdownViewer from '@/components/markdown/MarkdownViewer.vue';
 import { useMetaStore } from '@/stores/meta';
 import type { DisplaySubmissionStatus, Task, TaskSubmission, UploadedFile } from '@/types/api';
+import { useOverlayLayout } from '@/composables/useMediaQuery';
 
+const { dialogWidth } = useOverlayLayout({ dialogWidth: '620px' });
 const route = useRoute();
 const metaStore = useMetaStore();
 const task = ref<Task | null>(null);

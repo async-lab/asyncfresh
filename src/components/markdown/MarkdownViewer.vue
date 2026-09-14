@@ -22,8 +22,23 @@ const safeHtml = computed(() => DOMPurify.sanitize(md.render(props.content || ''
 
 <style scoped>
 .markdown-body {
+  overflow-wrap: anywhere;
+  word-break: break-word;
   line-height: 1.72;
   color: var(--app-text);
+}
+
+.markdown-body :deep(img),
+.markdown-body :deep(video) {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body :deep(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .markdown-body :deep(h1),

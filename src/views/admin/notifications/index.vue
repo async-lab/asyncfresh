@@ -27,9 +27,11 @@
         <el-table-column label="创建时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">标为已读</el-button>
+            <div class="table-actions">
+              <el-button text type="primary" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">标为已读</el-button>
+            </div>
           </template>
         </el-table-column>
       </PageTable>
@@ -103,5 +105,19 @@ function formatDateTime(value?: string) {
 
 .toolbar-left {
   flex: 1;
+}
+
+@media (max-width: 960px) {
+  .notify-toolbar,
+  .toolbar-left {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .notify-toolbar :deep(.el-input),
+  .notify-toolbar :deep(.el-select),
+  .notify-toolbar :deep(.el-button) {
+    width: 100%;
+  }
 }
 </style>

@@ -44,15 +44,17 @@
         <el-table-column label="发布时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="kind === 'tasks'" text type="primary" :icon="Checked" @click="openReviews(row)">批阅</el-button>
-            <el-button text type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm :title="`确认删除该${itemName}？`" confirm-button-text="删除" cancel-button-text="取消" @confirm="handleDelete(row)">
-              <template #reference>
-                <el-button text type="danger" :icon="Delete">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="table-actions">
+              <el-button v-if="kind === 'tasks'" text type="primary" :icon="Checked" @click="openReviews(row)">批阅</el-button>
+              <el-button text type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
+              <el-popconfirm :title="`确认删除该${itemName}？`" confirm-button-text="删除" cancel-button-text="取消" @confirm="handleDelete(row)">
+                <template #reference>
+                  <el-button text type="danger" :icon="Delete">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </PageTable>
@@ -68,8 +70,8 @@
       />
     </section>
 
-    <el-drawer v-model="drawerVisible" :title="editingId ? `编辑${itemName}` : `新建${itemName}`" size="560px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="86px">
+    <el-drawer v-model="drawerVisible" :title="editingId ? `编辑${itemName}` : `新建${itemName}`" :size="isMobile ? '100%' : '560px'">
+      <el-form ref="formRef" :model="form" :rules="rules" :label-position="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '86px'">
         <el-form-item label="标题" prop="title">
           <el-input v-model="form.title" maxlength="80" show-word-limit />
         </el-form-item>
@@ -109,7 +111,7 @@
       </template>
     </el-drawer>
 
-    <el-drawer v-model="reviewVisible" title="任务批阅" size="860px">
+    <el-drawer v-model="reviewVisible" title="任务批阅" :size="isMobile ? '100%' : '860px'">
       <div class="review-head">
         <strong>{{ currentTask?.title }}</strong>
         <el-button :icon="Download" @click="downloadSubmissions">批下载</el-button>
@@ -132,24 +134,26 @@
           </template>
         </el-table-column>
         <el-table-column prop="score" label="分数" width="80" />
-        <el-table-column label="操作" width="210" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" :disabled="!hasSubmissionDetail(row)" @click="openSubmissionDetail(row)">
-              查看
-            </el-button>
-            <el-button text type="primary" @click="openReviewDialog(row)">评分</el-button>
-            <el-popconfirm title="确认打回该提交？" confirm-button-text="打回" cancel-button-text="取消" @confirm="returnSubmission(row)">
-              <template #reference>
-                <el-button text type="warning">打回</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="View" :disabled="!hasSubmissionDetail(row)" @click="openSubmissionDetail(row)">
+                查看
+              </el-button>
+              <el-button text type="primary" @click="openReviewDialog(row)">评分</el-button>
+              <el-popconfirm title="确认打回该提交？" confirm-button-text="打回" cancel-button-text="取消" @confirm="returnSubmission(row)">
+                <template #reference>
+                  <el-button text type="warning">打回</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </PageTable>
     </el-drawer>
 
-    <el-dialog v-model="scoreVisible" title="提交评分" width="420px">
-      <el-form :model="scoreForm" label-width="72px">
+    <el-dialog v-model="scoreVisible" title="提交评分" :width="isMobile ? '92%' : '420px'">
+      <el-form :model="scoreForm" :label-position="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '72px'">
         <el-form-item label="分数">
           <el-input-number v-model="scoreForm.score" :min="0" :max="currentTask?.maxScore || 100" />
         </el-form-item>
@@ -163,9 +167,9 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="submissionVisible" title="提交详情" width="680px">
+    <el-dialog v-model="submissionVisible" title="提交详情" :width="isMobile ? '96%' : '680px'">
       <template v-if="submissionTarget">
-        <el-descriptions :column="2" border>
+        <el-descriptions :column="isMobile ? 1 : 2" border>
           <el-descriptions-item label="姓名">{{ submissionTarget.realName || '-' }}</el-descriptions-item>
           <el-descriptions-item label="账号">{{ submissionTarget.username || '-' }}</el-descriptions-item>
           <el-descriptions-item label="状态">
@@ -207,6 +211,8 @@
 import { Checked, Delete, Download, Edit, Plus, Refresh, View } from '@element-plus/icons-vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
+
+import { useIsMobile } from '@/composables/useMediaQuery';
 
 import {
   createAdminAnnouncement,
@@ -257,6 +263,7 @@ type Mode = 'leader' | 'admin';
 type Kind = 'announcements' | 'materials' | 'tasks';
 type ManagedItem = Announcement | Material | Task;
 
+const isMobile = useIsMobile();
 const props = defineProps<{
   mode: Mode;
   kind: Kind;
@@ -648,6 +655,13 @@ function formatDateTime(value?: string | null) {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+@media (max-width: 960px) {
+  .review-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .submission-section {

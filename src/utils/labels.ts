@@ -45,4 +45,6 @@ export const scopeLabels: Record<Scope, string> = {
 export const gradeLabels: Record<Grade, string> = {
   YEAR_1: '大一',
   YEAR_2: '大二',
+  YEAR_3: '大三',
+  YEAR_4: '大四'
 };

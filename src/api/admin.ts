@@ -132,34 +132,6 @@ export function getAdminUser(id: number | string) {
   return getData<User>(`/admin/users/${id}`);
 }
 
-export interface AdminUserBasePayload {
-  username: string;
-  email: string;
-  role: Exclude<Role, 'ADMIN'>;
-  status: UserStatus;
-  emailVerified: boolean;
-}
-
-export interface AdminUserCreatePayload extends AdminUserBasePayload {
-  password: string;
-}
-
-export interface AdminUserUpdatePayload extends AdminUserBasePayload {
-  password?: string;
-}
-
-export function createAdminUser(payload: AdminUserCreatePayload) {
-  return postData<User, AdminUserCreatePayload>('/admin/users', payload);
-}
-
-export function updateAdminUser(id: number | string, payload: AdminUserUpdatePayload) {
-  return putData<User, AdminUserUpdatePayload>(`/admin/users/${id}`, payload);
-}
-
-export function deleteAdminUser(id: number | string) {
-  return deleteData<null>(`/admin/users/${id}`);
-}
-
 export function updateUserStatus(id: number | string, status: 'ACTIVE' | 'DISABLED') {
   return patchData<User, { status: 'ACTIVE' | 'DISABLED' }>(`/admin/users/${id}/status`, { status });
 }

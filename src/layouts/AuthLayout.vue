@@ -21,8 +21,11 @@ const metaStore = useMetaStore();
 .auth-layout {
   display: grid;
   min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
   place-items: center;
-  padding: 24px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background:
     radial-gradient(circle at 18% 18%, rgba(198, 179, 141, 0.12), transparent 26%),
     radial-gradient(circle at 84% 18%, rgba(165, 155, 212, 0.1), transparent 24%),
@@ -47,11 +50,34 @@ const metaStore = useMetaStore();
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .brand strong {
   font-size: 20px;
   color: var(--app-text);
+}
+
+@media (max-width: 640px) {
+  .auth-layout {
+    place-items: stretch;
+  }
+
+  .auth-panel {
+    min-height: calc(100dvh - 32px);
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .brand {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+
+  .brand strong {
+    font-size: 18px;
+  }
 }
 </style>

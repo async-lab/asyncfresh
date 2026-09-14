@@ -58,9 +58,11 @@
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.id}`)">
-              详情
-            </el-button>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.id}`)">
+                详情
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>

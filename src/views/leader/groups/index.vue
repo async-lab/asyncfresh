@@ -9,9 +9,11 @@
         </el-table-column>
         <el-table-column prop="admissionYear" label="入学年份" width="110" />
         <el-table-column prop="maxSize" label="容量" width="90" />
-        <el-table-column label="操作" width="140">
+        <el-table-column label="操作" width="150">
           <template #default="{ row }">
-            <el-button text type="primary" @click="$router.push(`/leader/groups/${row.id}/members`)">查看组员</el-button>
+            <div class="table-actions">
+              <el-button text type="primary" @click="$router.push(`/leader/groups/${row.id}/members`)">查看组员</el-button>
+            </div>
           </template>
         </el-table-column>
       </PageTable>

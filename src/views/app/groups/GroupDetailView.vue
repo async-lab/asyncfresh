@@ -122,7 +122,8 @@ h2 {
 }
 
 @media (max-width: 860px) {
-  .detail-grid {
+  .detail-grid,
+  .compact {
     grid-template-columns: 1fr;
   }
 }

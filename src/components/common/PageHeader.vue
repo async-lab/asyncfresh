@@ -67,5 +67,9 @@ p {
   h1 {
     font-size: 22px;
   }
+
+  .page-header__actions :deep(.el-button) {
+    flex: 1 1 auto;
+  }
 }
 </style>

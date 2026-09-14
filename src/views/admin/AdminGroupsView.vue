@@ -38,19 +38,21 @@
         <el-table-column label="负责人" width="120">
           <template #default="{ row }">{{ getLeaderLabel(row) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="230" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button text type="primary" :icon="View" @click="openDetail(row.id)">详情</el-button>
-            <el-button text :icon="EditPen" @click="openEditDialog(row)">编辑</el-button>
-            <ConfirmAction title="确认删除该分组？已有成员的分组应由后端拒绝删除。" @confirm="handleDelete(row)">
-              <el-button text type="danger" :icon="Delete">删除</el-button>
-            </ConfirmAction>
+            <div class="table-actions">
+              <el-button text type="primary" :icon="View" @click="openDetail(row.id)">详情</el-button>
+              <el-button text :icon="EditPen" @click="openEditDialog(row)">编辑</el-button>
+              <ConfirmAction title="确认删除该分组？已有成员的分组应由后端拒绝删除。" @confirm="handleDelete(row)">
+                <el-button text type="danger" :icon="Delete">删除</el-button>
+              </ConfirmAction>
+            </div>
           </template>
         </el-table-column>
       </el-table>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑分组' : '创建分组'" width="620px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑分组' : '创建分组'" :width="dialogWidth" :close-on-click-modal="false">
       <el-form label-position="top" :model="form">
         <el-form-item label="分组名称">
           <el-input v-model="form.name" maxlength="50" />
@@ -78,7 +80,7 @@
       </template>
     </el-dialog>
 
-    <el-drawer v-model="detailVisible" title="分组详情" size="620px" @closed="handleDetailClosed">
+    <el-drawer v-model="detailVisible" title="分组详情" :size="drawerSize" @closed="handleDetailClosed">
       <div v-loading="detailLoading">
         <template v-if="detailGroup">
           <el-descriptions :column="1" border>
@@ -123,7 +125,9 @@ import DirectionCascader from '@/components/forms/DirectionCascader.vue';
 import { useMetaStore } from '@/stores/meta';
 import type { Grade, Group, GroupMember } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
+import { useOverlayLayout } from '@/composables/useMediaQuery';
 
+const { dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '620px', drawerSize: '620px' });
 const route = useRoute();
 const router = useRouter();
 const metaStore = useMetaStore();
