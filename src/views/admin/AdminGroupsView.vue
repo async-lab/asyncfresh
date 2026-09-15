@@ -25,7 +25,28 @@
     </section>
 
     <section class="page-section">
-      <el-table v-loading="loading" :data="groups" empty-text="暂无分组">
+      <MobileList v-if="isMobile" :data="groups" :loading="loading" empty-text="暂无分组" key-field="id">
+        <template #item="{ item }">
+          <div class="group-card">
+            <div class="group-card__head">
+              <span class="group-card__name">{{ item.name }}</span>
+              <el-tag effect="light" size="small">{{ getGradeLabel(item.grade) }}</el-tag>
+            </div>
+            <div class="group-card__meta">{{ getGroupDirectionLabel(item) }}</div>
+            <div class="group-card__meta">入学年份：{{ item.admissionYear }} · 容量：{{ item.maxSize }}</div>
+            <div class="group-card__meta">负责人：{{ getLeaderLabel(item) }}</div>
+            <div class="group-card__actions">
+              <el-button text type="primary" :icon="View" @click="openDetail(item.id)">详情</el-button>
+              <el-button text :icon="EditPen" @click="openEditDialog(item)">编辑</el-button>
+              <ConfirmAction title="确认删除该分组？已有成员的分组应由后端拒绝删除。" @confirm="handleDelete(item)">
+                <el-button text type="danger" :icon="Delete">删除</el-button>
+              </ConfirmAction>
+            </div>
+          </div>
+        </template>
+      </MobileList>
+
+      <el-table v-else v-loading="loading" :data="groups" empty-text="暂无分组">
         <el-table-column prop="name" label="分组名称" min-width="180" />
         <el-table-column label="方向" min-width="180">
           <template #default="{ row }">{{ getGroupDirectionLabel(row) }}</template>
@@ -200,15 +221,16 @@ import {
 } from '@/api/admin';
 import { getGroup, getGroupMembers } from '@/api/groups';
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
+import MobileList from '@/components/common/MobileList.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import SearchBar from '@/components/common/SearchBar.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
 import { useMetaStore } from '@/stores/meta';
 import type { Grade, Group, GroupMember, User } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
-import { useOverlayLayout } from '@/composables/useMediaQuery';
+import { useIsMobile, useOverlayLayout } from '@/composables/useMediaQuery';
 
-const { dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '620px', drawerSize: '620px' });
+const { isMobile, dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '620px', drawerSize: '620px' });
 const route = useRoute();
 const router = useRouter();
 const metaStore = useMetaStore();
@@ -526,6 +548,46 @@ h3 {
   color: var(--el-text-color-secondary);
   font-size: 13px;
   margin: 0 0 10px;
+}
+
+.group-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.group-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.group-card__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.group-card__meta {
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.group-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+
+.group-card__actions :deep(.el-button) {
+  margin-left: 0 !important;
+  min-height: 32px;
 }
 
 @media (max-width: 720px) {

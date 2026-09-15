@@ -513,7 +513,8 @@ button,
   }
 
   .metric-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 
   .el-button,
@@ -607,11 +608,29 @@ button,
     width: 100%;
   }
 
+  /* 小屏分页太宽：隐藏每页条数选择器 */
+  .el-pagination .el-pagination__sizes {
+    display: none;
+  }
+
   .el-table .el-table__cell {
     padding: 10px 8px;
   }
 
+  /* 手机端取消固定列吸附：操作列随表格横向滚动，信息列不再被遮盖 */
+  .el-table .el-table-fixed-column--left,
+  .el-table .el-table-fixed-column--right {
+    position: static !important;
+    box-shadow: none !important;
+  }
+
+  .el-table .el-scrollbar__wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .el-table .cell {
+    padding: 0 6px;
     line-height: 1.45;
     overflow-wrap: anywhere;
   }
@@ -619,8 +638,18 @@ button,
     overflow-wrap: normal;
   }
 
+  .table-actions {
+    gap: 2px;
+  }
+
   .table-actions .el-button {
     min-height: 32px;
+    padding: 8px 7px;
+  }
+
+  /* 移动端操作按钮只显示图标，缩小操作列占比 */
+  .table-actions .el-button > span:not(.el-icon) {
+    display: none;
   }
 
 

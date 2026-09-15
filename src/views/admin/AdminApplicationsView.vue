@@ -81,7 +81,7 @@
         <el-table-column label="备注" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">{{ row.statusRemark || '—' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 84 : 240" fixed="right">
           <template #default="{ row }">
             <div v-if="row.status === 'SUBMITTED'" class="table-actions">
               <el-button
@@ -134,10 +134,12 @@ import PageTable from '@/components/common/PageTable.vue';
 import SearchBar from '@/components/common/SearchBar.vue';
 import StatusTag from '@/components/common/StatusTag.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import { useMetaStore } from '@/stores/meta';
 import type { Application, ApplicationStatus, Grade, Group } from '@/types/api';
 import { applicationStatusLabels, gradeLabels } from '@/utils/labels';
 
+const isMobile = useIsMobile();
 const metaStore = useMetaStore();
 const loading = ref(false);
 const actionId = ref<number | null>(null);

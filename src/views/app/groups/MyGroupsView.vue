@@ -18,7 +18,7 @@
             <span>{{ row.leaderUserId ? `#${row.leaderUserId}` : '暂未任命' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 120" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="$router.push(`/app/groups/${row.id}`)">
@@ -38,11 +38,13 @@ import { computed, onMounted, ref } from 'vue';
 
 import { getGroup } from '@/api/groups';
 import PageHeader from '@/components/common/PageHeader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import { useAuthStore } from '@/stores/auth';
 import { useMetaStore } from '@/stores/meta';
 import type { Grade, Group, SimpleGroup } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 
+const isMobile = useIsMobile();
 const authStore = useAuthStore();
 const metaStore = useMetaStore();
 const loading = ref(false);
@@ -61,6 +63,8 @@ onMounted(loadGroups);
 async function loadGroups() {
   loading.value = true;
   try {
+    // 用户信息里的 groups 是登录时的快照，先刷新避免刚分组后显示“暂无分组”。
+    await authStore.fetchMe().catch(() => undefined);
     const simpleGroups = authStore.user?.groups || [];
     const groupDetails = await Promise.all(simpleGroups.map((group) => loadGroupDetail(group)));
     groups.value = groupDetails;

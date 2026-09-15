@@ -21,7 +21,7 @@
         <el-table-column label="发布时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="110" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 110" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="$router.push(`/leader/announcements/${row.id}`)">
@@ -53,11 +53,13 @@ import { ElMessage } from 'element-plus';
 
 import { getAnnouncements } from '@/api/announcements';
 import PageHeader from '@/components/common/PageHeader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import type { Announcement, Scope } from '@/types/api';
 import { scopeLabels } from '@/utils/labels';
 
 type ScopeFilter = 'ALL' | Scope;
 
+const isMobile = useIsMobile();
 const loading = ref(false);
 const announcements = ref<Announcement[]>([]);
 const query = reactive({

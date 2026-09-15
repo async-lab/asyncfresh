@@ -56,7 +56,7 @@
             <AttachmentLink :href="getAttachmentHref(row)" label="下载" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="130" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 130" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.id}`)">
@@ -78,9 +78,11 @@ import { getTasks } from '@/api/tasks';
 import AttachmentLink from '@/components/common/AttachmentLink.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import StatusTag from '@/components/common/StatusTag.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import { useMetaStore } from '@/stores/meta';
 import type { DisplaySubmissionStatus, Task } from '@/types/api';
 
+const isMobile = useIsMobile();
 const metaStore = useMetaStore();
 const tasks = ref<Task[]>([]);
 const loading = ref(false);

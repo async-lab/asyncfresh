@@ -10,7 +10,25 @@
     </PageHeader>
 
     <section class="page-section">
-      <el-table v-loading="loading" :data="periods" empty-text="暂无时期配置">
+      <MobileList v-if="isMobile" :data="periods" :loading="loading" empty-text="暂无时期配置" key-field="id">
+        <template #item="{ item }">
+          <div class="period-card">
+            <div class="period-card__head">
+              <span class="period-card__name">{{ getPeriodLabel(item.periodType) }}</span>
+              <el-tag :type="item.enabled ? 'success' : 'info'" effect="light" size="small">
+                {{ item.enabled ? '启用' : '停用' }}
+              </el-tag>
+            </div>
+            <div class="period-card__meta">开始：{{ formatDateTime(item.startTime) }}</div>
+            <div class="period-card__meta">结束：{{ formatDateTime(item.endTime) }}</div>
+            <div class="period-card__actions">
+              <el-button text type="primary" :icon="EditPen" @click="openDialog(item)">编辑</el-button>
+            </div>
+          </div>
+        </template>
+      </MobileList>
+
+      <el-table v-else v-loading="loading" :data="periods" empty-text="暂无时期配置">
         <el-table-column label="时期" width="120">
           <template #default="{ row }">{{ getPeriodLabel(row.periodType) }}</template>
         </el-table-column>
@@ -80,12 +98,13 @@ import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
 import { getAdminPeriods, saveAdminPeriods, updateAdminPeriod, type PeriodConfig } from '@/api/admin';
+import MobileList from '@/components/common/MobileList.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import type { PeriodType } from '@/types/api';
 import { periodLabels } from '@/utils/labels';
-import { useOverlayLayout } from '@/composables/useMediaQuery';
+import { useIsMobile, useOverlayLayout } from '@/composables/useMediaQuery';
 
-const { dialogWidth } = useOverlayLayout({ dialogWidth: '560px' });
+const { isMobile, dialogWidth } = useOverlayLayout({ dialogWidth: '560px' });
 const periodOptions: PeriodType[] = ['REGISTRATION', 'SELECTION', 'INTERVIEW', 'NOT_OPEN', 'FINISHED'];
 const periods = ref<PeriodConfig[]>([]);
 const loading = ref(false);
@@ -221,5 +240,37 @@ function formatDateTime(value?: string) {
 <style scoped>
 .full {
   width: 100%;
+}
+
+.period-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.period-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.period-card__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.period-card__meta {
+  color: var(--app-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.period-card__actions :deep(.el-button) {
+  margin-left: 0 !important;
+  min-height: 32px;
 }
 </style>

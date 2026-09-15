@@ -42,7 +42,7 @@
         <el-table-column label="批阅时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.reviewedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 140" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="$router.push(`/app/tasks/${row.taskId}`)">
@@ -62,8 +62,10 @@ import { computed, onMounted, ref } from 'vue';
 
 import { getMyScores } from '@/api/tasks';
 import PageHeader from '@/components/common/PageHeader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import type { TaskScore } from '@/types/api';
 
+const isMobile = useIsMobile();
 const loading = ref(false);
 const scores = ref<TaskScore[]>([]);
 const totalScore = computed(() => scores.value.reduce((sum, item) => sum + item.score, 0));

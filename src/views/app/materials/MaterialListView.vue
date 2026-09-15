@@ -30,7 +30,7 @@
         <el-table-column label="发布时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="110" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 110" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="$router.push(`/app/materials/${row.id}`)">
@@ -63,9 +63,11 @@ import { getMaterials } from '@/api/materials';
 import AttachmentLink from '@/components/common/AttachmentLink.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import DirectionCascader from '@/components/forms/DirectionCascader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import { useMetaStore } from '@/stores/meta';
 import type { Material } from '@/types/api';
 
+const isMobile = useIsMobile();
 const metaStore = useMetaStore();
 const loading = ref(false);
 const materials = ref<Material[]>([]);

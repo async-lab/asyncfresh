@@ -37,7 +37,7 @@
         <el-table-column label="更新时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 116 : 280" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="View" @click="openDetail(row)">详情</el-button>
@@ -200,7 +200,7 @@ import type { Application, ApplicationForm, Grade } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 import { useOverlayLayout } from '@/composables/useMediaQuery';
 
-const { dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '680px', drawerSize: '520px' });
+const { isMobile, dialogWidth, drawerSize } = useOverlayLayout({ dialogWidth: '680px', drawerSize: '520px' });
 const route = useRoute();
 const router = useRouter();
 const metaStore = useMetaStore();

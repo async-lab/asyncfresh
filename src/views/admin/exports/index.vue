@@ -134,4 +134,21 @@ async function runExport(type: 'applications' | 'groups' | 'tasks', url: string,
 .group-select {
   width: 240px;
 }
+
+@media (max-width: 960px) {
+  .export-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .group-select {
+    width: 100%;
+  }
+
+  .export-grid :deep(.el-button) {
+    width: 100%;
+    margin-left: 0;
+  }
+}
 </style>

@@ -26,7 +26,7 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 84 : 240" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button text type="primary" :icon="Check" :loading="actionGroupId === row.id" @click="handleAssign(row)">
@@ -53,9 +53,11 @@ import { onMounted, reactive, ref } from 'vue';
 import { assignLeader, getAdminGroups, getAdminUsers, removeLeader } from '@/api/admin';
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import { useMetaStore } from '@/stores/meta';
 import type { Group, User } from '@/types/api';
 
+const isMobile = useIsMobile();
 const metaStore = useMetaStore();
 const groups = ref<Group[]>([]);
 const leaders = ref<User[]>([]);

@@ -34,6 +34,54 @@
         @update:page="handlePageChange"
         @update:size="handleSizeChange"
       >
+        <template #card="{ row }">
+          <div class="user-card">
+            <div class="user-card__head">
+              <span class="user-card__name">{{ row.username }}</span>
+              <el-tag :type="row.status === 'DISABLED' ? 'info' : 'success'" effect="light" size="small">
+                {{ getUserStatusLabel(row.status) }}
+              </el-tag>
+            </div>
+            <div class="user-card__meta">{{ row.email || '未绑定邮箱' }}</div>
+            <div class="user-card__meta">
+              角色：
+              <el-select
+                v-if="canManageRow(row)"
+                :model-value="row.role"
+                size="small"
+                style="width: 130px"
+                @change="(value: Role) => handleRoleChange(row, value)"
+              >
+                <el-option v-for="role in managedRoleOptions" :key="role" :label="roleLabels[role]" :value="role" />
+              </el-select>
+              <el-tag v-else type="danger" effect="light" size="small">{{ getRoleLabel(row.role) }}</el-tag>
+            </div>
+            <div class="user-card__meta">
+              所在分组：{{ row.groups?.length ? row.groups.map((group: SimpleGroup) => group.name).join('、') : '暂无' }}
+            </div>
+            <div class="user-card__actions">
+              <el-button text type="primary" :icon="View" @click="openDetail(row.id)">详情</el-button>
+              <el-button text :icon="EditPen" :disabled="!canManageRow(row)" @click="openEditDialog(row)">编辑</el-button>
+              <el-button
+                text
+                :type="row.status === 'DISABLED' ? 'success' : 'danger'"
+                :icon="SwitchButton"
+                :disabled="!canManageRow(row)"
+                @click="toggleStatus(row)"
+              >
+                {{ row.status === 'DISABLED' ? '启用' : '停用' }}
+              </el-button>
+              <ConfirmAction
+                v-if="canManageRow(row)"
+                title="确认删除该用户？有关联数据的账号无法删除，建议改为停用。"
+                @confirm="handleDelete(row)"
+              >
+                <el-button text type="danger" :icon="Delete">删除</el-button>
+              </ConfirmAction>
+              <el-button v-else text type="danger" :icon="Delete" disabled>删除</el-button>
+            </div>
+          </div>
+        </template>
         <el-table-column prop="username" label="用户名" min-width="130" />
         <el-table-column prop="email" label="邮箱" min-width="220" />
         <el-table-column label="角色" width="150">
@@ -489,6 +537,50 @@ function createEmptyForm(): UserForm {
 
 .full {
   width: 100%;
+}
+
+.user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.user-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.user-card__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.user-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.user-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+
+.user-card__actions :deep(.el-button) {
+  margin-left: 0 !important;
+  min-height: 32px;
 }
 
 @media (max-width: 720px) {

@@ -68,6 +68,12 @@ p {
     font-size: 22px;
   }
 
+  p {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .page-header__actions :deep(.el-button) {
     flex: 1 1 auto;
   }

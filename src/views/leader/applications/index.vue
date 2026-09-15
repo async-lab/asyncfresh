@@ -22,13 +22,13 @@
           <template #default="{ row }">{{ getGradeLabel(row.grade) }}</template>
         </el-table-column>
         <el-table-column prop="introduction" label="自我介绍" min-width="220" show-overflow-tooltip />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 84 : 180" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button text type="primary" @click="assign(row.id)">加入</el-button>
+              <el-button text type="primary" :icon="Plus" @click="assign(row.id)">加入</el-button>
               <el-popconfirm title="确认驳回该申请？" confirm-button-text="驳回" cancel-button-text="取消" @confirm="reject(row.id)">
                 <template #reference>
-                  <el-button text type="danger">驳回</el-button>
+                  <el-button text type="danger" :icon="Close">驳回</el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -40,16 +40,18 @@
 </template>
 
 <script setup lang="ts">
-import { Refresh } from '@element-plus/icons-vue';
+import { Close, Plus, Refresh } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { computed, onMounted, ref } from 'vue';
 
 import { addLeaderApplicationToGroup, getGroups, getLeaderUngroupedApplications, rejectLeaderApplication } from '@/api/leader';
 import PageHeader from '@/components/common/PageHeader.vue';
 import PageTable from '@/components/common/PageTable.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import type { Application, Grade, Group } from '@/types/api';
 import { gradeLabels } from '@/utils/labels';
 
+const isMobile = useIsMobile();
 const loading = ref(false);
 const keyword = ref('');
 const selectedGroupId = ref<number>();

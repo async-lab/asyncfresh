@@ -14,25 +14,27 @@
             <el-option label="全局" value="GLOBAL" />
             <el-option label="组内" value="GROUP" />
           </el-select>
-          <el-input v-model="query.keyword" class="keyword-input" clearable :placeholder="`搜索${itemName}标题或内容`" @keyup.enter="loadItems" />
+          <div class="toolbar-inline">
+            <el-input v-model="query.keyword" class="keyword-input" clearable :placeholder="`搜索${itemName}标题或内容`" @keyup.enter="loadItems" />
+            <el-button :icon="Refresh" :loading="loading" @click="loadItems">刷新</el-button>
+          </div>
         </div>
-        <el-button :icon="Refresh" :loading="loading" @click="loadItems">刷新</el-button>
       </div>
 
       <PageTable :data="pagedItems" :loading="loading" empty-text="暂无内容">
-        <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
+        <el-table-column prop="title" label="标题" :min-width="isMobile ? 110 : 220" show-overflow-tooltip />
         <el-table-column v-if="kind === 'announcements'" label="范围" width="96">
           <template #default="{ row }">
             <el-tag effect="plain">{{ scopeLabels[row.scope as Scope] || '组内' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-else label="责任包" min-width="150">
+        <el-table-column v-else label="责任包" :min-width="isMobile ? 100 : 150">
           <template #default="{ row }">{{ getGroupName(row.groupId) }}</template>
         </el-table-column>
         <el-table-column v-if="kind === 'tasks'" label="满分" width="86">
           <template #default="{ row }">{{ row.maxScore }}</template>
         </el-table-column>
-        <el-table-column v-if="kind === 'tasks'" label="截止时间" min-width="170">
+        <el-table-column v-if="kind === 'tasks'" label="截止时间" :min-width="isMobile ? 130 : 170">
           <template #default="{ row }">{{ formatDateTime(row.deadlineAt) }}</template>
         </el-table-column>
         <el-table-column v-if="kind !== 'announcements'" label="附件" width="92">
@@ -41,17 +43,30 @@
             <span v-else class="muted">无</span>
           </template>
         </el-table-column>
-        <el-table-column label="发布时间" min-width="170">
+        <el-table-column label="发布时间" :min-width="isMobile ? 130 : 170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" :width="actionColumnWidth" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button v-if="kind === 'tasks'" text type="primary" :icon="Checked" @click="openReviews(row)">批阅</el-button>
-              <el-button text type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
+              <el-button
+                v-if="kind === 'tasks'"
+                text
+                type="primary"
+                :icon="Checked"
+                title="批阅"
+                @click="openReviews(row)"
+              >
+                <span v-if="!isMobile">批阅</span>
+              </el-button>
+              <el-button text type="primary" :icon="Edit" title="编辑" @click="openEdit(row)">
+                <span v-if="!isMobile">编辑</span>
+              </el-button>
               <el-popconfirm :title="`确认删除该${itemName}？`" confirm-button-text="删除" cancel-button-text="取消" @confirm="handleDelete(row)">
                 <template #reference>
-                  <el-button text type="danger" :icon="Delete">删除</el-button>
+                  <el-button text type="danger" :icon="Delete" title="删除">
+                    <span v-if="!isMobile">删除</span>
+                  </el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -63,7 +78,9 @@
         v-model:current-page="query.page"
         v-model:page-size="query.size"
         class="pager"
-        layout="total, sizes, prev, pager, next"
+        :small="isMobile"
+        :pager-count="isMobile ? 5 : 7"
+        :layout="isMobile ? 'total, prev, pager, next' : 'total, sizes, prev, pager, next'"
         :page-sizes="[10, 20, 50]"
         :total="filteredItems.length"
         @size-change="query.page = 1"
@@ -134,16 +151,20 @@
           </template>
         </el-table-column>
         <el-table-column prop="score" label="分数" width="80" />
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" :width="reviewActionWidth" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button text type="primary" :icon="View" :disabled="!hasSubmissionDetail(row)" @click="openSubmissionDetail(row)">
-                查看
+              <el-button text type="primary" :icon="View" title="查看" :disabled="!hasSubmissionDetail(row)" @click="openSubmissionDetail(row)">
+                <span v-if="!isMobile">查看</span>
               </el-button>
-              <el-button text type="primary" @click="openReviewDialog(row)">评分</el-button>
+              <el-button text type="primary" :icon="EditPen" title="评分" @click="openReviewDialog(row)">
+                <span v-if="!isMobile">评分</span>
+              </el-button>
               <el-popconfirm title="确认打回该提交？" confirm-button-text="打回" cancel-button-text="取消" @confirm="returnSubmission(row)">
                 <template #reference>
-                  <el-button text type="warning">打回</el-button>
+                  <el-button text type="warning" :icon="RefreshLeft" title="打回">
+                    <span v-if="!isMobile">打回</span>
+                  </el-button>
                 </template>
               </el-popconfirm>
             </div>
@@ -208,7 +229,7 @@
 </template>
 
 <script setup lang="ts">
-import { Checked, Delete, Download, Edit, Plus, Refresh, View } from '@element-plus/icons-vue';
+import { Checked, Delete, Download, Edit, EditPen, Plus, Refresh, RefreshLeft, View } from '@element-plus/icons-vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -278,6 +299,11 @@ const itemNameMap: Record<Kind, string> = {
 };
 
 const itemName = computed(() => itemNameMap[props.kind]);
+const actionColumnWidth = computed(() => {
+  if (!isMobile.value) return 280;
+  return props.kind === 'tasks' ? 132 : 92;
+});
+const reviewActionWidth = computed(() => (isMobile.value ? 128 : 260));
 const loading = ref(false);
 const submitting = ref(false);
 const drawerVisible = ref(false);
@@ -622,6 +648,16 @@ function formatDateTime(value?: string | null) {
   flex-shrink: 0;
 }
 
+/* 桌面端透明容器：搜索框与刷新按钮沿用原布局，刷新靠右 */
+.toolbar-inline {
+  display: contents;
+}
+
+.toolbar-inline > :deep(.el-button) {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .keyword-input {
   width: 260px;
   flex: 1 1 260px;
@@ -697,13 +733,27 @@ function formatDateTime(value?: string | null) {
 
   .toolbar-left {
     width: 100%;
+    flex: 0 0 auto;
   }
 
-  .content-toolbar > :deep(.el-button) {
+  /* 移动端搜索框与刷新按钮同行，减少堆叠行数 */
+  .toolbar-inline {
+    display: flex;
+    gap: 10px;
     width: 100%;
   }
 
-  .keyword-input,
+  .toolbar-inline .keyword-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  .toolbar-inline > :deep(.el-button) {
+    margin-left: 0;
+    flex: 0 0 auto;
+  }
+
   .group-select,
   .scope-select {
     width: 100%;

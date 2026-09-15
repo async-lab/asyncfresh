@@ -1,6 +1,17 @@
 <template>
   <div class="page-table">
-    <div class="page-table__scroll">
+    <MobileList
+      v-if="isMobile && $slots.card"
+      class="page-table__cards"
+      :data="data"
+      :loading="loading"
+      :empty-text="emptyText"
+    >
+      <template #item="{ item, index }">
+        <slot name="card" :row="item" :index="index" />
+      </template>
+    </MobileList>
+    <div v-else class="page-table__scroll">
       <el-table v-loading="loading" :data="data" :empty-text="emptyText" v-bind="$attrs">
         <slot />
       </el-table>
@@ -22,16 +33,17 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" generic="T">
 import { computed } from 'vue';
 
+import MobileList from '@/components/common/MobileList.vue';
 import { useIsMobile } from '@/composables/useMediaQuery';
 
 defineOptions({ inheritAttrs: false });
 
 withDefaults(
   defineProps<{
-    data: unknown[];
+    data: T[];
     loading?: boolean;
     pagination?: boolean;
     page?: number;

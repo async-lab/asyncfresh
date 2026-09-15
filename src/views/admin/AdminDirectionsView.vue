@@ -7,7 +7,54 @@
     </PageHeader>
 
     <section class="page-section">
+      <MobileList
+        v-if="isMobile"
+        :data="directions"
+        :loading="loading"
+        empty-text="暂无方向"
+        key-field="id"
+      >
+        <template #item="{ item }">
+          <div class="direction-card">
+            <div class="direction-card__head">
+              <span class="direction-card__name">{{ item.name }}</span>
+              <el-tag :type="item.enabled === false ? 'info' : 'success'" effect="light" size="small">
+                {{ item.enabled === false ? '停用' : '启用' }}
+              </el-tag>
+            </div>
+            <div class="direction-card__actions">
+              <el-button size="small" text type="primary" :icon="Plus" @click="openCreateDialog(item.id)">
+                子方向
+              </el-button>
+              <el-button size="small" text :icon="EditPen" @click="openEditDialog(item)">编辑</el-button>
+              <ConfirmAction title="确认删除该方向？" @confirm="handleDelete(item)">
+                <el-button size="small" text type="danger" :icon="Delete">删除</el-button>
+              </ConfirmAction>
+            </div>
+
+            <div v-if="item.children?.length" class="direction-card__children">
+              <div v-for="child in item.children" :key="child.id" class="direction-child">
+                <div class="direction-child__info">
+                  <span class="direction-child__name">{{ child.name }}</span>
+                  <span class="direction-child__meta">排序 {{ child.sortOrder ?? 0 }}</span>
+                </div>
+                <el-tag :type="child.enabled === false ? 'info' : 'success'" effect="light" size="small">
+                  {{ child.enabled === false ? '停用' : '启用' }}
+                </el-tag>
+                <div class="direction-child__actions">
+                  <el-button text type="primary" :icon="EditPen" title="编辑" @click="openEditDialog(child)" />
+                  <ConfirmAction title="确认删除该方向？" @confirm="handleDelete(child)">
+                    <el-button text type="danger" :icon="Delete" title="删除" />
+                  </ConfirmAction>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </MobileList>
+
       <el-table
+        v-else
         v-loading="loading"
         :data="directions"
         row-key="id"
@@ -82,11 +129,12 @@ import {
   type DirectionPayload
 } from '@/api/admin';
 import ConfirmAction from '@/components/common/ConfirmAction.vue';
+import MobileList from '@/components/common/MobileList.vue';
 import PageHeader from '@/components/common/PageHeader.vue';
 import type { Direction } from '@/types/api';
 import { useOverlayLayout } from '@/composables/useMediaQuery';
 
-const { dialogWidth } = useOverlayLayout({ dialogWidth: '520px' });
+const { isMobile, dialogWidth } = useOverlayLayout({ dialogWidth: '520px' });
 const directions = ref<Direction[]>([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -169,5 +217,86 @@ function createEmptyForm(parentId?: number): DirectionPayload {
 <style scoped>
 .full {
   width: 100%;
+}
+
+.direction-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.direction-card__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.direction-card__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.direction-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+
+.direction-card__actions :deep(.el-button) {
+  margin-left: 0 !important;
+  min-height: 30px;
+}
+
+.direction-card__children {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-left: 12px;
+  border-left: 3px solid rgba(165, 155, 212, 0.35);
+}
+
+.direction-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.direction-child__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.direction-child__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  color: var(--app-text);
+}
+
+.direction-child__meta {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+.direction-child__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.direction-child__actions :deep(.el-button) {
+  margin-left: 0 !important;
 }
 </style>

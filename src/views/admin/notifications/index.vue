@@ -27,10 +27,10 @@
         <el-table-column label="创建时间" min-width="170">
           <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" :width="isMobile ? 64 : 140" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button text type="primary" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">标为已读</el-button>
+              <el-button text type="primary" :icon="Check" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">标为已读</el-button>
             </div>
           </template>
         </el-table-column>
@@ -40,15 +40,17 @@
 </template>
 
 <script setup lang="ts">
-import { Refresh } from '@element-plus/icons-vue';
+import { Check, Refresh } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
 import { getCurrentNotifications, markAllNotificationsRead, markNotificationRead } from '@/api/admin';
 import PageHeader from '@/components/common/PageHeader.vue';
 import PageTable from '@/components/common/PageTable.vue';
+import { useIsMobile } from '@/composables/useMediaQuery';
 import type { NotificationItem } from '@/types/api';
 
+const isMobile = useIsMobile();
 const loading = ref(false);
 const notifications = ref<NotificationItem[]>([]);
 const query = reactive({ unreadOnly: false, page: 1, size: 10 });

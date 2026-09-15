@@ -132,6 +132,8 @@ onMounted(loadDashboard);
 async function loadDashboard() {
   loading.value = true;
   try {
+    // 刷新用户信息，保证“所在分组”卡片与最新分组状态一致。
+    await authStore.fetchMe().catch(() => undefined);
     const [applicationList, applicationSummary] = await Promise.all([
       getApplications(),
       getApplicationSummary()
