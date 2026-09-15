@@ -19,6 +19,9 @@ const csrfFreeAuthPaths = new Set([
   '/auth/reset-password'
 ]);
 
+// 会话探测接口：未登录属于预期结果，交给路由守卫处理，避免拦截器弹窗并整页跳转
+const silentUnauthorizedPaths = new Set(['/auth/me']);
+
 http.interceptors.request.use((config) => {
   if (shouldAttachCsrf(config.method, config.url)) {
     const token = readCookie('XSRF-TOKEN');
@@ -35,7 +38,7 @@ http.interceptors.response.use(
     const body = response.data as ApiResponse<unknown>;
 
     if (body && typeof body.code === 'number' && body.code !== 0) {
-      handleBusinessError(body);
+      handleBusinessError(body, response.config.url);
       return Promise.reject(body);
     }
 
@@ -45,7 +48,7 @@ http.interceptors.response.use(
     const body = error.response?.data;
 
     if (typeof body?.code === 'number') {
-      handleBusinessError(body);
+      handleBusinessError(body, error.config?.url);
     } else {
       ElMessage.error('网络异常，请稍后重试');
     }
@@ -63,6 +66,10 @@ function shouldAttachCsrf(method = 'get', url = '') {
   }
 
   return !csrfFreeAuthPaths.has(normalizePath(url));
+}
+
+function isSilentUnauthorizedPath(url = '') {
+  return silentUnauthorizedPaths.has(normalizePath(url));
 }
 
 function normalizePath(url: string) {
@@ -94,8 +101,12 @@ function readCookie(name: string) {
   }
 }
 
-function handleBusinessError(body: ApiResponse<unknown>) {
+function handleBusinessError(body: ApiResponse<unknown>, url?: string) {
   if (body.code === 40100) {
+    if (isSilentUnauthorizedPath(url)) {
+      return;
+    }
+
     ElMessage.warning('登录已过期，请重新登录');
     window.location.assign(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
     return;

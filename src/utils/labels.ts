@@ -1,4 +1,13 @@
-import type { ApplicationStatus, Grade, PeriodType, Role, Scope, SubmissionStatus, UserStatus } from '@/types/api';
+import type {
+  ApplicationStatus,
+  Grade,
+  NotificationType,
+  PeriodType,
+  Role,
+  Scope,
+  SubmissionStatus,
+  UserStatus
+} from '@/types/api';
 
 export const roleLabels: Record<Role, string> = {
   FRESHMAN: '新生',
@@ -47,4 +56,15 @@ export const gradeLabels: Record<Grade, string> = {
   YEAR_2: '大二',
   YEAR_3: '大三',
   YEAR_4: '大四'
+};
+
+export const notificationTypeLabels: Record<NotificationType, string> = {
+  APPLICATION_REJECTED: '报名驳回',
+  APPLICATION_GROUPED: '分组结果',
+  APPLICATION_UNASSIGNED: '分组变更',
+  TASK_PUBLISHED: '新任务',
+  TASK_RETURNED: '任务打回',
+  TASK_REVIEWED: '任务评测',
+  ANNOUNCEMENT_PUBLISHED: '公告',
+  MATERIAL_PUBLISHED: '学习资料'
 };

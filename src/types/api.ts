@@ -28,6 +28,15 @@ export type Grade = 'YEAR_1' | 'YEAR_2' | 'YEAR_3' | 'YEAR_4';
 export type SubmissionStatus = 'PENDING' | 'SUBMITTED' | 'REVIEWED';
 export type DisplaySubmissionStatus = SubmissionStatus | 'EXPIRED';
 export type FilePurpose = 'TASK_ATTACHMENT' | 'TASK_SUBMISSION_ATTACHMENT' | 'MATERIAL_ATTACHMENT';
+export type NotificationType =
+  | 'APPLICATION_REJECTED'
+  | 'APPLICATION_GROUPED'
+  | 'APPLICATION_UNASSIGNED'
+  | 'TASK_PUBLISHED'
+  | 'TASK_RETURNED'
+  | 'TASK_REVIEWED'
+  | 'ANNOUNCEMENT_PUBLISHED'
+  | 'MATERIAL_PUBLISHED';
 
 export interface TaskAttachment {
   id?: number;
@@ -250,11 +259,15 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface NotificationSummary {
+  unreadCount: number;
+}
+
 export interface NotificationItem {
   id: number;
   title: string;
   content: string;
-  type?: string;
+  type?: NotificationType;
   relatedType?: string | null;
   relatedId?: number | null;
   senderUserId?: number | null;

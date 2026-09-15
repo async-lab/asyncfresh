@@ -550,16 +550,17 @@ router.beforeEach(async (to) => {
     await metaStore.bootstrap().catch(() => undefined);
   }
 
-  if (!to.meta.requiresAuth) {
-    if (authStore.user && guestOnlyRouteNames.has(String(to.name || ''))) {
-      return getHomePathByRole(authStore.role);
-    }
-
-    return true;
-  }
-
+  // 刷新后 Pinia 是空的，先用 Cookie 里的凭证尝试恢复会话，未登录时静默失败
   if (!authStore.initialized && !authStore.loading) {
     await authStore.fetchMe().catch(() => undefined);
+  }
+
+  if (authStore.user && guestOnlyRouteNames.has(String(to.name || ''))) {
+    return getHomePathByRole(authStore.role);
+  }
+
+  if (!to.meta.requiresAuth) {
+    return true;
   }
 
   if (!authStore.user) {

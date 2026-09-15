@@ -1,16 +1,14 @@
 <template>
   <div class="page">
-    <PageHeader title="通知中心" description="查看当前账号收到的系统通知并处理未读状态。" />
-
+    <PageHeader title="通知中心" description="查看系统通知、审核通知以及公告通知。" />
     <section class="page-section">
-      <div class="page-toolbar notify-toolbar">
+      <div class="page-toolbar">
         <div class="toolbar-left">
           <el-checkbox v-model="query.unreadOnly" @change="loadNotifications">只看未读</el-checkbox>
           <el-button :disabled="!notifications.some((item) => !item.readAt)" @click="markAllRead">全部已读</el-button>
         </div>
         <el-button :icon="Refresh" :loading="loading" @click="loadNotifications">刷新</el-button>
       </div>
-
       <PageTable :data="notifications" :loading="loading">
         <el-table-column prop="title" label="标题" min-width="180" />
         <el-table-column prop="content" label="内容" min-width="260" show-overflow-tooltip />
@@ -30,7 +28,9 @@
         <el-table-column label="操作" :width="isMobile ? 64 : 140" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button text type="primary" :icon="Check" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">标为已读</el-button>
+              <el-button text type="primary" :icon="Check" :disabled="Boolean(row.readAt)" @click="markRead(row.id)">
+                标为已读
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -89,7 +89,7 @@ function getTypeLabel(type?: string) {
   return type ? labels[type] || type : '-';
 }
 
-function formatDateTime(value?: string) {
+function formatDateTime(value?: string | null) {
   if (!value) return '-';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString('zh-CN', { hour12: false });
@@ -97,29 +97,10 @@ function formatDateTime(value?: string) {
 </script>
 
 <style scoped>
-.notify-toolbar,
 .toolbar-left {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.toolbar-left {
   flex: 1;
-}
-
-@media (max-width: 960px) {
-  .notify-toolbar,
-  .toolbar-left {
-    width: 100%;
-    align-items: stretch;
-  }
-
-  .notify-toolbar :deep(.el-input),
-  .notify-toolbar :deep(.el-select),
-  .notify-toolbar :deep(.el-button) {
-    width: 100%;
-  }
+  gap: 10px;
 }
 </style>

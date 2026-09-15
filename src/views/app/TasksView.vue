@@ -48,7 +48,7 @@
         </el-table-column>
         <el-table-column label="提交状态" width="120">
           <template #default="{ row }">
-            <StatusTag :value="getSubmissionStatus(row)" />
+            <StatusTag kind="submission" :value="getSubmissionStatus(row)" />
           </template>
         </el-table-column>
         <el-table-column label="附件" width="90">

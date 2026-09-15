@@ -70,3 +70,4 @@ export function addLeaderApplicationToGroup(groupId: number | string, applicatio
 export function rejectLeaderApplication(applicationId: number | string, remark?: string) {
   return postData<null, { remark?: string }>(`/leader/applications/${applicationId}/reject`, { remark });
 }
+

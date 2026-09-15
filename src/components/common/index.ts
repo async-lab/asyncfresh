@@ -4,6 +4,8 @@ export { default as FileUploader } from './FileUploader.vue';
 export { default as PageHeader } from './PageHeader.vue';
 export { default as PageTable } from './PageTable.vue';
 export { default as MobileList } from './MobileList.vue';
+export { default as NotificationAlertDialog } from './NotificationAlertDialog.vue';
+export { default as NotificationBell } from './NotificationBell.vue';
 export { default as PeriodBadge } from './PeriodBadge.vue';
 export { default as SearchBar } from './SearchBar.vue';
 export { default as StatusTag } from './StatusTag.vue';

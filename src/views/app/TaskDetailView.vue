@@ -25,7 +25,7 @@
 
           <div class="status-row">
             <span class="muted">当前提交状态</span>
-            <StatusTag :value="currentSubmissionStatus" />
+            <StatusTag kind="submission" :value="currentSubmissionStatus" />
           </div>
 
           <h2>任务说明</h2>
@@ -38,7 +38,7 @@
         <h2>当前提交</h2>
         <div class="progress-card">
           <span class="muted">状态</span>
-          <StatusTag :value="currentSubmissionStatus" />
+          <StatusTag kind="submission" :value="currentSubmissionStatus" />
           <small>{{ currentSubmission?.submittedAt ? formatDateTime(currentSubmission.submittedAt) : submitHint }}</small>
         </div>
 

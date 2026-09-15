@@ -1,12 +1,14 @@
 <template>
   <div class="file-uploader">
     <el-upload
+      ref="uploadRef"
       accept=".md,.markdown,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.txt,.png,.jpg,.jpeg,.gif,.webp,.json,.java,.py,.c,.cpp,.js,.ts"
       :auto-upload="false"
       :disabled="disabled || uploading"
       :limit="1"
       :show-file-list="false"
       :on-change="handleFileChange"
+      :on-exceed="handleExceed"
     >
       <el-button :icon="Upload" :loading="uploading" :disabled="disabled || uploading">
         {{ buttonText }}
@@ -24,7 +26,7 @@
 
 <script setup lang="ts">
 import { Close, Upload } from '@element-plus/icons-vue';
-import { ElMessage, type UploadFile } from 'element-plus';
+import { ElMessage, genFileId, type UploadFile, type UploadInstance, type UploadRawFile } from 'element-plus';
 import { ref, watch } from 'vue';
 
 import { uploadFile } from '@/api/files';
@@ -52,6 +54,7 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
+const uploadRef = ref<UploadInstance>();
 const uploading = ref(false);
 const fileName = ref(props.existingFileName || '');
 
@@ -62,9 +65,24 @@ watch(
   }
 );
 
+// 外部把选中值清空（如关闭/重置抽屉）时，必须同步清掉 el-upload 内部列表，
+// 否则 :limit="1" 会一直认为已选满，之后再也选不了文件。
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (value == null) {
+      uploadRef.value?.clearFiles();
+    }
+  }
+);
+
 async function handleFileChange(uploadFileItem: UploadFile) {
   const raw = uploadFileItem.raw;
   if (!raw) {
+    return;
+  }
+
+  if (uploading.value) {
     return;
   }
 
@@ -75,13 +93,32 @@ async function handleFileChange(uploadFileItem: UploadFile) {
     emit('update:modelValue', file.id);
     emit('uploaded', file);
     ElMessage.success('附件上传成功');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    // axios / 业务错误已由 http 拦截器统一提示，这里只兜底其它异常
+    if (message && !(error as { isAxiosError?: boolean }).isAxiosError) {
+      ElMessage.error(message);
+    }
+    fileName.value = '';
+    emit('update:modelValue', null);
   } finally {
     uploading.value = false;
+    // 无论成功还是失败都清空内部列表，保证下一个文件可以正常选择
+    uploadRef.value?.clearFiles();
+  }
+}
+
+function handleExceed(files: File[]) {
+  uploadRef.value?.clearFiles();
+  const [nextFile] = files;
+  if (nextFile) {
+    uploadRef.value?.handleStart(Object.assign(nextFile, { uid: genFileId() }) as UploadRawFile);
   }
 }
 
 function clearFile() {
   fileName.value = '';
+  uploadRef.value?.clearFiles();
   emit('update:modelValue', null);
   emit('clear');
 }

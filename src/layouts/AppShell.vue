@@ -39,6 +39,7 @@
           <slot name="brand" />
         </div>
         <div class="topbar-right">
+          <NotificationBell />
           <slot name="actions" />
         </div>
       </el-header>
@@ -54,6 +55,7 @@ import { Menu } from '@element-plus/icons-vue';
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { NotificationBell } from '@/components/common';
 import { useIsMobile } from '@/composables/useMediaQuery';
 
 defineProps<{
