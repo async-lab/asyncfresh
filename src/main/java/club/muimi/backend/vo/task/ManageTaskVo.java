@@ -7,6 +7,7 @@ public record ManageTaskVo(
         Long groupId,
         String groupName,
         String title,
+        TaskAttachmentVo attachment,
         Integer maxScore,
         OffsetDateTime deadlineAt,
         long memberCount,

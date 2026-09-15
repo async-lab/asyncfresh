@@ -64,6 +64,13 @@ public class LocalFileStorageService implements FileStorageService {
             "text/plain"
     );
 
+    // 纯文本/代码类扩展名在浏览器与操作系统上给出的 MIME 极不稳定
+    // （例如 Windows 上 .ts 会被报成 video/mp2t，.md 常被报成空值），
+    // 这些扩展名本身已在白名单内，扩展名通过后不再因 MIME 拒绝上传。
+    private static final Set<String> MIME_UNRELIABLE_EXTENSIONS = Set.of(
+            "md", "markdown", "txt", "json", "ts", "js", "py", "java", "c", "cpp"
+    );
+
 
     private final FileStorageProperties fileStorageProperties;
     private final TaskModuleProperties taskModuleProperties;
@@ -470,9 +477,9 @@ public class LocalFileStorageService implements FileStorageService {
             }
         }
 
-        // Browser/OS MIME for Markdown is unreliable, especially on Windows.
+        // Browser/OS MIME for plain text and code files is unreliable, especially on Windows.
         // Once the extension is allowed, do not reject the upload because of MIME.
-        if (isMarkdownExtension(extension)) {
+        if (hasUnreliableMime(extension)) {
             return;
         }
 
@@ -491,8 +498,8 @@ public class LocalFileStorageService implements FileStorageService {
         }
     }
 
-    private boolean isMarkdownExtension(String extension) {
-        return extension != null && BUILTIN_MARKDOWN_EXTENSIONS.contains(extension);
+    private boolean hasUnreliableMime(String extension) {
+        return extension != null && MIME_UNRELIABLE_EXTENSIONS.contains(extension);
     }
 
     private Set<String> normalizeConfiguredContentTypes(java.util.List<String> values) {

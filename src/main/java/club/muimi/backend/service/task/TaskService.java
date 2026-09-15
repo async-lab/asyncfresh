@@ -103,6 +103,9 @@ public class TaskService {
                 ).stream()
                 .filter(submission -> submission.getUserId().equals(currentUser.getUserId()))
                 .collect(Collectors.toMap(TaskSubmission::getTaskId, Function.identity()));
+        Map<Long, StoredFile> storedFileMap = loadStoredFiles(
+                tasks.stream().map(RecruitmentTask::getAttachmentFileId).toList()
+        );
 
         return tasks.stream()
                 .map(task -> {
@@ -113,6 +116,7 @@ public class TaskService {
                             task.getGroupId(),
                             group == null ? null : group.getName(),
                             task.getTitle(),
+                            toAttachmentVo(findStoredFile(storedFileMap, task.getAttachmentFileId())),
                             task.getMaxScore(),
                             toOffsetDateTime(task.getDeadlineAt()),
                             submission == null ? TaskSubmissionStatus.PENDING : submission.getStatus(),
@@ -247,6 +251,9 @@ public class TaskService {
                         tasks.stream().map(RecruitmentTask::getId).toList()
                 ).stream()
                 .collect(Collectors.groupingBy(TaskSubmission::getTaskId));
+        Map<Long, StoredFile> storedFileMap = loadStoredFiles(
+                tasks.stream().map(RecruitmentTask::getAttachmentFileId).toList()
+        );
 
         return tasks.stream()
                 .map(task -> {
@@ -266,6 +273,7 @@ public class TaskService {
                             groupId,
                             group.getName(),
                             task.getTitle(),
+                            toAttachmentVo(findStoredFile(storedFileMap, task.getAttachmentFileId())),
                             task.getMaxScore(),
                             toOffsetDateTime(task.getDeadlineAt()),
                             memberCount,
@@ -336,16 +344,23 @@ public class TaskService {
         RecruitmentGroup group = recruitmentGroupRepository.findById(groupId)
                 .orElseThrow(() -> new NotFoundException("分组不存在"));
         ensureCanManageGroup(currentUser, group);
-        StoredFile oldAttachment = task.getAttachmentFileId() == null ? null : storedFileRepository.findById(task.getAttachmentFileId()).orElse(null);
+        Long currentAttachmentFileId = task.getAttachmentFileId();
+        StoredFile oldAttachment = currentAttachmentFileId == null ? null : storedFileRepository.findById(currentAttachmentFileId).orElse(null);
+        // 编辑时前端会把任务当前的附件 ID 原样回传，这种情况视为"保留原附件"，
+        // 不能再走"未绑定文件"校验，否则该文件已绑定到本任务会被判为被占用。
+        boolean keepCurrentAttachment = request.attachmentFileId() != null
+                && Objects.equals(request.attachmentFileId(), currentAttachmentFileId);
         StoredFile newAttachment = null;
-        if (request.attachmentFileId() != null) {
+        if (request.attachmentFileId() != null && !keepCurrentAttachment) {
             newAttachment = fileStorageService.requireOwnedUnboundFile(
                     request.attachmentFileId(),
                     StoredFilePurpose.TASK_ATTACHMENT,
                     currentUser.getUserId()
             );
         }
-        boolean willHaveAttachment = newAttachment != null || (!request.removeAttachment() && oldAttachment != null);
+        boolean willHaveAttachment = newAttachment != null
+                || keepCurrentAttachment
+                || (!request.removeAttachment() && oldAttachment != null);
         validateTaskPayloadForUpdate(request.contentMarkdown(), willHaveAttachment);
 
         task.setTitle(request.title().trim());
