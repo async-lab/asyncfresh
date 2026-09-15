@@ -243,13 +243,17 @@ a {
   background: #9e94cf;
 }
 
+/* 文字按钮不使用拟态阴影，否则无底色的按钮在表格操作列会显示成浅色块 */
 .el-button.is-text {
   color: var(--app-primary);
+  box-shadow: none;
 }
 
-.el-button.is-text:not(.is-disabled):hover {
+.el-button.is-text:not(.is-disabled):hover,
+.el-button.is-text:not(.is-disabled):focus {
   color: var(--app-primary-strong);
-  background: rgba(165, 155, 212, 0.08);
+  background: rgba(165, 155, 212, 0.1);
+  box-shadow: none;
 }
 
 .el-input__wrapper,
@@ -463,6 +467,14 @@ button,
   margin-left: 0 !important;
 }
 
+/* 操作列中的占位文案（如“不可操作”）与文字按钮左对齐、同高 */
+.table-actions > .muted {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 15px;
+}
+
 .el-table .cell:has(> .table-actions) {
   white-space: nowrap;
   overflow-wrap: normal;
@@ -645,6 +657,10 @@ button,
   .table-actions .el-button {
     min-height: 32px;
     padding: 8px 7px;
+  }
+
+  .table-actions > .muted {
+    padding: 0 7px;
   }
 
   /* 移动端操作按钮只显示图标，缩小操作列占比 */

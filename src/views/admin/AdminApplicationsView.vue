@@ -87,7 +87,7 @@
               <el-button
                 text
                 type="primary"
-                :icon="Connection"
+                :icon="Plus"
                 :disabled="getCandidateGroups(row).length === 0"
                 :loading="actionId === row.id"
                 @click="assignApplication(row)"
@@ -109,7 +109,9 @@
                 取消分组
               </el-button>
             </div>
-            <span v-else class="muted">不可操作</span>
+            <div v-else class="table-actions">
+              <span class="muted">不可操作</span>
+            </div>
           </template>
         </el-table-column>
       </PageTable>
@@ -118,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { Close, Connection, Refresh, Remove, Search } from '@element-plus/icons-vue';
+import { Close, Plus, Refresh, Remove, Search } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { onMounted, reactive, ref } from 'vue';
 
