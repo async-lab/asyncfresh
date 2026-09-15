@@ -87,6 +87,7 @@
             :http-request="handleUploadRequest"
             :before-upload="beforeUpload"
             :on-remove="handleFileRemove"
+            :on-exceed="handleFileExceed"
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽文件到此处，或点击上传</div>
@@ -114,9 +115,11 @@
 import { Back, Medal, UploadFilled } from '@element-plus/icons-vue';
 import {
   ElMessage,
+  genFileId,
   type FormInstance,
   type UploadInstance,
   type UploadProps,
+  type UploadRawFile,
   type UploadRequestOptions,
   type UploadUserFile
 } from 'element-plus';
@@ -267,6 +270,19 @@ const beforeUpload: UploadProps['beforeUpload'] = (file) => {
 
   return true;
 };
+
+// 提交附件只保留一个：超过限制时用新文件替换旧文件，避免第二次选择被直接拒绝而看起来像上传失败
+function handleFileExceed(files: File[]) {
+  const [nextFile] = files;
+  if (!nextFile) {
+    return;
+  }
+
+  uploadRef.value?.clearFiles();
+  uploadedFile.value = null;
+  submitForm.attachmentFileId = null;
+  uploadRef.value?.handleStart(Object.assign(nextFile, { uid: genFileId() }) as UploadRawFile);
+}
 
 async function handleUploadRequest(options: UploadRequestOptions) {
   uploading.value = true;

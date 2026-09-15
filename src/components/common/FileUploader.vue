@@ -14,7 +14,7 @@
         {{ buttonText }}
       </el-button>
     </el-upload>
-    <p class="file-uploader__hint">支持 .md / .markdown、PDF、Office、图片和常见代码文件</p>
+    <p class="file-uploader__hint">支持 .md / .markdown、PDF、Office、图片和常见代码文件，单个文件不超过 {{ maxSizeMb }}MB</p>
     <div v-if="fileName || modelValue" class="file-uploader__current">
       <el-tag effect="light" type="info">
         {{ fileName || `文件 #${modelValue}` }}
@@ -40,11 +40,13 @@ const props = withDefaults(
     clearable?: boolean;
     buttonText?: string;
     existingFileName?: string | null;
+    maxSizeMb?: number;
   }>(),
   {
     clearable: true,
     buttonText: '上传附件',
-    existingFileName: null
+    existingFileName: null,
+    maxSizeMb: 20
   }
 );
 
@@ -86,6 +88,12 @@ async function handleFileChange(uploadFileItem: UploadFile) {
     return;
   }
 
+  if (raw.size > props.maxSizeMb * 1024 * 1024) {
+    ElMessage.error(`附件大小不能超过 ${props.maxSizeMb}MB，当前文件约 ${(raw.size / 1024 / 1024).toFixed(1)}MB`);
+    uploadRef.value?.clearFiles();
+    return;
+  }
+
   uploading.value = true;
   try {
     const file = await uploadFile(raw, props.purpose);
@@ -94,10 +102,10 @@ async function handleFileChange(uploadFileItem: UploadFile) {
     emit('uploaded', file);
     ElMessage.success('附件上传成功');
   } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-    // axios / 业务错误已由 http 拦截器统一提示，这里只兜底其它异常
-    if (message && !(error as { isAxiosError?: boolean }).isAxiosError) {
-      ElMessage.error(message);
+    const response = (error as { response?: { status?: number } }).response;
+    // axios / 业务错误已由 http 拦截器统一提示，这里只兜底没有响应体的场景（网络中断、超时等）
+    if (!response) {
+      ElMessage.error('附件上传失败，请检查网络后重试');
     }
     fileName.value = '';
     emit('update:modelValue', null);
