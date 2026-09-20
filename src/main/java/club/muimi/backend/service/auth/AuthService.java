@@ -111,8 +111,7 @@ public class AuthService {
 
     @Transactional
     public void sendEmailCode(SendEmailCodeRequest request, HttpServletRequest httpServletRequest) {
-        String clientIp = resolveClientIp(httpServletRequest);
-        enforceEmailSendRateLimit(clientIp);
+        enforceEmailSendRateLimit();
 
         boolean shouldSendMail = true;
         if (request.scene() == EmailCodeScene.REGISTER) {
@@ -434,13 +433,7 @@ public class AuthService {
         return failCount;
     }
 
-    private void enforceEmailSendRateLimit(String clientIp) {
-        Duration ipWindow = Duration.ofSeconds(authProperties.getEmailCode().getIpSendWindowSeconds());
-        long ipCount = authCacheService.incrementEmailSendIpCount(clientIp, ipWindow);
-        if (ipCount > authProperties.getEmailCode().getMaxIpSendCount()) {
-            throw new TooManyRequestsException("验证码发送过于频繁，请稍后再试");
-        }
-
+    private void enforceEmailSendRateLimit() {
         Duration globalWindow = Duration.ofSeconds(authProperties.getEmailCode().getGlobalSendWindowSeconds());
         long globalCount = authCacheService.incrementEmailSendGlobalCount(globalWindow);
         if (globalCount > authProperties.getEmailCode().getMaxGlobalSendCount()) {

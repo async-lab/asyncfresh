@@ -50,11 +50,6 @@ public class RedisAuthCacheService implements AuthCacheService {
     }
 
     @Override
-    public long incrementEmailSendIpCount(String clientIp, Duration ttl) {
-        return incrementWithTtl(emailSendIpKey(clientIp), ttl);
-    }
-
-    @Override
     public long incrementEmailSendGlobalCount(Duration ttl) {
         return incrementWithTtl(emailSendGlobalKey(), ttl);
     }
@@ -124,10 +119,6 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     private String emailCooldownKey(EmailCodeScene scene, String email) {
         return "auth:email-send-cooldown:" + scene.name() + ":" + email;
-    }
-
-    private String emailSendIpKey(String clientIp) {
-        return "auth:email-send:ip:" + clientIp;
     }
 
     private String emailSendGlobalKey() {

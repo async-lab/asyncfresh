@@ -50,7 +50,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -93,8 +92,6 @@ class AuthServiceTest {
         authProperties.getEmailCode().setSendCooldownSeconds(60);
         authProperties.getEmailCode().setMaxVerifyFailCount(5);
         authProperties.getEmailCode().setVerifyLockSeconds(300);
-        authProperties.getEmailCode().setIpSendWindowSeconds(3600);
-        authProperties.getEmailCode().setMaxIpSendCount(30);
         authProperties.getEmailCode().setGlobalSendWindowSeconds(60);
         authProperties.getEmailCode().setMaxGlobalSendCount(300);
         authProperties.getLogin().setMaxFailCount(5);
@@ -402,26 +399,10 @@ class AuthServiceTest {
     }
 
     @Test
-    void sendEmailCodeShouldRejectWhenIpRateLimitExceeded() {
-        SendEmailCodeRequest request = new SendEmailCodeRequest("user@example.com", EmailCodeScene.REGISTER);
-        MockHttpServletRequest httpRequest = new MockHttpServletRequest();
-        httpRequest.setRemoteAddr("203.0.113.10");
-        when(authCacheService.incrementEmailSendIpCount(eq("203.0.113.10"), any())).thenReturn(31L);
-
-        assertThatThrownBy(() -> authService.sendEmailCode(request, httpRequest))
-                .isInstanceOf(TooManyRequestsException.class)
-                .hasMessage("验证码发送过于频繁，请稍后再试");
-
-        verify(authCacheService, never()).incrementEmailSendGlobalCount(any());
-        verify(mailService, never()).sendVerificationCode(anyString(), anyString(), any());
-    }
-
-    @Test
     void sendEmailCodeShouldRejectWhenGlobalRateLimitExceeded() {
         SendEmailCodeRequest request = new SendEmailCodeRequest("user@example.com", EmailCodeScene.REGISTER);
         MockHttpServletRequest httpRequest = new MockHttpServletRequest();
         httpRequest.setRemoteAddr("203.0.113.10");
-        when(authCacheService.incrementEmailSendIpCount(eq("203.0.113.10"), any())).thenReturn(1L);
         when(authCacheService.incrementEmailSendGlobalCount(any())).thenReturn(301L);
 
         assertThatThrownBy(() -> authService.sendEmailCode(request, httpRequest))
