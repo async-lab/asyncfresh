@@ -163,4 +163,27 @@ class LearningMaterialServiceTest {
         assertThat(materials.getFirst().attachment()).isNull();
         verify(storedFileRepository, never()).findAllByIdIn(any());
     }
+
+    @Test
+    void deleteMaterialShouldCleanRelatedNotifications() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        RecruitmentGroup group = RecruitmentGroup.builder()
+                .id(12L)
+                .name("后端组")
+                .build();
+        LearningMaterial material = LearningMaterial.builder()
+                .id(3L)
+                .groupId(12L)
+                .title("资料")
+                .publisherUserId(2L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(recruitmentGroupRepository.findById(12L)).thenReturn(Optional.of(group));
+        when(learningMaterialRepository.findById(3L)).thenReturn(Optional.of(material));
+
+        learningMaterialService.deleteMaterial(12L, 3L);
+
+        verify(learningMaterialRepository).delete(material);
+        verify(notificationService).deleteByRelated("MATERIAL", 3L);
+    }
 }

@@ -18,6 +18,9 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,5 +82,23 @@ class NotificationServiceTest {
         assertThat(saved.getSenderUserId()).isEqualTo(1L);
         assertThat(saved.getRelatedType()).isEqualTo("TASK");
         assertThat(saved.getRelatedId()).isEqualTo(1L);
+    }
+
+    @Test
+    void deleteByRelatedShouldDelegateToRepositoryWithExactTypeAndId() {
+        when(notificationRepository.deleteAllByRelated("TASK", 5L)).thenReturn(2);
+
+        notificationService.deleteByRelated("TASK", 5L);
+
+        verify(notificationRepository).deleteAllByRelated("TASK", 5L);
+    }
+
+    @Test
+    void deleteByRelatedShouldIgnoreMissingArguments() {
+        notificationService.deleteByRelated(null, 5L);
+        notificationService.deleteByRelated("TASK", null);
+        notificationService.deleteByRelated("  ", 5L);
+
+        verify(notificationRepository, never()).deleteAllByRelated(anyString(), any());
     }
 }

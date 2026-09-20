@@ -17,6 +17,7 @@ import club.muimi.backend.service.user.CurrentUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,6 +27,8 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -100,5 +103,34 @@ class AnnouncementServiceTest {
                 new UpsertAnnouncementRequest("新公告", "新内容", AnnouncementScope.GROUP, 20L)
         )).isInstanceOf(ConflictException.class)
                 .hasMessage("公告发布后不允许修改可见范围");
+    }
+
+    @Test
+    void deleteAnnouncementShouldCleanRelatedNotificationsBeforeRemoval() {
+        Announcement announcement = Announcement.builder()
+                .id(7L)
+                .title("待删除公告")
+                .contentMarkdown("内容")
+                .scope(AnnouncementScope.GLOBAL)
+                .publisherUserId(2L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(new LoginUser(
+                1L,
+                "admin",
+                "admin@example.com",
+                "hashed",
+                Role.ADMIN,
+                UserStatus.ACTIVE,
+                0L,
+                "jti-admin"
+        ));
+        when(announcementRepository.findById(7L)).thenReturn(Optional.of(announcement));
+
+        announcementService.deleteAnnouncement(7L);
+
+        InOrder inOrder = inOrder(notificationService, announcementRepository);
+        inOrder.verify(notificationService).deleteByRelated("ANNOUNCEMENT", 7L);
+        inOrder.verify(announcementRepository).delete(announcement);
+        verify(auditLogService).record(org.mockito.ArgumentMatchers.any());
     }
 }
