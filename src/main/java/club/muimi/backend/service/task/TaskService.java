@@ -429,8 +429,9 @@ public class TaskService {
             task.setAttachmentFileId(null);
             recruitmentTaskRepository.saveAndFlush(task);
         }
-        recruitmentTaskRepository.delete(task);
+        // 与公告/资料删除保持一致：关联通知必须在主体删除之前清理，否则会触发约束冲突（40900 数据冲突）
         notificationService.deleteByRelated("TASK", taskId);
+        recruitmentTaskRepository.delete(task);
         attachmentsToDelete.forEach(fileStorageService::deleteStoredFile);
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("groupId", groupId);

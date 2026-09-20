@@ -184,8 +184,10 @@ public class LearningMaterialService {
             learningMaterialRepository.saveAndFlush(material);
         }
 
-        learningMaterialRepository.delete(material);
+        // 与公告删除保持一致：先清理关联通知，再删除资料本体，最后删除附件记录。
+        // 若先删主体，服务器数据库上会因通知仍指向该资料触发约束冲突，对外表现为 40900「数据冲突」。
         notificationService.deleteByRelated("MATERIAL", materialId);
+        learningMaterialRepository.delete(material);
         recordMaterialAudit("DELETE_MATERIAL", "删除学习资料", currentUser, material, hadAttachment);
 
         if (attachment != null) {

@@ -34,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -185,5 +186,34 @@ class LearningMaterialServiceTest {
 
         verify(learningMaterialRepository).delete(material);
         verify(notificationService).deleteByRelated("MATERIAL", 3L);
+    }
+
+    @Test
+    void deleteMaterialShouldCleanRelatedNotificationsBeforeRemoval() {
+        LoginUser admin = new LoginUser(1L, "admin", "admin@example.com", "hashed", Role.ADMIN, UserStatus.ACTIVE, 0L, "jti-admin");
+        RecruitmentGroup group = RecruitmentGroup.builder()
+                .id(12L)
+                .name("后端组")
+                .build();
+        LearningMaterial material = LearningMaterial.builder()
+                .id(3L)
+                .groupId(12L)
+                .title("资料")
+                .publisherUserId(2L)
+                .build();
+        when(currentUserService.requireCurrentUser()).thenReturn(admin);
+        when(recruitmentGroupRepository.findById(12L)).thenReturn(Optional.of(group));
+        when(learningMaterialRepository.findById(3L)).thenReturn(Optional.of(material));
+
+        learningMaterialService.deleteMaterial(12L, 3L);
+
+        // 顺序约定与公告删除一致：先清理关联通知，再删除资料本体，避免约束冲突（40900 数据冲突）
+        inOrder(notificationService, learningMaterialRepository)
+                .verify(notificationService)
+                .deleteByRelated("MATERIAL", 3L);
+        inOrder(notificationService, learningMaterialRepository)
+                .verify(learningMaterialRepository)
+                .delete(material);
+        verify(auditLogService).record(any());
     }
 }
