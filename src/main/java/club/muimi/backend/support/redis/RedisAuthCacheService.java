@@ -51,23 +51,17 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     @Override
     public long incrementEmailSendIpCount(String clientIp, Duration ttl) {
-        Long value = redisTemplate.opsForValue().increment(emailSendIpKey(clientIp));
-        redisTemplate.expire(emailSendIpKey(clientIp), ttl);
-        return value == null ? 0L : value;
+        return incrementWithTtl(emailSendIpKey(clientIp), ttl);
     }
 
     @Override
     public long incrementEmailSendGlobalCount(Duration ttl) {
-        Long value = redisTemplate.opsForValue().increment(emailSendGlobalKey());
-        redisTemplate.expire(emailSendGlobalKey(), ttl);
-        return value == null ? 0L : value;
+        return incrementWithTtl(emailSendGlobalKey(), ttl);
     }
 
     @Override
     public long incrementEmailCodeVerifyFailCount(EmailCodeScene scene, String email, Duration ttl) {
-        Long value = redisTemplate.opsForValue().increment(emailCodeVerifyFailKey(scene, email));
-        redisTemplate.expire(emailCodeVerifyFailKey(scene, email), ttl);
-        return value == null ? 0L : value;
+        return incrementWithTtl(emailCodeVerifyFailKey(scene, email), ttl);
     }
 
     @Override
@@ -93,9 +87,7 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     @Override
     public long incrementLoginFailCount(String email, Duration ttl) {
-        Long value = redisTemplate.opsForValue().increment(loginFailKey(email));
-        redisTemplate.expire(loginFailKey(email), ttl);
-        return value == null ? 0L : value;
+        return incrementWithTtl(loginFailKey(email), ttl);
     }
 
     @Override
@@ -160,5 +152,17 @@ public class RedisAuthCacheService implements AuthCacheService {
 
     private String jwtBlacklistKey(String jti) {
         return "auth:jwt:blacklist:" + jti;
+    }
+
+    /**
+     * 计数器自增，并且只在计数键首次创建时设置过期时间。
+     * 如果每次自增都重新设置过期时间，限流窗口会被请求不断顺延，计数永远无法归零，一旦超限就只能等窗口内长时间无请求才可能恢复。
+     */
+    private long incrementWithTtl(String key, Duration ttl) {
+        Long value = redisTemplate.opsForValue().increment(key);
+        if (value != null && value == 1L) {
+            redisTemplate.expire(key, ttl);
+        }
+        return value == null ? 0L : value;
     }
 }
