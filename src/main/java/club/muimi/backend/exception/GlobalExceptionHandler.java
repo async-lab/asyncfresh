@@ -103,6 +103,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolation(DataIntegrityViolationException exception) {
+        // 统一返回 40900「数据冲突」，但必须把真实的数据库约束错误（唯一键/外键/超长）打进日志，否则无法定位
+        log.error("数据库约束冲突：{}", exception.getMostSpecificCause().getMessage(), exception);
         return ResponseEntity.status(ErrorCode.CONFLICT.getHttpStatus())
                 .body(ApiResponse.failure(ErrorCode.CONFLICT, ErrorCode.CONFLICT.getDefaultMessage(), null));
     }

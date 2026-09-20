@@ -116,7 +116,7 @@ public class LearningMaterialService {
             fileStorageService.bindFile(attachment, MATERIAL_BINDING_TYPE, material.getId());
         }
         notifyMaterialPublished(currentUser, material);
-        recordMaterialAudit("CREATE_MATERIAL", "创建学习资料", currentUser, material);
+        recordMaterialAudit("CREATE_MATERIAL", "创建学习资料", currentUser, material, material.getAttachmentFileId() != null);
         return buildMaterialVos(List.of(material)).getFirst();
     }
 
@@ -157,7 +157,7 @@ public class LearningMaterialService {
                 && !Objects.equals(saved.getAttachmentFileId(), oldAttachment.getId())) {
             fileStorageService.deleteStoredFile(oldAttachment);
         }
-        recordMaterialAudit("UPDATE_MATERIAL", "更新学习资料", currentUser, saved);
+        recordMaterialAudit("UPDATE_MATERIAL", "更新学习资料", currentUser, saved, saved.getAttachmentFileId() != null);
         return buildMaterialVos(List.of(saved)).getFirst();
     }
 
@@ -170,17 +170,27 @@ public class LearningMaterialService {
         if (!material.getGroupId().equals(groupId)) {
             throw new NotFoundException("学习资料不属于指定分组");
         }
-        if (material.getAttachmentFileId() != null) {
-            StoredFile storedFile = storedFileRepository.findById(material.getAttachmentFileId()).orElse(null);
+
+        // 删除顺序必须是：先置空 learning_material.attachment_file_id 并立刻落库，
+        // 再删除资料本体，最后才删除附件记录。
+        // 否则 DELETE FROM stored_file 会先于主体删除执行，撞上
+        // fk_learning_material_attachment_file_id 外键约束，对外表现为 40900「数据冲突」。
+        StoredFile attachment = material.getAttachmentFileId() == null
+                ? null
+                : storedFileRepository.findById(material.getAttachmentFileId()).orElse(null);
+        boolean hadAttachment = attachment != null;
+        if (hadAttachment) {
             material.setAttachmentFileId(null);
-            learningMaterialRepository.save(material);
-            if (storedFile != null) {
-                fileStorageService.deleteStoredFile(storedFile);
-            }
+            learningMaterialRepository.saveAndFlush(material);
         }
+
         learningMaterialRepository.delete(material);
         notificationService.deleteByRelated("MATERIAL", materialId);
-        recordMaterialAudit("DELETE_MATERIAL", "删除学习资料", currentUser, material);
+        recordMaterialAudit("DELETE_MATERIAL", "删除学习资料", currentUser, material, hadAttachment);
+
+        if (attachment != null) {
+            fileStorageService.deleteStoredFile(attachment);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -287,11 +297,17 @@ public class LearningMaterialService {
         notificationService.createOrRefreshAll(commands);
     }
 
-    private void recordMaterialAudit(String action, String summary, LoginUser actor, LearningMaterial material) {
+    private void recordMaterialAudit(
+            String action,
+            String summary,
+            LoginUser actor,
+            LearningMaterial material,
+            boolean hasAttachment
+    ) {
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("groupId", material.getGroupId());
         detail.put("title", material.getTitle());
-        detail.put("hasAttachment", material.getAttachmentFileId() != null);
+        detail.put("hasAttachment", hasAttachment);
         auditLogService.record(AuditLogCommand.builder(
                         AuditModule.MATERIAL,
                         action,
