@@ -410,29 +410,28 @@ public class TaskService {
             throw new ConflictException("任务不属于指定分组");
         }
         ensureCanManageGroup(currentUser, groupId);
+        // 删除顺序同学习资料：先置空主体上的 attachment_file_id 并立刻落库，再删除任务/提交主体，
+        // 最后才删除附件记录。否则 DELETE FROM stored_file 会先于主体删除执行，撞上
+        // fk_recruitment_task_attachment_file_id / fk_task_submission_attachment_file_id，对外表现为 40900「数据冲突」。
         List<TaskSubmission> submissions = taskSubmissionRepository.findAllByTaskId(taskId);
+        List<StoredFile> attachmentsToDelete = new ArrayList<>();
         for (TaskSubmission submission : submissions) {
-            StoredFile attachment = submission.getAttachmentFileId() == null
-                    ? null
-                    : storedFileRepository.findById(submission.getAttachmentFileId()).orElse(null);
-            if (attachment != null) {
+            if (submission.getAttachmentFileId() != null) {
+                storedFileRepository.findById(submission.getAttachmentFileId()).ifPresent(attachmentsToDelete::add);
                 submission.setAttachmentFileId(null);
-                taskSubmissionRepository.save(submission);
-                fileStorageService.deleteStoredFile(attachment);
+                taskSubmissionRepository.saveAndFlush(submission);
             }
         }
         taskSubmissionRepository.deleteAll(submissions);
 
         if (task.getAttachmentFileId() != null) {
-            StoredFile taskAttachment = storedFileRepository.findById(task.getAttachmentFileId()).orElse(null);
+            storedFileRepository.findById(task.getAttachmentFileId()).ifPresent(attachmentsToDelete::add);
             task.setAttachmentFileId(null);
-            recruitmentTaskRepository.save(task);
-            if (taskAttachment != null) {
-                fileStorageService.deleteStoredFile(taskAttachment);
-            }
+            recruitmentTaskRepository.saveAndFlush(task);
         }
         recruitmentTaskRepository.delete(task);
         notificationService.deleteByRelated("TASK", taskId);
+        attachmentsToDelete.forEach(fileStorageService::deleteStoredFile);
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("groupId", groupId);
         detail.put("submissionCount", submissions.size());
