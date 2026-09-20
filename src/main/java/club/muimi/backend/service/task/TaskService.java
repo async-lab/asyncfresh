@@ -432,6 +432,7 @@ public class TaskService {
             }
         }
         recruitmentTaskRepository.delete(task);
+        notificationService.deleteByRelated("TASK", taskId);
         Map<String, Object> detail = new LinkedHashMap<>();
         detail.put("groupId", groupId);
         detail.put("submissionCount", submissions.size());

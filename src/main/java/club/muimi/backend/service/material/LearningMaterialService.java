@@ -179,6 +179,7 @@ public class LearningMaterialService {
             }
         }
         learningMaterialRepository.delete(material);
+        notificationService.deleteByRelated("MATERIAL", materialId);
         recordMaterialAudit("DELETE_MATERIAL", "删除学习资料", currentUser, material);
     }
 

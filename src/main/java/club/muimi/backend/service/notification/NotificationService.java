@@ -165,6 +165,14 @@ public class NotificationService {
                 .toList();
     }
 
+    @Transactional
+    public void deleteByRelated(String relatedType, Long relatedId) {
+        if (relatedType == null || relatedType.isBlank() || relatedId == null) {
+            return;
+        }
+        notificationRepository.deleteAllByRelated(relatedType, relatedId);
+    }
+
     private NotificationVo toVo(Notification notification) {
         return new NotificationVo(
                 notification.getId(),

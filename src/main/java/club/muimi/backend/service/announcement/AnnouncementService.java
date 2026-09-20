@@ -119,6 +119,7 @@ public class AnnouncementService {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new NotFoundException("公告不存在"));
         ensureCanManageAnnouncement(currentUser, announcement);
+        notificationService.deleteByRelated("ANNOUNCEMENT", announcement.getId());
         announcementRepository.delete(announcement);
         recordAnnouncementAudit("DELETE_ANNOUNCEMENT", "删除公告", currentUser, announcement);
     }
