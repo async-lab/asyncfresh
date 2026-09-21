@@ -1,0 +1,17 @@
+# 根目录忽略
+.agents/
+.m2/
+dump.rdb
+*.log
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+frontend/.vite-dev*.log
+
+# 后端
+backend/target/
+backend/logs/
+backend/storage/
+backend/.local-mysql/
+backend/src/main/resources/static/
