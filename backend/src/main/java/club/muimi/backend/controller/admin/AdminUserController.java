@@ -1,0 +1,105 @@
+package club.muimi.backend.controller.admin;
+
+import club.muimi.backend.common.api.ApiResponse;
+import club.muimi.backend.common.api.PageResult;
+import club.muimi.backend.common.enums.Role;
+import club.muimi.backend.common.enums.UserStatus;
+import club.muimi.backend.dto.admin.CreateAdminUserRequest;
+import club.muimi.backend.dto.admin.UpdateAdminUserRequest;
+import club.muimi.backend.dto.admin.UpdateUserRoleRequest;
+import club.muimi.backend.dto.admin.UpdateUserStatusRequest;
+import club.muimi.backend.service.admin.AdminUserService;
+import club.muimi.backend.vo.admin.AdminUserDetailVo;
+import club.muimi.backend.vo.admin.AdminUserSummaryVo;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@Validated
+@RestController
+@RequestMapping("/api/v1/admin/users")
+@PreAuthorize("hasRole('ADMIN')")
+public class AdminUserController {
+
+    private final AdminUserService adminUserService;
+
+    public AdminUserController(AdminUserService adminUserService) {
+        this.adminUserService = adminUserService;
+    }
+
+    @GetMapping
+    public ApiResponse<PageResult<AdminUserSummaryVo>> listUsers(
+            @RequestParam(defaultValue = "1")
+            @Min(value = 1, message = "页码必须大于等于 1")
+            int page,
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "每页条数必须大于等于 1")
+            @Max(value = 50, message = "每页条数不能超过 50")
+            int size,
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) UserStatus status,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ApiResponse.success(adminUserService.listUsers(page, size, role, status, keyword), "ok");
+    }
+
+    @PostMapping
+    public ApiResponse<AdminUserDetailVo> createUser(@Valid @RequestBody CreateAdminUserRequest request) {
+        return ApiResponse.success(adminUserService.createUser(request), "用户创建成功");
+    }
+
+    @GetMapping("/{userId}")
+    public ApiResponse<AdminUserDetailVo> getUserDetail(@PathVariable Long userId) {
+        return ApiResponse.success(adminUserService.getUserDetail(userId), "ok");
+    }
+
+    @PutMapping("/{userId}")
+    public ApiResponse<AdminUserDetailVo> updateUser(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateAdminUserRequest request
+    ) {
+        return ApiResponse.success(adminUserService.updateUser(userId, request), "用户信息更新成功");
+    }
+
+    @PatchMapping("/{userId}")
+    public ApiResponse<AdminUserDetailVo> patchUser(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateAdminUserRequest request
+    ) {
+        return ApiResponse.success(adminUserService.updateUser(userId, request), "用户信息更新成功");
+    }
+
+    @PatchMapping("/{userId}/status")
+    public ApiResponse<AdminUserDetailVo> updateUserStatus(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+        return ApiResponse.success(adminUserService.updateUserStatus(userId, request), "用户状态更新成功");
+    }
+
+    @PatchMapping("/{userId}/role")
+    public ApiResponse<AdminUserDetailVo> updateUserRole(
+            @PathVariable Long userId,
+            @Valid @RequestBody UpdateUserRoleRequest request
+    ) {
+        return ApiResponse.success(adminUserService.updateUserRole(userId, request), "用户角色更新成功");
+    }
+
+    @DeleteMapping("/{userId}")
+    public ApiResponse<Void> deleteUser(@PathVariable Long userId) {
+        adminUserService.deleteUser(userId);
+        return ApiResponse.success(null, "用户删除成功");
+    }
+}

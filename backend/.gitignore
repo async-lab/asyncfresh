@@ -1,0 +1,54 @@
+HELP.md
+target/
+logs/
+storage/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Local runtime ###
+.local-mysql/
+.mvn/codex-settings.xml
+*.pid
+*.rdb
+*.log
+*.log.*
+.env
+.env.*
+!.env.example
+
+### Frontend build output ###
+# Vue/Vite dist copied into Spring static resources. Rebuild frontend and copy dist here locally.
+src/main/resources/static/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
