@@ -1,0 +1,308 @@
+import { deleteData, getData, patchData, postData, putData } from './http';
+import type {
+  AdminDashboardSummary,
+  AuditLog,
+  Application,
+  Direction,
+  Grade,
+  Group,
+  NotificationItem,
+  PageResult,
+  PeriodType,
+  Role,
+  User,
+  UserStatus
+} from '@/types/api';
+export {
+  createAdminAnnouncement,
+  deleteAdminAnnouncement,
+  getAnnouncements,
+  updateAdminAnnouncement
+} from './announcements';
+export {
+  createAdminMaterial,
+  deleteAdminMaterial,
+  getMaterials,
+  updateAdminMaterial
+} from './materials';
+export {
+  createAdminTask,
+  deleteAdminTask,
+  getAdminManagedTasks,
+  getAdminTaskSubmissions,
+  getTasks,
+  returnAdminSubmission,
+  reviewAdminSubmission,
+  updateAdminTask
+} from './tasks';
+
+export interface PeriodConfig {
+  id?: number;
+  periodType: PeriodType;
+  startTime: string;
+  endTime: string;
+  enabled: boolean;
+}
+
+export interface DirectionPayload {
+  parentId?: number | null;
+  name: string;
+  sortOrder: number;
+  enabled: boolean;
+}
+
+export interface GroupPayload {
+  name: string;
+  directionLevel1Id: number;
+  directionLevel2Id: number;
+  grade: Grade;
+  admissionYear: number;
+  maxSize: number;
+}
+
+export function getDashboardSummary() {
+  return Promise.all([
+    getData<AdminDashboardOverview>('/admin/dashboard/overview'),
+    getData<PageResult<User>>('/admin/users', { role: 'LEADER', page: 1, size: 1 })
+  ]).then(([overview, leaders]) => ({
+    userCount: overview.totalUsers,
+    applicationCount: overview.totalApplications,
+    groupedUserCount: overview.groupedApplications,
+    groupedApplicationCount: overview.groupedApplications,
+    unassignedApplicationCount: overview.ungroupedApplications,
+    leaderCount: leaders.total,
+    taskCompletionRate:
+      overview.totalSubmittedTaskResults + overview.totalReviewedTaskResults === 0
+        ? 0
+        : overview.totalReviewedTaskResults /
+          (overview.totalSubmittedTaskResults + overview.totalReviewedTaskResults)
+  }));
+}
+
+interface AdminDashboardOverview {
+  totalUsers: number;
+  totalApplications: number;
+  groupedApplications: number;
+  ungroupedApplications: number;
+  totalGroups: number;
+  totalTasks: number;
+  totalSubmittedTaskResults: number;
+  totalReviewedTaskResults: number;
+}
+
+export function getAdminPeriods() {
+  return getData<PeriodConfig[]>('/admin/periods');
+}
+
+export function saveAdminPeriods(periods: PeriodConfig[]) {
+  return postData<PeriodConfig[], { periods: PeriodConfig[] }>('/admin/periods', { periods });
+}
+
+export function updateAdminPeriod(id: number | string, payload: PeriodConfig) {
+  return putData<PeriodConfig, PeriodConfig>(`/admin/periods/${id}`, payload);
+}
+
+export function getAdminDirections() {
+  return getData<Direction[]>('/admin/directions');
+}
+
+export function createDirection(payload: DirectionPayload) {
+  return postData<Direction, DirectionPayload>('/admin/directions', payload);
+}
+
+export function updateDirection(id: number | string, payload: DirectionPayload) {
+  return putData<Direction, DirectionPayload>(`/admin/directions/${id}`, payload);
+}
+
+export function deleteDirection(id: number | string) {
+  return deleteData<null>(`/admin/directions/${id}`);
+}
+
+export function getAdminUsers(params?: {
+  role?: Role;
+  status?: string;
+  keyword?: string;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<User>>('/admin/users', params);
+}
+
+export function getAdminUser(id: number | string) {
+  return getData<User>(`/admin/users/${id}`);
+}
+
+export function updateUserStatus(id: number | string, status: 'ACTIVE' | 'DISABLED') {
+  return patchData<User, { status: 'ACTIVE' | 'DISABLED' }>(`/admin/users/${id}/status`, { status });
+}
+
+export function updateUserRole(id: number | string, role: Exclude<Role, 'ADMIN'>) {
+  return patchData<User, { role: Exclude<Role, 'ADMIN'> }>(`/admin/users/${id}/role`, { role });
+}
+
+export interface AdminUserPayload {
+  username: string;
+  email: string;
+  password?: string;
+  role?: Exclude<Role, 'ADMIN'>;
+  status?: UserStatus;
+  emailVerified?: boolean;
+}
+
+export function createAdminUser(payload: AdminUserPayload) {
+  return postData<User, AdminUserPayload>('/admin/users', payload);
+}
+
+export function updateAdminUser(id: number | string, payload: AdminUserPayload) {
+  return putData<User, AdminUserPayload>(`/admin/users/${id}`, payload);
+}
+
+export function deleteAdminUser(id: number | string) {
+  return deleteData<null>(`/admin/users/${id}`);
+}
+
+export function getAdminGroups(params?: {
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+}) {
+  return getData<Group[]>('/admin/groups', params);
+}
+
+export function getAdminUngroupedApplications(params?: {
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+  keyword?: string;
+}) {
+  return getData<Application[]>('/admin/groups/ungrouped-applications', params);
+}
+
+export function getAdminApplications(params?: {
+  keyword?: string;
+  status?: Application['status'];
+  directionLevel1Id?: number;
+  directionLevel2Id?: number;
+  grade?: Grade;
+  admissionYear?: number;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<Application>>('/admin/applications', params);
+}
+
+export function createGroup(payload: GroupPayload) {
+  return postData<Group, GroupPayload>('/admin/groups', payload);
+}
+
+export function updateGroup(id: number | string, payload: GroupPayload) {
+  return putData<Group, GroupPayload>(`/admin/groups/${id}`, payload);
+}
+
+export function deleteGroup(id: number | string) {
+  return deleteData<null>(`/admin/groups/${id}`);
+}
+
+export function addApplicationToGroup(groupId: number | string, applicationId: number | string) {
+  return postData<null>(`/admin/groups/${groupId}/applications/${applicationId}`);
+}
+
+export interface AdminAddGroupMemberPayload {
+  userId: number;
+  realName: string;
+  phone: string;
+  college: string;
+  major: string;
+  className: string;
+  introduction?: string;
+}
+
+export function addGroupMember(groupId: number | string, payload: AdminAddGroupMemberPayload) {
+  return postData<null, AdminAddGroupMemberPayload>(`/admin/groups/${groupId}/members`, payload);
+}
+
+export function unassignApplicationFromGroup(groupId: number | string, applicationId: number | string, remark?: string) {
+  return postData<null, { remark?: string }>(`/admin/groups/${groupId}/applications/${applicationId}/unassign`, {
+    remark
+  });
+}
+
+export function rejectAdminApplication(applicationId: number | string, remark?: string) {
+  return postData<null, { remark?: string }>(`/admin/applications/${applicationId}/reject`, { remark });
+}
+
+export function assignLeader(groupId: number | string, userId: number) {
+  return putData<null, { leaderUserId: number }>(`/admin/groups/${groupId}/leader`, { leaderUserId: userId });
+}
+
+export function removeLeader(groupId: number | string) {
+  return deleteData<null>(`/admin/groups/${groupId}/leader`);
+}
+
+export function getApplicationsExportUrl() {
+  return '/api/v1/admin/exports/applications';
+}
+
+export function getGroupsExportUrl() {
+  return '/api/v1/admin/exports/groups';
+}
+
+export function getGroupTasksExportUrl(groupId: number | string) {
+  return `/api/v1/admin/exports/groups/${groupId}/tasks`;
+}
+
+export function getAdminTaskBatchDownloadUrl(groupId: number | string, taskId?: number | string) {
+  const suffix = taskId ? `?taskId=${taskId}` : '';
+  return `/api/v1/admin/groups/${groupId}/tasks/submissions/download${suffix}`;
+}
+
+export function getAdminAuditLogs(params?: {
+  module?: string;
+  keyword?: string;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<AuditLog>>('/admin/audit-logs', params);
+}
+
+export interface NotificationPayload {
+  title: string;
+  content: string;
+  channel: NotificationItem['channel'];
+  targetRole?: Role;
+}
+
+export function getAdminNotifications(params?: {
+  status?: NotificationItem['status'];
+  keyword?: string;
+  page?: number;
+  size?: number;
+}) {
+  return getData<PageResult<NotificationItem>>('/admin/notifications', params);
+}
+
+export function createAdminNotification(payload: NotificationPayload) {
+  return postData<NotificationItem, NotificationPayload>('/admin/notifications', payload);
+}
+
+export function sendAdminNotification(id: number | string) {
+  return postData<NotificationItem>(`/admin/notifications/${id}/send`);
+}
+
+export function deleteAdminNotification(id: number | string) {
+  return deleteData<null>(`/admin/notifications/${id}`);
+}
+
+export function getCurrentNotifications(params?: { unreadOnly?: boolean; page?: number; size?: number }) {
+  return getData<PageResult<NotificationItem>>('/notifications', params);
+}
+
+export function markNotificationRead(id: number | string) {
+  return postData<null>(`/notifications/${id}/read`);
+}
+
+export function markAllNotificationsRead() {
+  return postData<null>('/notifications/read-all');
+}
