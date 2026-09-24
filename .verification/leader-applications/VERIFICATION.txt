@@ -1,0 +1,31 @@
+Change: frontend/src/views/leader/applications/index.vue, PageTable 意向方向 column.
+Field: directionLevel1Name / directionLevel2Name, displayed as 父方向 / 子方向.
+Also corrected the existing malformed introduction column label attribute.
+
+Original SHA-256: 8673fbad87c3ae9d7624cab52fa6c56560b0297c29cdf56ac8b0ca9c587480d2
+Modified SHA-256: 496a24cb2b0eb7f3e95be34c5687ef207802fd8d1a358ea0ccfb8d847c878b34
+
+Artifacts:
+MODIFIED_FILE: H:\asyncfresh\.verification\leader-applications\MODIFIED_FILE.vue
+DIFF_FILE: H:\asyncfresh\.verification\leader-applications\DIFF_FILE.patch
+VERIFICATION.txt: H:\asyncfresh\.verification\leader-applications\VERIFICATION.txt
+ROLLBACK.sh: H:\asyncfresh\.verification\leader-applications\ROLLBACK.sh
+
+BASELINE
+Command: npm run build (working directory H:\asyncfresh\frontend)
+Input: pre-change page with no 意向方向 column and label``="自我介绍".
+Literal result: ✓ built in 14.55s
+Exit status: 0
+
+MODIFIED
+Command: npm run build (working directory H:\asyncfresh\frontend)
+Input: PageTable column using directionLevel1Name / directionLevel2Name.
+Literal result: ✓ built in 9.91s
+Exit status: 0
+
+ROLLBACK
+Command: & 'C:\Program Files\Git\bin\bash.exe' '.verification/leader-applications/ROLLBACK.sh' '.verification/leader-applications/rollback-test.vue' (working directory H:\asyncfresh)
+Input: rollback-test.vue copied from MODIFIED_FILE.vue.
+Literal output: RESTORED baseline
+Exit status: 0
+Restored behavior/status: rollback-test.vue has no 意向方向 column; its SHA-256 is 8673fbad87c3ae9d7624cab52fa6c56560b0297c29cdf56ac8b0ca9c587480d2, matching BASELINE.vue. The actual page and MODIFIED_FILE.vue remain changed.
