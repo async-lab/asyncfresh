@@ -15,3 +15,4 @@ backend/logs/
 backend/storage/
 backend/.local-mysql/
 backend/src/main/resources/static/
+backend/document/后端启动流程.md
